@@ -169,15 +169,15 @@
         const reviewsByPlace = {};
         rRows.forEach(r=>{
           const o = Object.fromEntries(rHdr.map((h,i)=>[h,r[i]||'']));
-          // sanitize and remove leading commas/spaces from PhotoURL
-          let photoUrl = (o.PhotoURL || '').trim();
-          photoUrl = photoUrl.replace(/^,+\s*/, '');
-          reviewsByPlace[o.PlaceID] = reviewsByPlace[o.PlaceID] || [];
+          // split comma-separated URLs into an array, trimming and stripping leading commas
+          let photos = (o.PhotoURL||'').trim().replace(/^,+\s*/, '')
+                       .split(/\s*,\s*/).filter(u=>u);
+          reviewsByPlace[o.PlaceID] = reviewsByPlace[o.PlaceID]||[];
           reviewsByPlace[o.PlaceID].push({
             date:   o.VisitDate,
-            rating: Number(o.Rating) || 0,
+            rating: Number(o.Rating)||0,
             review: o.Review,
-            photo:  photoUrl
+            photos
           });
         });
 
@@ -309,9 +309,12 @@
             revs.forEach(r=>{
               popup+=`<div class="review-item">
                          <strong>${r.date}</strong>
-                         <p>${r.review}</p>`+
-                       (r.photo?`<a href="${r.photo}" target="_blank">View photo</a>`:'')+
-                       `</div>`;
+                         <p>${r.review}</p>`;
+              // multiple photos links
+              r.photos.forEach(url=>{
+                popup+=`<a href="${url}" target="_blank">View photo</a>`;
+              });
+              popup+=`</div>`;
             });
             popup+=`</div></details>`;
           }
