@@ -164,15 +164,23 @@
             appleLink:o.AppleMapsLink
           };
         });
+
         const [rHdr, ...rRows] = data.valueRanges[1].values;
         const reviewsByPlace = {};
         rRows.forEach(r=>{
-          const o=Object.fromEntries(rHdr.map((h,i)=>[h,r[i]||'']));
-          (reviewsByPlace[o.PlaceID]||=[]).push({
-            date:o.VisitDate, rating:Number(o.Rating)||0,
-            review:o.Review, photo:o.PhotoURL
+          const o = Object.fromEntries(rHdr.map((h,i)=>[h,r[i]||'']));
+          // sanitize and remove leading commas/spaces from PhotoURL
+          let photoUrl = (o.PhotoURL || '').trim();
+          photoUrl = photoUrl.replace(/^,+\s*/, '');
+          reviewsByPlace[o.PlaceID] = reviewsByPlace[o.PlaceID] || [];
+          reviewsByPlace[o.PlaceID].push({
+            date:   o.VisitDate,
+            rating: Number(o.Rating) || 0,
+            review: o.Review,
+            photo:  photoUrl
           });
         });
+
         buildMap(places, reviewsByPlace);
       })
       .catch(console.error);
@@ -297,7 +305,7 @@
             const latest=revs[0];
             popup+=`${'★'.repeat(latest.rating)}<br>`;
             popup+=`<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
-                      <div class="review-carousel">`;
+                       <div class="review-carousel">`;
             revs.forEach(r=>{
               popup+=`<div class="review-item">
                          <strong>${r.date}</strong>
