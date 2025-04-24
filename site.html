@@ -90,7 +90,8 @@
     // ─── CONFIG ───────────────────────────────────────────────────────────────
     const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74';
     const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
-    const range   = 'Sheet1!A:H';  // includes Visited column
+    // include AppleMapsLink in the range
+    const range   = 'Sheet1!A:I';  // Name,Category,Subcategory,Region,Notes,Coordinates,MapsLink,Visited,AppleMapsLink
 
     const jsonUrl =
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`
@@ -167,18 +168,20 @@
         .map(r => {
           const [lat, lng] = r.Coordinates.split(',').map(s => parseFloat(s.trim()));
           return {
-            name:        r.Name,
-            category:    r.Category.trim(),
-            subcategory: r.Subcategory.trim(),
-            region:      r.Region || '',
-            notes:       r.Notes || '',
-            visited:     (r.Visited||'').trim().toUpperCase() === 'Y',
+            name:           r.Name,
+            category:       r.Category.trim(),
+            subcategory:    r.Subcategory.trim(),
+            region:         r.Region || '',
+            notes:          r.Notes || '',
+            visited:        (r.Visited||'').trim().toUpperCase() === 'Y',
             lat, lng,
-            mapsLink:    r.MapsLink || ''
+            mapsLink:       r.MapsLink || '',
+            // accommodate both possible header names
+            appleMapsLink:  r.AppleMapsLink || r['Apple Maps Link'] || ''
           };
         });
 
-      // Build category→subs & regions
+      // Build category→subs & collect regions
       const categoryMap = {}, allRegions = new Set();
       places.forEach(p => {
         (categoryMap[p.category] ||= new Set()).add(p.subcategory);
@@ -220,7 +223,6 @@
         const pnl = document.createElement('div'); pnl.className='panel';
         const hdr = document.createElement('div'); hdr.className='panel-header';
 
-        // master checkbox for category panels only
         let master = null;
         if (!isRegion && !isVisited) {
           master = document.createElement('input');
@@ -258,8 +260,8 @@
                           : isVisited ? item
                           : `${title} - ${item}`;
           body.append(makeCheckbox(fullVal,
-            isRegion ? selectedRegs
-            : isVisited ? selectedVisited
+            isRegion   ? selectedRegs
+            : isVisited? selectedVisited
             : selectedSubs,
             item));
         });
@@ -282,25 +284,26 @@
       function drawMarkers() {
         markersLayer.clearLayers();
         places.forEach(p=>{
-          // visited filter
           if (!selectedVisited.has(p.visited ? 'Been there' : 'Not yet')) return;
-          // category filter
           const key = `${p.category} - ${p.subcategory}`;
           if (!selectedSubs.has(key)) return;
-          // region filter
           if (p.region && !selectedRegs.has(p.region)) return;
 
           L.marker([p.lat,p.lng], {
             icon: createSvgIcon(categoryColors[p.category], p.visited)
           })
-          .bindPopup(`
-            <strong>${p.name}</strong><br>
-            ${p.notes}<br>
-            <em>${p.category} – ${p.subcategory}` +
+          .bindPopup(
+            `<strong>${p.name}</strong><br>` +
+            `${p.notes}<br>` +
+            `<em>${p.category} – ${p.subcategory}` +
             (p.region ? ` / ${p.region}` : '') +
-            `</em><br>
-            <a href="${p.mapsLink}" target="_blank">Google Maps</a>
-          `)
+            `</em><br>` +
+            `<a href="${p.mapsLink}" target="_blank">Google Maps</a>` +
+            (p.appleMapsLink
+              ? `<br><a href="${p.appleMapsLink}" target="_blank">Apple Maps</a>`
+              : ''
+            )
+          )
           .addTo(markersLayer);
         });
       }
