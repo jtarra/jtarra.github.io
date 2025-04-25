@@ -5,95 +5,68 @@
   <title>Oahu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <!-- Google Font: Rock Salt -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
+        rel="stylesheet"/>
   <style>
+    /* Override default div-icon background */
+    .leaflet-div-icon {
+      background: transparent !important;
+      border: none !important;
+    }
+
     body, html { margin:0; height:100%; font-family:sans-serif; }
     #map { height:100%; }
 
-    /* Prevent popups from growing past viewport */
-    .leaflet-popup-content-wrapper {
-      max-height: 80vh;
-      overflow: auto;
-    }
-
-    /* Filters panel */
     .filters {
       position:absolute; top:10px; left:10px; z-index:1000;
-      background: rgba(255,249,230,0.95);
-      border-radius:8px;
-      overflow: hidden;
-      width: auto;
-      max-width: calc(100vw - 20px);
-      max-height: 40px;
-      transition: width 0.3s, max-height 0.3s, top 0.2s;
+      background:rgba(255,249,230,0.95); border-radius:8px;
+      overflow:hidden; max-height:40px; width:auto;
+      transition: max-height 0.3s, width 0.3s;
     }
     .filters.expanded {
-      width: 280px;
-      max-height: calc(100vh - 20px);
-      overflow-y: auto;
+      max-height:calc(100vh - 20px); width:280px;
+      overflow-y:auto;
     }
     #toggleFilters {
       display:block; width:100%; padding:8px;
       background:#FFECB3; border:none; border-bottom:1px solid #ddd;
-      font-family:'Rock Salt',cursive; font-size:1em; cursor:pointer;
+      font-family:'Rock Salt',cursive; cursor:pointer;
     }
-    .panel { margin-bottom:10px; }
+    .panel { margin:8px; }
     .panel-header {
-      display:flex; align-items:center; padding:8px;
+      display:flex; align-items:center; padding:6px 8px;
       background:#FFECB3; border-radius:6px;
       cursor:pointer; font-family:'Rock Salt',cursive;
-      font-size:1.1em; transition:background .2s;
     }
-    .panel-header:hover { background:#FFE082; }
-    .panel-header input { margin-right:8px; }
+    .panel-header input { margin-right:6px; }
     .panel-header .color-swatch {
       margin-left:auto; width:14px; height:14px;
       border-radius:50%; border:1px solid #999;
-      box-shadow:0 0 2px rgba(0,0,0,0.2);
     }
     .panel-header .arrow { margin-left:8px; font-weight:bold; }
     .panel-body {
-      display:none; padding:12px 8px 8px 20px; background:#FFF8E1;
+      display:none; padding:8px 12px; background:#FFF8E1;
       border-radius:6px;
     }
     .panel-body.active { display:block; }
-    .panel-body label {
-      display:block; margin-bottom:8px;
-    }
+    .panel-body label { display:block; margin-bottom:6px; }
 
-    /* Review carousel */
+    .leaflet-popup-content-wrapper {
+      max-height:80vh; overflow:auto;
+    }
     .review-carousel {
-      display:flex; overflow-x:auto; padding:8px 0; gap:12px;
+      display:flex; overflow-x:auto; gap:8px; padding:6px 0;
     }
     .review-item {
-      flex:0 0 200px;
-      max-height:180px;
-      overflow-y:auto;
-      background:#fff; border:1px solid #ddd;
-      border-radius:4px; padding:6px; box-sizing:border-box;
+      flex:0 0 180px; background:#fff; border:1px solid #ddd;
+      padding:6px; border-radius:4px; box-sizing:border-box;
     }
-    .review-item a {
-      display:block; margin-top:6px; color:#0077cc;
-      text-decoration:underline; font-size:0.9em;
-    }
-    .review-item strong {
-      display:block; margin-bottom:4px; font-size:0.95em;
-    }
-    .review-item p {
-      margin:0 0 4px 0; font-size:0.9em;
-    }
-    .review-carousel::-webkit-scrollbar { height:6px; }
-    .review-carousel::-webkit-scrollbar-thumb {
-      background:rgba(0,0,0,0.2); border-radius:3px;
-    }
+    .review-item a { display:block; margin-top:4px; font-size:0.9em; }
+    .review-item strong { display:block; margin-bottom:4px; }
+    .review-item p { margin:0 0 4px; }
   </style>
 </head>
 <body>
@@ -108,227 +81,257 @@
     const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74';
     const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
     const ranges  = ['Places!A:J','Reviews!A:E'];
-    const jsonUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' +
-      sheetId + '/values:batchGet?key=' + apiKey +
-      ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}` +
+                ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
 
-    // Initialize map
-    const map = L.map('map',{ zoomControl:false }).setView([21.3069,-157.8583],11);
-    L.control.zoom({ position:'topright' }).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{
-      attribution:'© Humanitarian OSM Team'
-    }).addTo(map);
-    const markersLayer = L.layerGroup().addTo(map);
-
-    // Filters clamp
-    const filtersDiv = document.getElementById('filters');
-    const toggleBtn  = document.getElementById('toggleFilters');
-    function clampFilters(){
-      const r = filtersDiv.getBoundingClientRect();
-      if(r.bottom > window.innerHeight){
-        const newTop = window.innerHeight - r.height - 10;
-        filtersDiv.style.top = Math.max(10,newTop) + 'px';
-      }
-    }
-    toggleBtn.onclick = ()=>{
-      const open = filtersDiv.classList.toggle('expanded');
-      toggleBtn.textContent = open?'Hide Filters':'Show Filters';
-      clampFilters();
-    };
-    window.addEventListener('resize', clampFilters);
-
-    // Keep popups in view
-    map.on('popupopen', e=>{
-      e.popup.options.autoPan = true;
-      e.popup.keepInView();
-      const el = e.popup.getElement();
-      el.querySelectorAll('details').forEach(d=>{
-        d.addEventListener('toggle', ()=> e.popup.keepInView());
-      });
-    });
-
-    // Fetch sheets
-    fetch(jsonUrl)
-      .then(r=>{ if(!r.ok) throw Error(r.statusText); return r.json(); })
+    fetch(url)
+      .then(r=> r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data=>{
-        const [pHdr, ...pRows] = data.valueRanges[0].values;
-        const places = pRows.map(r=>{
-          const o = Object.fromEntries(pHdr.map((h,i)=>[h,r[i]||'']));
-          const [lat,lng]=o.Coordinates.split(',').map(x=>parseFloat(x));
+        const [hdrP, ...rowsP] = data.valueRanges[0].values;
+        const places = rowsP.map(r=>{
+          const o = Object.fromEntries(hdrP.map((h,i)=>[h, r[i]||'']));
+          const [lat,lng] = o.Coordinates.split(',').map(Number);
           return {
-            placeId:o.PlaceID, name:o.Name,
-            category:o.Category, subcategory:o.Subcategory,
-            region:o.Region, notes:o.Notes,
-            visited:o.Visited.trim().toUpperCase()==='Y',
-            latlng:[lat,lng], mapsLink:o.MapsLink,
-            appleLink:o.AppleMapsLink
+            id:          o.PlaceID,
+            name:        o.Name,
+            category:    o.Category,
+            subcategory: o.Subcategory,
+            region:      o.Region,
+            notes:       o.Notes,
+            visited:     o.Visited.trim().toUpperCase() === 'Y',
+            latlng:      [lat,lng],
+            mapsLink:    o.MapsLink,
+            appleLink:   o.AppleMapsLink
           };
         });
 
-        const [rHdr, ...rRows] = data.valueRanges[1].values;
-        const reviewsByPlace = {};
-        rRows.forEach(r=>{
-          const o = Object.fromEntries(rHdr.map((h,i)=>[h,r[i]||'']));
-          // split comma-separated URLs into an array, trimming and stripping leading commas
-          let photos = (o.PhotoURL||'').trim().replace(/^,+\s*/, '')
-                       .split(/\s*,\s*/).filter(u=>u);
-          reviewsByPlace[o.PlaceID] = reviewsByPlace[o.PlaceID]||[];
-          reviewsByPlace[o.PlaceID].push({
+        const [hdrR, ...rowsR] = data.valueRanges[1].values;
+        const reviewsBy = {};
+        rowsR.forEach(r=>{
+          const o = Object.fromEntries(hdrR.map((h,i)=>[h, r[i]||'']));
+          const photos = (o.PhotoURL || '')
+                           .trim()
+                           .split(/\s*,\s*/)
+                           .filter(Boolean);
+          (reviewsBy[o.PlaceID] ||= []).push({
             date:   o.VisitDate,
-            rating: Number(o.Rating)||0,
-            review: o.Review,
+            rating: +o.Rating || 0,
+            text:   o.Review,
             photos
           });
         });
 
-        buildMap(places, reviewsByPlace);
+        initialize(places, reviewsBy);
       })
       .catch(console.error);
 
-    // Icon factory
-    function createSvgIcon(color,visited){
-      const stroke = visited ? '#DAA520' : '#555';
-      const svg = `<svg width="24" height="35" viewBox="0 0 24 35"
-        xmlns="http://www.w3.org/2000/svg">
-        <path fill="${color}" stroke="${stroke}" stroke-width="2"
-          d="M12 0C7.03 0 3 4.03 3 9
-             c0 6.75 9 19.5 9 19.5
-             s9-12.75 9-19.5
-             c0-4.97-4.03-9-9-9
-             zm0 13.5a4.5 4.5 0 1 1 0-9
-             4.5 4.5 0 0 1 0 9z"/>
-      </svg>`;
-      return L.divIcon({ html: svg,
-        iconSize:[24,35], iconAnchor:[12,35], popupAnchor:[0,-35], className:'' });
-    }
+    function initialize(places, reviewsBy){
+      // Map setup
+      const map = L.map('map', { zoomControl: false })
+                   .setView([21.3069, -157.8583], 11);
+      L.control.zoom({ position: 'topright' }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        attribution: '© Humanitarian OSM Team'
+      }).addTo(map);
+      const markerLayer = L.layerGroup().addTo(map);
 
-    // Build map & filters
-    function buildMap(places, reviewsByPlace){
-      const categoryMap={}, allRegions=new Set();
-      places.forEach(p=>{
-        (categoryMap[p.category]||=(new Set())).add(p.subcategory);
-        if(p.region) allRegions.add(p.region);
+      // Build category & region sets
+      const catMap = {}, regions = new Set();
+      places.forEach(p => {
+        (catMap[p.category] ||= new Set()).add(p.subcategory);
+        if (p.region) regions.add(p.region);
       });
-      const cats = Object.keys(categoryMap).sort();
-      function hslToHex(h,s,l){ l/=100; const a=s*Math.min(l,1-l)/100;
-        const f=n=>{ const k=(n+h/30)%12;
-          const c=l - a*Math.max(Math.min(k-3,9-k,1),-1);
-          return Math.round(255*c).toString(16).padStart(2,'0'); };
-        return `#${f(0)}${f(8)}${f(4)}`; }
-      const categoryColors={};
-      cats.forEach((c,i)=>categoryColors[c]=hslToHex(i*360/cats.length,60,50));
+      const categories = Object.keys(catMap);
 
-      const selectedSubs    = new Set(places.map(p=>`${p.category} - ${p.subcategory}`));
-      const selectedRegs    = new Set(allRegions);
-      const selectedVisited = new Set(['Been there','Not yet']);
+      // Alphabetical sort helper
+      const alpha = arr =>
+        arr.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
-      function makeCheckbox(val,set,label){
-        const lbl=document.createElement('label');
-        const cb=document.createElement('input');
-        cb.type='checkbox'; cb.value=val; cb.checked=true;
-        cb.onchange=()=>{ cb.checked?set.add(val):set.delete(val); drawMarkers(); };
-        lbl.append(cb,' ',label);
-        return lbl;
+      // Color palette
+      const palette = alpha([...categories]);
+      const colors = {};
+      palette.forEach((cat, i) => {
+        const h = i * 360 / palette.length, s = 60, l = 50;
+        const a = s * Math.min(l/100, 1 - l/100) / 100;
+        const toHex = n => {
+          const k = (n + h/30) % 12;
+          const c = l/100 - a * Math.max(Math.min(k-3, 9-k, 1), -1);
+          return Math.round(255 * c).toString(16).padStart(2, '0');
+        };
+        colors[cat] = `#${toHex(0)}${toHex(8)}${toHex(4)}`;
+      });
+
+      // Filter state
+      const selSub = new Set(places.map(p => `${p.category} - ${p.subcategory}`));
+      const selReg = new Set(regions);
+      const selVis = new Set(['Been there', 'Not yet']);
+
+      // Filter panel DOM
+      const filtersDiv = document.getElementById('filters');
+      const toggleBtn  = document.getElementById('toggleFilters');
+      toggleBtn.addEventListener('click', () => {
+        filtersDiv.classList.toggle('expanded');
+        toggleBtn.textContent = filtersDiv.classList.contains('expanded')
+                              ? 'Hide Filters'
+                              : 'Show Filters';
+      });
+
+      function makeCheckbox(value, setRef, labelText) {
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = value;
+        cb.checked = true;
+        cb.addEventListener('change', () => {
+          cb.checked ? setRef.add(value) : setRef.delete(value);
+          renderMarkers();
+        });
+        label.append(cb, ' ', labelText);
+        return label;
       }
-      function buildPanel(title, items, isRegion, toggleOnly=false){
-        const pnl=document.createElement('div'); pnl.className='panel';
-        const hdr=document.createElement('div'); hdr.className='panel-header';
-        if(!isRegion && !toggleOnly){
-          const master=document.createElement('input');
-          master.type='checkbox'; master.checked=true;
-          master.onchange=()=>{
-            const all=master.checked;
-            pnl.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-              if(cb!==master){
-                cb.checked=all;
-                const key=cb.value;
-                all?selectedSubs.add(key):selectedSubs.delete(key);
+
+      function addPanel(title, items, isRegion, toggleOnly = false) {
+        const panel = document.createElement('div');
+        panel.className = 'panel';
+
+        const header = document.createElement('div');
+        header.className = 'panel-header';
+
+        if (!toggleOnly) {
+          const master = document.createElement('input');
+          master.type = 'checkbox';
+          master.checked = true;
+          master.addEventListener('click', e => e.stopPropagation());
+          master.addEventListener('change', () => {
+            const all = master.checked;
+            panel.querySelectorAll('input[type=checkbox]').forEach(cb => {
+              if (cb !== master) {
+                cb.checked = all;
+                const key = cb.value;
+                if (isRegion) all ? selReg.add(key) : selReg.delete(key);
+                else          all ? selSub.add(key) : selSub.delete(key);
               }
             });
-            drawMarkers();
-          };
-          hdr.append(master);
+            renderMarkers();
+          });
+          header.append(master);
         }
-        hdr.append(document.createTextNode(title));
-        if(!isRegion && !toggleOnly){
-          const sw=document.createElement('div'); sw.className='color-swatch';
-          sw.style.background=categoryColors[title];
-          hdr.append(sw);
-        }
-        const arrow=document.createElement('span');
-        arrow.className='arrow'; arrow.textContent='▶';
-        hdr.append(arrow);
 
-        const body=document.createElement('div'); body.className='panel-body';
-        items.forEach(item=>{
-          const full = isRegion
-                     ? item
-                     : title==='Visited'
-                       ? item
-                       : `${title} - ${item}`;
-          const setRef = isRegion
-                       ? selectedRegs
-                       : title==='Visited'
-                         ? selectedVisited
-                         : selectedSubs;
-          body.append(makeCheckbox(full,setRef,item));
+        header.append(document.createTextNode(title));
+
+        if (!isRegion && title !== 'Visited?') {
+          const swatch = document.createElement('div');
+          swatch.className = 'color-swatch';
+          swatch.style.background = colors[title];
+          header.append(swatch);
+        }
+
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.textContent = '▶';
+        header.append(arrow);
+
+        const body = document.createElement('div');
+        body.className = 'panel-body';
+        items.forEach(item => {
+          const fullValue = isRegion
+            ? item
+            : title === 'Visited?'
+              ? item
+              : `${title} - ${item}`;
+          const refSet = isRegion
+            ? selReg
+            : title === 'Visited?'
+              ? selVis
+              : selSub;
+          body.append(makeCheckbox(fullValue, refSet, item));
         });
-        hdr.onclick=()=>{
-          const open=body.classList.toggle('active');
-          arrow.textContent=open?'▼':'▶';
-          clampFilters();
-        };
-        pnl.append(hdr, body);
-        filtersDiv.append(pnl);
+
+        header.addEventListener('click', () => {
+          body.classList.toggle('active');
+          arrow.textContent = body.classList.contains('active') ? '▼' : '▶';
+        });
+
+        panel.append(header, body);
+        filtersDiv.append(panel);
       }
 
-      cats.forEach(c=>buildPanel(c,Array.from(categoryMap[c]).sort(),false,false));
-      if(allRegions.size) buildPanel('Regions',Array.from(allRegions).sort(),true,false);
-      buildPanel('Visited',['Been there','Not yet'],false,true);
+      // Build filter panels in order
+      if (regions.size) addPanel('Region', alpha([...regions]), true);
+      addPanel('Visited?', ['Been there', 'Not yet'], false, true);
+      if (categories.includes('Food'))         addPanel('Food',         alpha([...catMap.Food]), false);
+      if (categories.includes('Sweet Treats')) addPanel('Sweet Treats', alpha([...catMap['Sweet Treats']]), false);
+      alpha(categories.filter(c => c !== 'Food' && c !== 'Sweet Treats'))
+        .forEach(cat => addPanel(cat, alpha([...catMap[cat]]), false));
 
-      function drawMarkers(){
-        markersLayer.clearLayers();
-        places.forEach(p=>{
-          if(!selectedVisited.has(p.visited?'Been there':'Not yet')) return;
-          if(!selectedSubs.has(`${p.category} - ${p.subcategory}`)) return;
-          if(p.region && !selectedRegs.has(p.region)) return;
+      // Render markers based on filters
+      function renderMarkers() {
+        markerLayer.clearLayers();
 
-          let popup=`<strong>${p.name}</strong><br>`;
-          if(p.notes) popup+=`${p.notes}<br>`;
-          popup+=`<em>${p.category} – ${p.subcategory}`+
-                  (p.region?` / ${p.region}`:'')+
-                  `</em><br>`;
+        places.forEach(p => {
+          if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
+          if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
+          if (p.region && !selReg.has(p.region)) return;
 
-          const revs=(reviewsByPlace[p.placeId]||[]).slice()
-                     .sort((a,b)=>b.date.localeCompare(a.date));
-          if(revs.length){
-            const latest=revs[0];
-            popup+=`${'★'.repeat(latest.rating)}<br>`;
-            popup+=`<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
-                       <div class="review-carousel">`;
-            revs.forEach(r=>{
-              popup+=`<div class="review-item">
-                         <strong>${r.date}</strong>
-                         <p>${r.review}</p>`;
-              // multiple photos links
-              r.photos.forEach(url=>{
-                popup+=`<a href="${url}" target="_blank">View photo</a>`;
+          let popup = `<strong>${p.name}</strong><br>`;
+          if (p.notes) popup += `${p.notes}<br>`;
+          popup += `<em>${p.category} – ${p.subcategory}` +
+                   (p.region ? ` / ${p.region}` : '') +
+                   `</em><br>`;
+
+          const reviews = (reviewsBy[p.id] || []).slice()
+                           .sort((a, b) => b.date.localeCompare(a.date));
+          if (reviews.length) {
+            popup += '★'.repeat(reviews[0].rating) + '<br>';
+            popup += `<details><summary>${reviews.length} review${reviews.length > 1 ? 's' : ''}</summary>
+                      <div class="review-carousel">`;
+            reviews.forEach(r => {
+              popup += `<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
+              r.photos.forEach(url => {
+                popup += `<a href="${url}" target="_blank">View photo</a>`;
               });
-              popup+=`</div>`;
+              popup += `</div>`;
             });
-            popup+=`</div></details>`;
+            popup += `</div></details>`;
           }
 
-          popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-          if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+          // Google & Apple Maps links
+          if (p.mapsLink) {
+            popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+          }
+          if (p.appleLink) {
+            popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+          }
 
-          L.marker(p.latlng,{icon:createSvgIcon(categoryColors[p.category],p.visited)})
-            .bindPopup(popup,{autoPan:true})
-            .addTo(markersLayer);
+          const strokeColor = p.visited ? '#DAA520' : '#555';
+          const svgIconHtml = `<svg width="24" height="35" viewBox="0 0 24 35"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                 <path fill="${colors[p.category]}"
+                                       stroke="${strokeColor}"
+                                       stroke-width="2"
+                                       d="M12 0C7.03 0 3 4.03 3 9
+                                          c0 6.75 9 19.5 9 19.5
+                                          s9-12.75 9-19.5
+                                          c0-4.97-4.03-9-9-9
+                                          zm0 13.5a4.5 4.5 0 1 1 0-9
+                                          4.5 4.5 0 0 1 0 9z"/>
+                               </svg>`;
+
+          L.marker(p.latlng, {
+            icon: L.divIcon({
+              html: svgIconHtml,
+              className: 'leaflet-div-icon',
+              iconSize: [24, 35],
+              iconAnchor: [12, 35],
+              popupAnchor: [0, -35]
+            })
+          })
+          .bindPopup(popup, { autoPan: true })
+          .addTo(markerLayer);
         });
       }
 
-      drawMarkers();
+      renderMarkers();
     }
   })();
   </script>
