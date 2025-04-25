@@ -5,10 +5,9 @@
   <title>Oahu – Tropical Filters</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <!-- Leaflet CSS -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    /* Custom Tiki font (headers & toggle) */
+    /* 1. Custom Tiki font for headers & toggle */
     @font-face {
       font-family: 'GlaryTropic';
       src: url('/MapResources/glary-tropic-trial.smooth.woff') format('woff');
@@ -20,32 +19,32 @@
     }
     #map { height:100vh; }
 
-    /* Stretchable bamboo frame */
-    .filters.expanded {
-      border-width: 30px;
-      border-style: solid;
-      border-image-source: url('/MapResources/pngs/bamboo-frame.png');
-      border-image-slice: 30 fill;
-      border-image-repeat: stretch;
-    }
-
-    /* Transparent marker icons */
-    .leaflet-div-icon {
-      background: transparent !important;
-      border: none !important;
-    }
-
-    /* Base panel styles */
+    /* 2. Reset & bamboo frame border-image on expand */
     .filters {
       position:absolute; top:20px; left:20px; z-index:1000;
       background:rgba(255,255,240,0.95); border-radius:12px;
       max-height:40px; overflow:hidden;
       transition: max-height .3s, width .3s;
+      border: 0; /* remove any default */
     }
     .filters.expanded {
       max-height:calc(100vh - 40px);
       width:300px;
+      border-width: 30px;
+      border-style: solid;
+      border-color: transparent; /* prevent black fallback */
+      border-image-source: url('/MapResources/pngs/bamboo-frame.png');
+      border-image-slice: 30 fill;
+      border-image-repeat: stretch;
     }
+
+    /* 3. Transparent Leaflet div-icons */
+    .leaflet-div-icon {
+      background: transparent !important;
+      border: none !important;
+    }
+
+    /* 4. Toggle button */
     #toggleFilters {
       display:block; width:100%; padding:10px; margin:0;
       background:linear-gradient(135deg,#FF9A8B,#FAD0C4);
@@ -55,7 +54,7 @@
       cursor:pointer;
     }
 
-    /* Panel headers */
+    /* 5. Panel headers */
     .panel { margin:0; }
     .panel-header {
       display:flex; align-items:center;
@@ -70,9 +69,9 @@
       content: '';
       display:inline-block;
       width:20px; height:20px; margin-right:8px;
-      background-image: url('/MapResources/pngs/hibiscus.png');
-      background-size: contain;
-      background-repeat: no-repeat;
+      background-image:url('/MapResources/pngs/hibiscus.png');
+      background-size:contain;
+      background-repeat:no-repeat;
     }
     .panel-header input { margin-right:10px; }
     .panel-header .arrow { margin-left:auto; font-weight:bold; }
@@ -82,7 +81,7 @@
       to   { transform: rotate(1deg); }
     }
 
-    /* Panel bodies with palm-pattern */
+    /* 6. Panel body texture */
     .panel-body {
       display:none;
       padding:12px 16px;
@@ -99,7 +98,7 @@
     }
     .panel-body label { display:block; margin-bottom:8px; }
 
-    /* Popups & carousel tweaks */
+    /* 7. Popups & carousel */
     .leaflet-popup-content-wrapper {
       max-height:80vh; overflow:auto;
     }
@@ -126,96 +125,137 @@
     const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
     const ranges  = ['Places!A:J','Reviews!A:E'];
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
-                + ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
+                + ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
     fetch(url)
-      .then(res=> res.ok ? res.json() : Promise.reject(res.statusText))
+      .then(r=>r.ok? r.json(): Promise.reject(r.statusText))
       .then(data=>{
-        const [hdrP,...rowsP] = data.valueRanges[0].values;
-        const places = rowsP.map(r=>{
-          const o = Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||'']));
+        const [hdrP,...rowsP]=data.valueRanges[0].values;
+        const places=rowsP.map(r=>{
+          const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||'']));
           const [lat,lng]=o.Coordinates.split(',').map(Number);
-          return {
-            id:o.PlaceID, name:o.Name,
-            category:o.Category, subcategory:o.Subcategory,
-            region:o.Region, notes:o.Notes,
-            visited:o.Visited.trim().toUpperCase()==='Y',
-            latlng:[lat,lng],
-            mapsLink:o.MapsLink, appleLink:o.AppleMapsLink
-          };
+          return {id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,
+                  region:o.Region,notes:o.Notes,
+                  visited:o.Visited.trim().toUpperCase()==='Y',
+                  latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink};
         });
-        const [hdrR,...rowsR] = data.valueRanges[1].values;
-        const reviewsBy = {};
+        const [hdrR,...rowsR]=data.valueRanges[1].values;
+        const reviewsBy={};
         rowsR.forEach(r=>{
-          const o = Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||'']));
-          const photos = (o.PhotoURL||'').split(/\s*,\s*/).filter(Boolean);
-          (reviewsBy[o.PlaceID]||=[]).push({
-            date:o.VisitDate, rating:+o.Rating||0,
-            text:o.Review, photos
-          });
+          const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||'']));
+          const photos=(o.PhotoURL||'').split(/\s*,\s*/).filter(Boolean);
+          (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate,rating:+o.Rating||0,
+                                            text:o.Review,photos});
         });
-        initMap(places, reviewsBy);
-      })
-      .catch(console.error);
+        init(places,reviewsBy);
+      }).catch(console.error);
 
-    function initMap(places, reviewsBy){
-      const map = L.map('map',{zoomControl:false}).setView([21.3069,-157.8583],11);
+    function init(places,reviewsBy){
+      const map=L.map('map',{zoomControl:false}).setView([21.3069,-157.8583],11);
       L.control.zoom({position:'topright'}).addTo(map);
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{
-        attribution:'© Humanitarian OSM Team'
-      }).addTo(map);
-      const markerLayer = L.layerGroup().addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                  {attribution:'© Humanitarian OSM Team'}).addTo(map);
+      const markerLayer=L.layerGroup().addTo(map);
 
-      // Build filters...
-      const catMap={}, regions=new Set();
-      places.forEach(p=>{ (catMap[p.category]||=new Set()).add(p.subcategory); if(p.region) regions.add(p.region); });
+      // build filters
+      const catMap={},regions=new Set();
+      places.forEach(p=>{(catMap[p.category]||=new Set()).add(p.subcategory);if(p.region)regions.add(p.region);});
       const categories=Object.keys(catMap);
       const alpha=arr=>arr.sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
 
-      // Color palette
-      const palette=alpha([...categories]);
-      const colors={};
-      palette.forEach((cat,i)=>{ const h=i*360/palette.length,s=60,l=50,a=s*Math.min(l/100,1-l/100)/100; const toHex=n=>{ const k=(n+h/30)%12; const c=l/100 - a*Math.max(Math.min(k-3,9-k,1),-1); return Math.round(255*c).toString(16).padStart(2,'0'); }; colors[cat]=`#${toHex(0)}${toHex(8)}${toHex(4)}`; });
+      // colors
+      const palette=alpha([...categories]),colors={};
+      palette.forEach((cat,i)=>{const h=i*360/palette.length,s=60,l=50,a=s*Math.min(l/100,1-l/100)/100;
+        const toHex=n=>{const k=(n+h/30)%12;const c=l/100 - a*Math.max(Math.min(k-3,9-k,1),-1);
+          return Math.round(255*c).toString(16).padStart(2,'0');};
+        colors[cat]=`#${toHex(0)}${toHex(8)}${toHex(4)}`;});
 
-      const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)), selReg=new Set(regions), selVis=new Set(['Been there','Not yet']);
-
-      const filtersDiv=document.getElementById('filters'), toggleBtn=document.getElementById('toggleFilters');
-      toggleBtn.addEventListener('click', ()=>{
+      const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)),
+            selReg=new Set(regions),selVis=new Set(['Been there','Not yet']);
+      const filtersDiv=document.getElementById('filters'),
+            toggleBtn=document.getElementById('toggleFilters');
+      toggleBtn.addEventListener('click',()=>{
         filtersDiv.classList.toggle('expanded');
-        toggleBtn.textContent = filtersDiv.classList.contains('expanded') ? 'Hide Filters' : 'Show Filters';
+        toggleBtn.textContent=filtersDiv.classList.contains('expanded')?'Hide Filters':'Show Filters';
       });
-      function makeCheckbox(v,setRef,label){ const l=document.createElement('label'), cb=document.createElement('input'); cb.type='checkbox'; cb.value=v; cb.checked=true; cb.onchange=()=>{ cb.checked? setRef.add(v): setRef.delete(v); render(); }; l.append(cb,' ',label); return l; }
-      function addPanel(title,items,isRegion,toggleOnly=false){
-        const p=document.createElement('div'); p.className='panel';
-        const h=document.createElement('div'); h.className='panel-header';
-        if(!toggleOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.addEventListener('click',e=>e.stopPropagation()); m.onchange=()=>{ const all=m.checked; p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=all; const k=cb.value; isRegion? all?selReg.add(k):selReg.delete(k): all?selSub.add(k):selSub.delete(k); }}); render(); }; h.append(m); }
-        h.append(document.createTextNode(title));
-        if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=colors[title]; h.append(sw); }
-        const arrw=document.createElement('span'); arrw.className='arrow'; arrw.textContent='▶'; h.append(arrw);
-        const b=document.createElement('div'); b.className='panel-body';
-        items.forEach(it=>{ const full=isRegion?it: title==='Visited?'?it:`${title} - ${it}`; const ref=isRegion?selReg: title==='Visited?'?selVis:selSub; b.append(makeCheckbox(full,ref,it)); });
-        h.addEventListener('click',()=>{ b.classList.toggle('active'); arrw.textContent=b.classList.contains('active')?'▼':'▶'; });
-        p.append(h,b); filtersDiv.append(p);
+
+      function mkCB(v,setR,label){
+        const lbl=document.createElement('label'),cb=document.createElement('input');
+        cb.type='checkbox';cb.value=v;cb.checked=true;
+        cb.addEventListener('change',()=>{cb.checked?setR.add(v):setR.delete(v);render();});
+        lbl.append(cb,' ',label);return lbl;
       }
-      if(regions.size) addPanel('Region',alpha([...regions]),true);
+      function addPanel(title,items,isReg,toggleOnly=false){
+        const p=document.createElement('div');p.className='panel';
+        const h=document.createElement('div');h.className='panel-header';
+        if(!toggleOnly){
+          const m=document.createElement('input');m.type='checkbox';m.checked=true;
+          m.addEventListener('click',e=>e.stopPropagation());
+          m.addEventListener('change',()=>{
+            const all=m.checked;
+            p.querySelectorAll('input[type=checkbox]').forEach(cb=>{if(cb!==m){
+              cb.checked=all;const k=cb.value;
+              isReg?all?selReg.add(k):selReg.delete(k):all?selSub.add(k):selSub.delete(k);
+            }});render();});
+          h.append(m);
+        }
+        h.append(document.createTextNode(title));
+        if(!isReg&&title!=='Visited?'){
+          const sw=document.createElement('div');sw.className='color-swatch';
+          sw.style.background=colors[title];h.append(sw);
+        }
+        const arrow=document.createElement('span');arrow.className='arrow';arrow.textContent='▶';
+        h.append(arrow);
+        const b=document.createElement('div');b.className='panel-body';
+        items.forEach(it=>{const full=isReg?it:title==='Visited?'?it:`${title} - ${it}`,
+                          ref=isReg?selReg:title==='Visited?'?selVis:selSub;
+                          b.append(mkCB(full,ref,it));});
+        h.addEventListener('click',()=>{b.classList.toggle('active');
+          arrow.textContent=b.classList.contains('active')?'▼':'▶';});
+        p.append(h,b);filtersDiv.append(p);
+      }
+      if(regions.size)addPanel('Region',alpha([...regions]),true);
       addPanel('Visited?',['Been there','Not yet'],false,true);
-      if(categories.includes('Food')) addPanel('Food',alpha([...catMap.Food]),false);
-      if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',alpha([...catMap['Sweet Treats']]),false);
-      alpha(categories.filter(c=>c!=='Food'&&c!=='Sweet Treats')).forEach(c=>addPanel(c,alpha([...catMap[c]]),false));
+      if(categories.includes('Food'))addPanel('Food',alpha([...catMap.Food]),false);
+      if(categories.includes('Sweet Treats'))addPanel('Sweet Treats',alpha([...catMap['Sweet Treats']]),false);
+      alpha(categories.filter(c=>c!=='Food'&&c!=='Sweet Treats'))
+        .forEach(c=>addPanel(c,alpha([...catMap[c]]),false));
       function render(){
         markerLayer.clearLayers();
         places.forEach(p=>{
-          if(!selVis.has(p.visited?'Been there':'Not yet')) return;
-          if(!selSub.has(`${p.category} - ${p.subcategory}`)) return;
-          if(p.region && !selReg.has(p.region)) return;
-          let pop=`<strong>${p.name}</strong><br>`; if(p.notes) pop+=`${p.notes}<br>`;
+          if(!selVis.has(p.visited?'Been there':'Not yet'))return;
+          if(!selSub.has(`${p.category} - ${p.subcategory}`))return;
+          if(p.region&&!selReg.has(p.region))return;
+          let pop=`<strong>${p.name}</strong><br>`;if(p.notes)pop+=`${p.notes}<br>`;
           pop+=`<em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`;
           const revs=(reviewsBy[p.id]||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
-          if(revs.length){ pop+='★'.repeat(revs[0].rating)+'<br>'; pop+=`<details><summary>${revs.length} review${revs.length>1?'s':''}</summary><div class="review-carousel">`; revs.forEach(r=>{ pop+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>pop+=`<a href="${u}" target="_blank">View photo</a>`); pop+=`</div>`; }); pop+=`</div></details>`; }
-          if(p.mapsLink) pop+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-          if(p.appleLink) pop+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
-          const stroke=p.visited?'#DAA520':'#555';
-          const svg=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${colors[p.category]}" stroke="${stroke}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
-          L.marker(p.latlng,{icon:L.divIcon({html:svg,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(pop,{autoPan:true}).addTo(markerLayer);
+          if(revs.length){
+            pop+='★'.repeat(revs[0].rating)+'<br>';
+            pop+=`<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
+                  <div class="review-carousel">`;
+            revs.forEach(r=>{pop+=`<div class="review-item"><strong>${r.date}</strong>
+                        <p>${r.text}</p>`;r.photos.forEach(u=>pop+=`<a href="${u}" 
+                        target="_blank">View photo</a>`);pop+=`</div>`;});
+            pop+=`</div></details>`;
+          }
+          if(p.mapsLink)pop+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+          if(p.appleLink)pop+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+          const strokeColor=p.visited?'#DAA520':'#555';
+          const svg=`<svg width="24" height="35" 
+                          viewBox="0 0 24 35" 
+                          xmlns="http://www.w3.org/2000/svg">
+                          <path fill="${colors[p.category]}" 
+                                stroke="${strokeColor}" stroke-width="2"
+                                d="M12 0C7.03 0 3 4.03 3 9 
+                                   c0 6.75 9 19.5 9 19.5 
+                                   s9-12.75 9-19.5 
+                                   c0-4.97-4.03-9-9-9 
+                                   zm0 13.5a4.5 4.5 0 1 1 0-9 
+                                   4.5 4.5 0 0 1 0 9z"/>
+                        </svg>`;
+          L.marker(p.latlng,{icon:L.divIcon({
+            html:svg,className:'leaflet-div-icon',
+            iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]
+          })}).bindPopup(pop,{autoPan:true}).addTo(markerLayer);
         });
       }
       render();
