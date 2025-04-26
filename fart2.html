@@ -5,101 +5,91 @@
   <title>Oahu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <!-- Leaflet CSS -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <!-- Google Font: Rock Salt (fallback) -->
-  <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
-        rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    /* --- Custom Fonts --- */
-    @font-face {
-      font-family: 'Tropical Vibes';
-      src: url('/MapResources/fonts/Tropical Vibes.woff') format('woff');
-    }
+    /* 0) Custom Fonts */
     @font-face {
       font-family: 'Bardy';
       src: url('/MapResources/fonts/Bardy.woff') format('woff');
     }
+    @font-face {
+      font-family: 'Balkey';
+      src: url('/MapResources/fonts/Balkey.woff') format('woff');
+    }
 
-    /* --- Base Styles & Overrides --- */
-    body, html { margin:0; height:100%; font-family:sans-serif; }
+    /* 1) Base & Leaflet Overrides */
+    body, html { margin:0; height:100%; }
     #map { height:100%; }
     .leaflet-div-icon { background:transparent!important; border:none!important; }
 
-    /* --- Filters Panel (no paper effect) --- */
+    /* 2) Filters Panel */
     .filters {
       position:absolute; top:10px; left:10px; z-index:1000;
       background:rgba(255,249,230,0.95); border-radius:8px;
       overflow:hidden; max-height:40px; width:auto;
-      transition: max-height 0.3s, width 0.3s;
-      /* allow map clicks when collapsed */
-      pointer-events: none;
+      transition:max-height .3s,width .3s;
+      pointer-events:none; /* let clicks through when collapsed */
     }
     .filters.expanded {
       max-height:calc(100vh - 20px);
       width:280px; overflow-y:auto;
-      background-clip: padding-box;
-      /* re-enable filter clicks */
-      pointer-events: auto;
+      background-clip:padding-box;
+      pointer-events:auto;
     }
-    /* ensure filter controls stay interactive */
-    .filters.expanded *,
-    .filters * {
-      pointer-events: auto;
-    }
+    .filters.expanded *, .filters * { pointer-events:auto; }
 
-    /* --- Toggle Button & Embossed Text --- */
+    /* 3) Toggle Button */
     #toggleFilters {
       display:block; width:100%; padding:8px; margin:0;
       background:#FFECB3; border:none; border-bottom:1px solid #ddd;
-      font-family:'Tropical Vibes','Rock Salt',cursive;
-      font-size:1.1em; cursor:pointer;
-      position: relative;
-      text-shadow:
-        1px 1px 0 rgba(255,255,255,0.7),
-       -1px -1px 0 rgba(0,0,0,0.2);
+      font-family:'Balkey',sans-serif;
+      font-size:1em; cursor:pointer;
+      text-shadow:1px 1px 0 rgba(255,255,255,0.7), -1px -1px 0 rgba(0,0,0,0.2);
     }
 
-    /* --- Panel Headers (bigger + hibiscus-dot) --- */
+    /* 4) Panel Headers */
     .panel { margin:8px; }
     .panel-header {
-      position: relative;
+      position:relative;
       display:flex; align-items:center; padding:6px 8px;
       background:#FFECB3; border-radius:6px;
       cursor:pointer;
-      font-family:'Tropical Vibes','Rock Salt',cursive;
-      font-size:1.3em; /* bumped up */
-      text-shadow:
-        1px 1px 0 rgba(255,255,255,0.7),
-       -1px -1px 0 rgba(0,0,0,0.2);
+      font-family:'Bardy',cursive;
+      font-size:1.4em;
+      text-shadow:1px 1px 0 rgba(255,255,255,0.7), -1px -1px 0 rgba(0,0,0,0.2);
     }
     .panel-header::before {
-      content: '';
-      position: absolute;
-      top: 4px; left: 2px; /* scooted left */
-      width: 12px; height: 12px;
-      background: rgba(233,30,99,0.3);
-      border-radius: 50%;
-      transform: rotate(-30deg);
+      content:'';
+      position:absolute; top:4px; left:0px;
+      width:12px; height:12px;
+      background:rgba(233,30,99,0.3);
+      border-radius:50%; transform:rotate(-30deg);
     }
-    .panel-header input { margin-right:6px; }
+    .panel-header .master-toggle {
+      margin-right:8px;
+      font-size:1.2em;
+      cursor:pointer;
+    }
+    .panel-header input[type="checkbox"] { display:none; }
     .panel-header .color-swatch {
       margin-left:auto; width:14px; height:14px;
       border-radius:50%; border:1px solid #999;
     }
-    .panel-header .arrow { margin-left:8px; font-weight:bold; }
+    .panel-header .arrow {
+      margin-left:8px; font-size:1.2em;
+    }
+
+    /* 5) Panel Bodies & Checkboxes */
     .panel-body {
       display:none; padding:8px 12px; background:#FFF8E1;
       border-radius:6px;
-      font-family:'Bardy',sans-serif;
+      font-family:'Balkey',sans-serif;
+      font-size:0.95em; color:#333;
     }
     .panel-body.active { display:block; }
     .panel-body label {
-      display:flex; align-items:center;
-      margin-bottom:6px; color:#333;
-      font-size:0.95em;
+      display:flex; align-items:center; margin-bottom:6px;
     }
-    /* Hibiscus-emoji checkboxes */
     .panel-body input[type="checkbox"] {
       appearance:none; width:18px; height:18px;
       margin-right:8px; border:2px solid #FF5722;
@@ -108,14 +98,13 @@
     .panel-body input[type="checkbox"]:checked::after {
       content:'🌺';
       position:absolute; top:-3px; left:-2px;
-      font-size:24px; line-height:18px;
-      pointer-events:none;
+      font-size:24px; line-height:18px; pointer-events:none;
     }
 
-    /* --- Popup Typography --- */
+    /* 6) Popup Content */
     .leaflet-popup-content-wrapper {
       max-height:80vh; overflow:auto;
-      font-family:'Bardy',sans-serif;
+      font-family:'Balkey',sans-serif;
     }
     .leaflet-popup-content-wrapper p,
     .leaflet-popup-content-wrapper strong,
@@ -123,7 +112,7 @@
       font-family:inherit;
     }
 
-    /* --- Reviews Carousel (baseline) --- */
+    /* 7) Reviews Carousel */
     .review-carousel {
       display:flex; overflow-x:auto; gap:8px; padding:6px 0;
     }
@@ -146,14 +135,14 @@
     const sheetId='1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
           apiKey ='AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
           ranges =['Places!A:J','Reviews!A:E'];
-    const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
-              + ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
+                + ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
 
     fetch(url)
-      .then(r=>r.ok? r.json(): Promise.reject(r.statusText))
+      .then(r=> r.ok? r.json(): Promise.reject(r.statusText))
       .then(data=>{
-        const [hdrP, ...pRows] = data.valueRanges[0].values;
-        const places = pRows.map(r=>{
+        const [hdrP, ...rowsP] = data.valueRanges[0].values;
+        const places = rowsP.map(r=>{
           const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||'']));
           const [lat,lng]=o.Coordinates.split(',').map(Number);
           return {
@@ -165,9 +154,9 @@
           };
         });
 
-        const [hdrR, ...rRows] = data.valueRanges[1].values;
+        const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy={};
-        rRows.forEach(r=>{
+        rowsR.forEach(r=>{
           const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||'']));
           const photos=(o.PhotoURL||'').split(/\s*,\s*/).filter(u=>u);
           (reviewsBy[o.PlaceID]||=[]).push({
@@ -176,15 +165,16 @@
           });
         });
 
-        init(places, reviewsBy);
+        initialize(places, reviewsBy);
       })
       .catch(console.error);
 
-    function init(places, reviewsBy) {
+    function initialize(places, reviewsBy){
       const map=L.map('map',{zoomControl:false}).setView([21.3069,-157.8583],11);
       L.control.zoom({position:'topright'}).addTo(map);
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{
-        attribution:'© Humanitarian OSM Team'}).addTo(map);
+        attribution:'© Humanitarian OSM Team'
+      }).addTo(map);
       const markerLayer=L.layerGroup().addTo(map);
 
       const filtersDiv=document.getElementById('filters'),
@@ -208,7 +198,7 @@
           return Math.round(255*c).toString(16).padStart(2,'0');
         };
         return `#${f(0)}${f(8)}${f(4)}`; }
-      const colors={}; cats.forEach((c,i)=> colors[c]=hslToHex(i*360/cats.length,60,50));
+      const colors={}; cats.forEach((c,i)=>colors[c]=hslToHex(i*360/cats.length,60,50));
 
       const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)),
             selReg=new Set(regions), selVis=new Set(['Been there','Not yet']);
@@ -217,33 +207,45 @@
         const lbl=document.createElement('label'),
               cb =document.createElement('input');
         cb.type='checkbox'; cb.value=val; cb.checked=true;
-        cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); render(); };
+        cb.onchange=()=>{cb.checked?setRef.add(val):setRef.delete(val); render();};
         lbl.append(cb,' ',label); return lbl;
       }
       function addPanel(title, items, isReg, toggleOnly=false){
         const p=document.createElement('div'); p.className='panel';
         const h=document.createElement('div'); h.className='panel-header';
-        if(!toggleOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true;
-          m.addEventListener('click',e=>e.stopPropagation());
-          m.addEventListener('change',()=>{
-            const all=m.checked;
-            p.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-              if(cb!==m){ cb.checked=all;
-                const k=cb.value;
-                isReg? all?selReg.add(k):selReg.delete(k)
-                     : all?selSub.add(k):selSub.delete(k);
-              }
-            }); render();
+
+        // master-toggle hibiscus
+        if(!toggleOnly){
+          const master=document.createElement('span');
+          master.className='master-toggle';
+          master.textContent='🌺';
+          const body=document.createElement('div'); body.className='panel-body';
+          master.addEventListener('click', e=>{
+            e.stopPropagation();
+            const cbs=body.querySelectorAll('input[type=checkbox]');
+            const allChecked=Array.from(cbs).every(cb=>cb.checked);
+            cbs.forEach(cb=>{
+              cb.checked=!allChecked;
+              const v=cb.value;
+              isReg? (!allChecked?selReg.add(v):selReg.delete(v))
+                   : (!allChecked?selSub.add(v):selSub.delete(v));
+            });
+            render();
           });
-          h.append(m);
+          h.append(master);
         }
+
         h.append(document.createTextNode(title));
+
+        // color swatch
         if(!isReg && title!=='Visited?'){
           const sw=document.createElement('div'); sw.className='color-swatch';
           sw.style.background=colors[title]; h.append(sw);
         }
-        const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶';
-        h.append(arr);
+
+        // arrow
+        const arr=document.createElement('span'); arr.className='arrow';
+        arr.textContent='▶'; h.append(arr);
 
         const b=document.createElement('div'); b.className='panel-body';
         items.forEach(it=>{
@@ -251,11 +253,14 @@
                 ref =isReg?selReg: title==='Visited?'?selVis:selSub;
           b.append(makeCheckbox(full,ref,it));
         });
-        h.onclick=()=>{
+
+        h.addEventListener('click', ()=>{
           b.classList.toggle('active');
           arr.textContent=b.classList.contains('active')?'▼':'▶';
-        };
-        p.append(h,b); filtersDiv.append(p);
+        });
+
+        p.append(h,b);
+        filtersDiv.append(p);
       }
 
       if(regions.size) addPanel('Region', alpha([...regions]), true);
@@ -293,12 +298,7 @@
 
           L.marker(p.latlng,{
             icon:L.divIcon({
-              html:`<svg width="24" height="35" viewBox="0 0 24 35">
-                       <path fill="${colors[p.category]}"
-                             stroke="${p.visited?'#DAA520':'#555'}"
-                             stroke-width="2"
-                             d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
-                     </svg>`,
+              html:`<svg width="24" height="35" viewBox="0 0 24 35"><path fill="${colors[p.category]}" stroke="${p.visited?'#DAA520':'#555'}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`,
               className:'leaflet-div-icon',
               iconSize:[24,35], iconAnchor:[12,35], popupAnchor:[0,-35]
             })
