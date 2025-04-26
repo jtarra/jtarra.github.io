@@ -15,14 +15,10 @@
     @font-face {
       font-family: 'Bardy';
       src: url('/MapResources/fonts/Bardy.woff') format('woff');
-      font-weight: normal;
-      font-style: normal;
     }
     @font-face {
       font-family: 'Balkey';
       src: url('/MapResources/fonts/Balkey.woff') format('woff');
-      font-weight: normal;
-      font-style: normal;
     }
 
     /* Override default div-icon background */
@@ -52,11 +48,12 @@
     }
 
     .panel { margin:8px; }
-    /* Category headers in Bardy */
+    /* Category headers in Bardy, bumped to 1.3em */
     .panel-header {
       display:flex; align-items:center; padding:6px 8px;
       background:#FFECB3; border-radius:6px;
       cursor:pointer; font-family:'Bardy',cursive;
+      font-size:1.3em;
     }
     .panel-header input { margin-right:6px; }
     .panel-header .color-swatch {
@@ -70,10 +67,11 @@
       border-radius:6px;
     }
     .panel-body.active { display:block; }
-    /* Subcategories in Balkey */
+    /* Subcategories in Balkey, increased to 1.1em */
     .panel-body label {
       display:block; margin-bottom:6px;
       font-family:'Balkey',sans-serif;
+      font-size:1.1em;
     }
 
     .leaflet-popup-content-wrapper {
