@@ -5,13 +5,14 @@
   <title>Oahu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <!-- Leaflet CSS -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <!-- Google Font: Rock Salt (fallback) -->
   <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
         rel="stylesheet"/>
   <style>
-    /* Load custom fonts */
+    /*— Custom Fonts —*/
     @font-face {
       font-family: 'Bardy';
       src: url('/MapResources/fonts/Bardy.woff') format('woff');
@@ -21,49 +22,53 @@
       src: url('/MapResources/fonts/Dorgan.woff') format('woff');
     }
 
-    /* Override default div-icon background */
-    .leaflet-div-icon {
-      background: transparent !important;
-      border: none !important;
-    }
-
+    /*— Base & Leaflet Overrides —*/
     body, html { margin:0; height:100%; font-family:sans-serif; }
     #map { height:100%; }
+    .leaflet-div-icon {
+      background:transparent!important;
+      border:none!important;
+    }
 
+    /*— Filters Panel —*/
     .filters {
       position:absolute; top:10px; left:10px; z-index:1000;
       background:rgba(255,249,230,0.95); border-radius:8px;
       overflow:hidden; max-height:40px; width:auto;
-      transition: max-height 0.3s, width 0.3s;
+      transition:max-height .3s, width .3s;
     }
     .filters.expanded {
-      max-height:calc(100vh - 20px); width:280px;
-      overflow-y:auto;
+      max-height:calc(100vh - 20px);
+      width:280px; overflow-y:auto;
     }
 
-    /* Show/Hide Filters button in Dorgan */
+    /*— Toggle Button —*/
     #toggleFilters {
       display:block; width:100%; padding:8px;
       background:#FFECB3; border:none; border-bottom:1px solid #ddd;
       font-family:'Dorgan',cursive; cursor:pointer;
     }
 
+    /*— Panels & Headers —*/
     .panel { margin:8px; }
-    /* Category headers in Bardy, 1.3em */
     .panel-header {
       display:flex; align-items:center; padding:6px 8px;
       background:#FFECB3; border-radius:6px;
       cursor:pointer; font-family:'Bardy',cursive;
       font-size:1.3em;
     }
-    /* hibiscus master-toggle */
-    .panel-header .master-toggle {
-      display:inline-block;
-      width:20px;
-      text-align:center;
-      margin-right:6px;
-      font-size:1.2em;
-      cursor:pointer;
+    .panel-header input[type="checkbox"] {
+      -webkit-appearance:none; appearance:none;
+      width:18px; height:18px; margin-right:6px;
+      border:2px solid #007bff; border-radius:3px;
+      position:relative; cursor:pointer;
+    }
+    /* 🌺 instead of ✓ */
+    .panel-header input[type="checkbox"]:checked::after {
+      content:'🌺';
+      position:absolute; top:-2px; left:-2px;
+      font-size:22px; line-height:18px;
+      pointer-events:none;
     }
     .panel-header .color-swatch {
       margin-left:auto; width:14px; height:14px;
@@ -71,18 +76,32 @@
     }
     .panel-header .arrow { margin-left:8px; font-weight:bold; }
 
+    /*— Panel Bodies & Sub-checkboxes —*/
     .panel-body {
       display:none; padding:8px 12px; background:#FFF8E1;
       border-radius:6px;
     }
     .panel-body.active { display:block; }
-    /* Subcategories in Dorgan, 1.1em */
     .panel-body label {
       display:block; margin-bottom:6px;
       font-family:'Dorgan',sans-serif;
-      font-size:1.1em;
+      font-size:1.1em; position:relative;
+    }
+    .panel-body input[type="checkbox"] {
+      -webkit-appearance:none; appearance:none;
+      width:18px; height:18px; margin-right:8px;
+      border:2px solid #007bff; border-radius:3px;
+      position:relative; cursor:pointer;
+    }
+    /* 🌺 instead of ✓ */
+    .panel-body input[type="checkbox"]:checked::after {
+      content:'🌺';
+      position:absolute; top:-2px; left:-2px;
+      font-size:22px; line-height:18px;
+      pointer-events:none;
     }
 
+    /*— Popups —*/
     .leaflet-popup-content-wrapper {
       max-height:80vh; overflow:auto;
       font-family:'Dorgan',sans-serif;
@@ -108,37 +127,43 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
   (function(){
-    const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
-          apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
-          ranges  = ['Places!A:J','Reviews!A:E'];
+    const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74';
+    const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
+    const ranges  = ['Places!A:J','Reviews!A:E'];
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
-                + ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
+                + ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
 
     fetch(url)
-      .then(r=> r.ok? r.json(): Promise.reject(r.statusText))
-      .then(data=>{
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(data => {
         const [hdrP, ...rowsP] = data.valueRanges[0].values;
-        const places = rowsP.map(r=>{
-          const o=Object.fromEntries(hdrP.map((h,i)=>[h, r[i]||'']));
-          const [lat,lng]=o.Coordinates.split(',').map(Number);
+        const places = rowsP.map(r => {
+          const o = Object.fromEntries(hdrP.map((h,i) => [h, r[i]||'']));
+          const [lat,lng] = o.Coordinates.split(',').map(Number);
           return {
-            id:o.PlaceID,name:o.Name,
-            category:o.Category,subcategory:o.Subcategory,
-            region:o.Region,notes:o.Notes,
-            visited:o.Visited.trim().toUpperCase()==='Y',
-            latlng:[lat,lng],mapsLink:o.MapsLink,
-            appleLink:o.AppleMapsLink
+            id:          o.PlaceID,
+            name:        o.Name,
+            category:    o.Category,
+            subcategory: o.Subcategory,
+            region:      o.Region,
+            notes:       o.Notes,
+            visited:     o.Visited.trim().toUpperCase() === 'Y',
+            latlng:      [lat,lng],
+            mapsLink:    o.MapsLink,
+            appleLink:   o.AppleMapsLink
           };
         });
 
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
-        const reviewsBy={};
-        rowsR.forEach(r=>{
-          const o=Object.fromEntries(hdrR.map((h,i)=>[h, r[i]||'']));
-          const photos=(o.PhotoURL||'').split(/\s*,\s*/).filter(u=>u);
-          (reviewsBy[o.PlaceID]||=[]).push({
-            date:o.VisitDate, rating:+o.Rating||0,
-            text:o.Review, photos
+        const reviewsBy = {};
+        rowsR.forEach(r => {
+          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));
+          const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean);
+          (reviewsBy[o.PlaceID] ||= []).push({
+            date:   o.VisitDate,
+            rating: +o.Rating || 0,
+            text:   o.Review,
+            photos
           });
         });
 
@@ -146,138 +171,207 @@
       })
       .catch(console.error);
 
-    function initialize(places, reviewsBy){
-      const map=L.map('map',{zoomControl:false}).setView([21.3069,-157.8583],11);
-      L.control.zoom({position:'topright'}).addTo(map);
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{
-        attribution:'© Humanitarian OSM Team'
+    function initialize(places, reviewsBy) {
+      // Map setup
+      const map = L.map('map', { zoomControl: false }).setView([21.3069, -157.8583], 11);
+      L.control.zoom({ position: 'topright' }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        attribution: '© Humanitarian OSM Team'
       }).addTo(map);
-      const markerLayer=L.layerGroup().addTo(map);
+      const markerLayer = L.layerGroup().addTo(map);
 
-      const filtersDiv=document.getElementById('filters'),
-            toggleBtn=document.getElementById('toggleFilters');
-      toggleBtn.addEventListener('click',()=>{
+      // Build category & region sets
+      const catMap = {}, regions = new Set();
+      places.forEach(p => {
+        (catMap[p.category] ||= new Set()).add(p.subcategory);
+        if (p.region) regions.add(p.region);
+      });
+      const categories = Object.keys(catMap);
+
+      // Alphabetical sort helper
+      const alpha = arr =>
+        arr.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+      // Color palette
+      const palette = alpha([...categories]);
+      const colors = {};
+      palette.forEach((cat, i) => {
+        const h = i * 360 / palette.length, s = 60, l = 50;
+        const a = s * Math.min(l/100, 1 - l/100) / 100;
+        const toHex = n => {
+          const k = (n + h/30) % 12;
+          const c = l/100 - a * Math.max(Math.min(k-3, 9-k, 1), -1);
+          return Math.round(255 * c).toString(16).padStart(2, '0');
+        };
+        colors[cat] = `#${toHex(0)}${toHex(8)}${toHex(4)}`;
+      });
+
+      // Filter state
+      const selSub = new Set(places.map(p => `${p.category} - ${p.subcategory}`));
+      const selReg = new Set(regions);
+      const selVis = new Set(['Been there', 'Not yet']);
+
+      // Filter panel DOM
+      const filtersDiv = document.getElementById('filters');
+      const toggleBtn  = document.getElementById('toggleFilters');
+      toggleBtn.addEventListener('click', () => {
         filtersDiv.classList.toggle('expanded');
         toggleBtn.textContent = filtersDiv.classList.contains('expanded')
                               ? 'Hide Filters'
                               : 'Show Filters';
       });
-      filtersDiv.querySelectorAll('.panel').forEach(p=>p.remove());
 
-      const catMap={}, regions=new Set();
-      places.forEach(p=>{ (catMap[p.category]||=new Set()).add(p.subcategory);
-                         if(p.region) regions.add(p.region); });
-      const cats=Object.keys(catMap).sort(),
-            alpha=arr=>arr.sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
-
-      function hslToHex(h,s,l){ l/=100; const a=s*Math.min(l,1-l)/100;
-        const f=n=>{ const k=(n+h/30)%12;
-          const c=l - a*Math.max(Math.min(k-3,9-k,1),-1);
-          return Math.round(255*c).toString(16).padStart(2,'0');
-        };
-        return `#${f(0)}${f(8)}${f(4)}`; }
-      const colors={};
-      cats.forEach((c,i)=>colors[c]=hslToHex(i*360/cats.length,60,50));
-
-      const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)),
-            selReg=new Set(regions), selVis=new Set(['Been there','Not yet']);
-
-      function makeCheckbox(val,setRef,label){
-        const lbl=document.createElement('label'),
-              cb =document.createElement('input');
-        cb.type='checkbox'; cb.value=val; cb.checked=true;
-        cb.onchange=()=>{cb.checked?setRef.add(val):setRef.delete(val); renderMarkers();};
-        lbl.append(cb,' ',label); return lbl;
+      function makeCheckbox(value, setRef, labelText) {
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = value;
+        cb.checked = true;
+        cb.addEventListener('change', () => {
+          cb.checked ? setRef.add(value) : setRef.delete(value);
+          renderMarkers();
+        });
+        label.append(cb, ' ', labelText);
+        return label;
       }
-      function addPanel(title, items, isReg, toggleOnly=false){
-        const p=document.createElement('div'); p.className='panel';
-        const h=document.createElement('div'); h.className='panel-header';
 
-        if(!toggleOnly){
-          const master=document.createElement('span');
-          master.className='master-toggle';
-          master.textContent='🌺';
-          const body=document.createElement('div'); body.className='panel-body';
-          master.addEventListener('click', e=>{
-            e.stopPropagation();
-            const cbs=body.querySelectorAll('input[type=checkbox]');
-            const allChecked=[...cbs].every(cb=>cb.checked);
-            cbs.forEach(cb=>{
-              cb.checked = !allChecked;
-              const v=cb.value;
-              isReg? (!allChecked?selReg.add(v):selReg.delete(v))
-                   : (!allChecked?selSub.add(v):selSub.delete(v));
+      function addPanel(title, items, isRegion, toggleOnly = false) {
+        const panel = document.createElement('div');
+        panel.className = 'panel';
+
+        const header = document.createElement('div');
+        header.className = 'panel-header';
+
+        if (!toggleOnly) {
+          const master = document.createElement('input');
+          master.type = 'checkbox';
+          master.checked = true;
+          master.addEventListener('click', e => e.stopPropagation());
+          master.addEventListener('change', () => {
+            const all = master.checked;
+            panel.querySelectorAll('input[type=checkbox]').forEach(cb => {
+              if (cb !== master) {
+                cb.checked = all;
+                const key = cb.value;
+                if (isRegion) all ? selReg.add(key) : selReg.delete(key);
+                else          all ? selSub.add(key) : selSub.delete(key);
+              }
             });
             renderMarkers();
           });
-          h.append(master);
+          header.append(master);
         }
 
-        h.append(document.createTextNode(title));
-        if(!isReg && title!=='Visited?'){
-          const sw=document.createElement('div'); sw.className='color-swatch';
-          sw.style.background=colors[title]; h.append(sw);
+        header.append(document.createTextNode(title));
+
+        if (!isRegion && title !== 'Visited?') {
+          const swatch = document.createElement('div');
+          swatch.className = 'color-swatch';
+          swatch.style.background = colors[title];
+          header.append(swatch);
         }
-        const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶';
-        h.append(arr);
 
-        const b=document.createElement('div'); b.className='panel-body';
-        items.forEach(it=>{
-          const full=isReg?it: title==='Visited?'?it:`${title} - ${it}`,
-                ref =isReg?selReg: title==='Visited?'?selVis:selSub;
-          b.append(makeCheckbox(full,ref,it));
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.textContent = '▶';
+        header.append(arrow);
+
+        const body = document.createElement('div');
+        body.className = 'panel-body';
+        items.forEach(item => {
+          const fullValue = isRegion
+            ? item
+            : title === 'Visited?'
+              ? item
+              : `${title} - ${item}`;
+          const refSet = isRegion
+            ? selReg
+            : title === 'Visited?'
+              ? selVis
+              : selSub;
+          body.append(makeCheckbox(fullValue, refSet, item));
         });
 
-        h.addEventListener('click', ()=>{
-          b.classList.toggle('active');
-          arr.textContent=b.classList.contains('active')?'▼':'▶';
+        header.addEventListener('click', () => {
+          body.classList.toggle('active');
+          arrow.textContent = body.classList.contains('active') ? '▼' : '▶';
         });
 
-        p.append(h,b);
-        filtersDiv.append(p);
+        panel.append(header, body);
+        filtersDiv.append(panel);
       }
 
-      if(regions.size) addPanel('Region', alpha([...regions]), true);
-      addPanel('Visited?',['Been there','Not yet'], false, true);
-      cats.forEach(c=>addPanel(c, alpha([...catMap[c]]), false));
+      // Build filter panels in order
+      if (regions.size) addPanel('Region', alpha([...regions]), true);
+      addPanel('Visited?', ['Been there', 'Not yet'], false, true);
+      if (categories.includes('Food'))         addPanel('Food',         alpha([...catMap.Food]), false);
+      if (categories.includes('Sweet Treats')) addPanel('Sweet Treats', alpha([...catMap['Sweet Treats']]), false);
+      alpha(categories.filter(c => c !== 'Food' && c !== 'Sweet Treats'))
+        .forEach(cat => addPanel(cat, alpha([...catMap[cat]]), false));
 
-      function renderMarkers(){
+      // Render markers based on filters
+      function renderMarkers() {
         markerLayer.clearLayers();
-        places.forEach(p=>{
-          if(!selVis.has(p.visited?'Been there':'Not yet')) return;
-          if(!selSub.has(`${p.category} - ${p.subcategory}`)) return;
-          if(p.region && !selReg.has(p.region)) return;
 
-          let popup=`<strong>${p.name}</strong><br>`;
-          if(p.notes) popup+=`${p.notes}<br>`;
-          popup+=`<em>${p.category} – ${p.subcategory}`+
-                 (p.region?` / ${p.region}`:'')+
-                 `</em><br>`;
+        places.forEach(p => {
+          if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
+          if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
+          if (p.region && !selReg.has(p.region)) return;
 
-          const revs=(reviewsBy[p.id]||[]).slice()
-                     .sort((a,b)=>b.date.localeCompare(a.date));
-          if(revs.length){
-            popup+='★'.repeat(revs[0].rating)+'<br>';
-            popup+=`<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
+          let popup = `<strong>${p.name}</strong><br>`;
+          if (p.notes) popup += `${p.notes}<br>`;
+          popup += `<em>${p.category} – ${p.subcategory}` +
+                   (p.region ? ` / ${p.region}` : '') +
+                   `</em><br>`;
+
+          const reviews = (reviewsBy[p.id] || []).slice()
+                           .sort((a, b) => b.date.localeCompare(a.date));
+          if (reviews.length) {
+            popup += '★'.repeat(reviews[0].rating) + '<br>';
+            popup += `<details><summary>${reviews.length} review${reviews.length > 1 ? 's' : ''}</summary>
                       <div class="review-carousel">`;
-            revs.forEach(r=>{
-              popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
-              r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`);
-              popup+=`</div>`;
+            reviews.forEach(r => {
+              popup += `<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
+              r.photos.forEach(url => {
+                popup += `<a href="${url}" target="_blank">View photo</a>`;
+              });
+              popup += `</div>`;
             });
-            popup+=`</div></details>`;
+            popup += `</div></details>`;
           }
 
-          if(p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-          if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+          if (p.mapsLink) {
+            popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+          }
+          if (p.appleLink) {
+            popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+          }
 
-          L.marker(p.latlng,{
-            icon:L.divIcon({
-              html:`<svg width="24" height="35" viewBox="0 0 24 35"><path fill="${colors[p.category]}" stroke="${p.visited?'#DAA520':'#555'}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`,
-              className:'leaflet-div-icon', iconSize:[24,35],
-              iconAnchor:[12,35], popupAnchor:[0,-35]
+          const strokeColor = p.visited ? '#DAA520' : '#555';
+          const svgIconHtml = `<svg width="24" height="35" viewBox="0 0 24 35"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                 <path fill="${colors[p.category]}"
+                                       stroke="${strokeColor}"
+                                       stroke-width="2"
+                                       d="M12 0C7.03 0 3 4.03 3 9
+                                          c0 6.75 9 19.5 9 19.5
+                                          s9-12.75 9-19.5
+                                          c0-4.97-4.03-9-9-9
+                                          zm0 13.5a4.5 4.5 0 1 1 0-9
+                                          4.5 4.5 0 0 1 0 9z"/>
+                               </svg>`;
+
+          L.marker(p.latlng, {
+            icon: L.divIcon({
+              html: svgIconHtml,
+              className: 'leaflet-div-icon',
+              iconSize: [24, 35],
+              iconAnchor: [12, 35],
+              popupAnchor: [0, -35]
             })
-          }).addTo(markerLayer);
+          })
+          .bindPopup(popup, { autoPan: true })
+          .addTo(markerLayer);
         });
       }
 
