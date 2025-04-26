@@ -20,20 +20,16 @@
       background: #fff;
       border-width: 20px;
       border-style: solid;
-      border-color: transparent; /* no black fallback */
+      border-color: transparent;
       border-image-source: url('/MapResources/pngs/strip.png');
       border-image-slice: 20 fill;
       border-image-repeat: repeat;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      /* preserve default padding */
       padding: 12px;
     }
-    /* hide the little triangle */
-    .leaflet-popup-tip {
-      background: transparent;
-    }
+    .leaflet-popup-tip { background: transparent; }
 
-    /* keep icons transparent */
+    /* transparent markers */
     .leaflet-div-icon {
       background: transparent !important;
       border: none !important;
@@ -45,22 +41,17 @@
     /* ---------------- FILTER PANEL ---------------- */
     .filters {
       position:absolute; top:10px; left:10px; z-index:1000;
-      background:rgba(255,249,230,0.95);
-      border-radius:8px;
+      background:rgba(255,249,230,0.95); border-radius:8px;
       overflow:hidden; max-height:40px; width:auto;
       transition: max-height 0.3s, width 0.3s;
-      /* prepare for corners */
-      /* position:absolute already is a containing block for pseudos */
+      border:0;
     }
     .filters.expanded {
-      max-height:calc(100vh - 20px);
-      width:280px;
+      max-height:calc(100vh - 20px); width:280px;
       overflow-y:auto;
-      /* bamboo frame (unchanged) if you still have it:
-      border: 8px solid transparent;
-      border-image: url('/MapResources/pngs/bamboo-frame.png') 8 fill stretch;
-      */
+      background-clip: padding-box;
     }
+
     /* --------------- PALM-FROND CORNERS on expanded --------------- */
     .filters.expanded::before,
     .filters.expanded::after {
@@ -71,32 +62,28 @@
       pointer-events: none;
     }
     .filters.expanded::before {
-      top: -10px;
-      left: -10px;
-      transform: rotate(0deg);
+      top: -10px; left: -10px;
     }
     .filters.expanded::after {
-      top: -10px;
-      right: -10px;
-      transform: scaleX(-1); /* mirror for top-right */
+      top: -10px; right: -10px;
+      transform: scaleX(-1);
     }
 
+    /* toggle button + hibiscus stamp */
     #toggleFilters {
       display:block; width:100%; padding:8px;
       background:#FFECB3; border:none; border-bottom:1px solid #ddd;
       font-family:'Rock Salt',cursive; cursor:pointer;
-      position: relative;  /* for hibiscus stamp */
+      position: relative;
     }
-    /* ------------- HIBISCUS-STAMPED LEGEND ------------- */
     #toggleFilters::after {
       content: '';
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 100px; height: 100px;
+      position: absolute; top:50%; left:50%;
+      width:100px; height:100px;
       background: url('/MapResources/pngs/stamp.png') no-repeat center/contain;
-      opacity: 0.15;
-      transform: translate(-50%, -50%) rotate(-10deg);
-      pointer-events: none;
+      opacity:0.15;
+      transform: translate(-50%,-50%) rotate(-10deg);
+      pointer-events:none;
     }
 
     .panel { margin:8px; }
@@ -118,9 +105,6 @@
     .panel-body.active { display:block; }
     .panel-body label { display:block; margin-bottom:6px; }
 
-    .leaflet-popup-content-wrapper {
-      max-height:80vh; overflow:auto;
-    }
     .review-carousel {
       display:flex; overflow-x:auto; gap:8px; padding:6px 0;
     }
@@ -145,9 +129,8 @@
     const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74';
     const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
     const ranges  = ['Places!A:J','Reviews!A:E'];
-    const jsonUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' +
-      sheetId + '/values:batchGet?key=' + apiKey +
-      ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
+    const jsonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
+                  + ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
 
     fetch(jsonUrl)
       .then(r=> r.ok? r.json(): Promise.reject(r.statusText))
@@ -172,10 +155,8 @@
           const o = Object.fromEntries(rHdr.map((h,i)=>[h,r[i]||'']));
           const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(u=>u);
           (reviewsByPlace[o.PlaceID] ||= []).push({
-            date:   o.VisitDate,
-            rating: Number(o.Rating)||0,
-            review: o.Review,
-            photos
+            date:o.VisitDate, rating:Number(o.Rating)||0,
+            review:o.Review, photos
           });
         });
 
@@ -184,6 +165,7 @@
       .catch(console.error);
 
     function initialize(places, reviewsByPlace){
+      // map
       const map = L.map('map',{ zoomControl:false })
                    .setView([21.3069,-157.8583],11);
       L.control.zoom({ position:'topright' }).addTo(map);
@@ -192,38 +174,54 @@
       }).addTo(map);
       const markersLayer = L.layerGroup().addTo(map);
 
+      // filter DOM + toggle
+      const filtersDiv = document.getElementById('filters');
+      const toggleBtn  = document.getElementById('toggleFilters');
+      toggleBtn.addEventListener('click', ()=>{
+        filtersDiv.classList.toggle('expanded');
+        toggleBtn.textContent = filtersDiv.classList.contains('expanded')
+                              ? 'Hide Filters' : 'Show Filters';
+      });
+      // clear old panels only
+      filtersDiv.querySelectorAll('.panel').forEach(p=>p.remove());
+
+      // build data sets
       const catMap={}, allRegions=new Set();
       places.forEach(p=>{
-        (catMap[p.category]||=(new Set())).add(p.subcategory);
+        (catMap[p.category] ||= new Set()).add(p.subcategory);
         if(p.region) allRegions.add(p.region);
       });
       const cats = Object.keys(catMap).sort();
 
+      // color helper
       function hslToHex(h,s,l){ l/=100;
         const a=s*Math.min(l,1-l)/100;
-        const f=n=>{ const k=(n+h/30)%12;
+        const f=n=>{
+          const k=(n+h/30)%12;
           const c=l - a*Math.max(Math.min(k-3,9-k,1),-1);
-          return Math.round(255*c).toString(16).padStart(2,'0'); };
-        return `#${f(0)}${f(8)}${f(4)}`; }
-      const categoryColors={};
-      cats.forEach((c,i)=>categoryColors[c]=hslToHex(i*360/cats.length,60,50));
+          return Math.round(255*c).toString(16).padStart(2,'0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`;
+      }
+      const categoryColors = {};
+      cats.forEach((c,i)=> categoryColors[c] = hslToHex(i*360/cats.length,60,50) );
 
       const selectedSubs    = new Set(places.map(p=>`${p.category} - ${p.subcategory}`));
       const selectedRegs    = new Set(allRegions);
       const selectedVisited = new Set(['Been there','Not yet']);
 
       function makeCheckbox(val,set,label){
-        const lbl=document.createElement('label');
-        const cb=document.createElement('input');
+        const lbl = document.createElement('label'),
+              cb  = document.createElement('input');
         cb.type='checkbox'; cb.value=val; cb.checked=true;
-        cb.onchange=()=>{ cb.checked?set.add(val):set.delete(val); drawMarkers(); };
+        cb.onchange = ()=>{ cb.checked? set.add(val): set.delete(val); drawMarkers(); };
         lbl.append(cb,' ',label);
         return lbl;
       }
 
       function addPanel(title, items, isRegion, toggleOnly=false){
-        const pnl=document.createElement('div'); pnl.className='panel';
-        const hdr=document.createElement('div'); hdr.className='panel-header';
+        const pnl = document.createElement('div'); pnl.className='panel';
+        const hdr = document.createElement('div'); hdr.className='panel-header';
         if(!toggleOnly){
           const master=document.createElement('input');
           master.type='checkbox'; master.checked=true;
@@ -234,7 +232,7 @@
               if(cb!==master){
                 cb.checked=all;
                 const key=cb.value;
-                all?selectedSubs.add(key):selectedSubs.delete(key);
+                all? selectedSubs.add(key): selectedSubs.delete(key);
               }
             });
             drawMarkers();
@@ -252,8 +250,8 @@
 
         const body=document.createElement('div'); body.className='panel-body';
         items.forEach(item=>{
-          const full=isRegion?item:title==='Visited?'?item:`${title} - ${item}`;
-          const ref=isRegion?selectedRegs:title==='Visited?'?selectedVisited:selectedSubs;
+          const full=isRegion? item: title==='Visited?'? item: `${title} - ${item}`;
+          const ref= isRegion? selectedRegs: title==='Visited?'? selectedVisited: selectedSubs;
           body.append(makeCheckbox(full,ref,item));
         });
         hdr.onclick=()=>{
@@ -264,11 +262,10 @@
         filtersDiv.append(pnl);
       }
 
-      // Build filters...
-      filtersDiv.innerHTML=''; // clear existing
-      if(allRegions.size)    addPanel('Region',Array.from(allRegions).sort(),true,false);
-      addPanel('Visited?',['Been there','Not yet'],false,true);
-      cats.forEach(c=>addPanel(c,Array.from(catMap[c]).sort(),false,false));
+      // build panels
+      if(allRegions.size) addPanel('Region', Array.from(allRegions).sort(), true, false);
+      addPanel('Visited?', ['Been there','Not yet'], false, true);
+      cats.forEach(c=> addPanel(c, Array.from(catMap[c]).sort(), false, false) );
 
       function drawMarkers(){
         markersLayer.clearLayers();
@@ -286,36 +283,36 @@
           const revs=(reviewsByPlace[p.placeId]||[]).slice()
                      .sort((a,b)=>b.date.localeCompare(a.date));
           if(revs.length){
-            popup+=`${'★'.repeat(revs[0].rating)}<br>`;
-            popup+=`<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
-                       <div class="review-carousel">`;
+            popup+= '★'.repeat(revs[0].rating) + '<br>';
+            popup+= `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
+                      <div class="review-carousel">`;
             revs.forEach(r=>{
-              popup+=`<div class="review-item">
+              popup+= `<div class="review-item">
                          <strong>${r.date}</strong>
                          <p>${r.review}</p>`;
               r.photos.forEach(url=>
-                popup+=`<a href="${url}" target="_blank">View photo</a>`);
-              popup+=`</div>`;
+                popup+= `<a href="${url}" target="_blank">View photo</a>`);
+              popup+= `</div>`;
             });
-            popup+=`</div></details>`;
+            popup+= `</div></details>`;
           }
 
-          if(p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-          if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+          if(p.mapsLink)  popup+= `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+          if(p.appleLink) popup+= `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
 
           L.marker(p.latlng,{
-            icon:L.divIcon({
+            icon: L.divIcon({
               html:`<svg width="24" height="35" viewBox="0 0 24 35"
-                         xmlns="http://www.w3.org/2000/svg">
-                         <path fill="${categoryColors[p.category]}"
-                               stroke="#555" stroke-width="2"
-                               d="M12 0C7.03 0 3 4.03 3 9
-                                  c0 6.75 9 19.5 9 19.5
-                                  s9-12.75 9-19.5
-                                  c0-4.97-4.03-9-9-9
-                                  zm0 13.5a4.5 4.5 0 1 1 0-9
-                                  4.5 4.5 0 0 1 0 9z"/>
-                       </svg>`,
+                           xmlns="http://www.w3.org/2000/svg">
+                           <path fill="${categoryColors[p.category]}"
+                                 stroke="#555" stroke-width="2"
+                                 d="M12 0C7.03 0 3 4.03 3 9
+                                    c0 6.75 9 19.5 9 19.5
+                                    s9-12.75 9-19.5
+                                    c0-4.97-4.03-9-9-9
+                                    zm0 13.5a4.5 4.5 0 1 1 0-9
+                                    4.5 4.5 0 0 1 0 9z"/>
+                         </svg>`,
               className:'leaflet-div-icon',
               iconSize:[24,35], iconAnchor:[12,35], popupAnchor:[0,-35]
             })
