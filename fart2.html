@@ -22,21 +22,19 @@
     #map { height:100%; }
     .leaflet-div-icon { background:transparent!important; border:none!important; }
 
-    /* 2) Filters Panel */
+    /* 2) Filters Panel (no pointer-events blocking) */
     .filters {
       position:absolute; top:10px; left:10px; z-index:1000;
-      background:rgba(255,249,230,0.95); border-radius:8px;
+      background:rgba(255,249,230,0.95);
+      border-radius:8px;
       overflow:hidden; max-height:40px; width:auto;
       transition:max-height .3s,width .3s;
-      pointer-events:none; /* let clicks through when collapsed */
     }
     .filters.expanded {
       max-height:calc(100vh - 20px);
       width:280px; overflow-y:auto;
       background-clip:padding-box;
-      pointer-events:auto;
     }
-    .filters.expanded *, .filters * { pointer-events:auto; }
 
     /* 3) Toggle Button */
     #toggleFilters {
@@ -65,12 +63,12 @@
       background:rgba(233,30,99,0.3);
       border-radius:50%; transform:rotate(-30deg);
     }
+    /* master-toggle hibiscus */
     .panel-header .master-toggle {
       margin-right:8px;
       font-size:1.2em;
       cursor:pointer;
     }
-    .panel-header input[type="checkbox"] { display:none; }
     .panel-header .color-swatch {
       margin-left:auto; width:14px; height:14px;
       border-radius:50%; border:1px solid #999;
@@ -84,7 +82,8 @@
       display:none; padding:8px 12px; background:#FFF8E1;
       border-radius:6px;
       font-family:'Balkey',sans-serif;
-      font-size:0.95em; color:#333;
+      font-size:1em; /* increased */
+      color:#333;
     }
     .panel-body.active { display:block; }
     .panel-body label {
@@ -97,7 +96,7 @@
     }
     .panel-body input[type="checkbox"]:checked::after {
       content:'🌺';
-      position:absolute; top:-3px; left:-2px;
+      position:absolute; top:-3px; left:-4px; /* scooted left */
       font-size:24px; line-height:18px; pointer-events:none;
     }
 
@@ -205,16 +204,16 @@
 
       function makeCheckbox(val,setRef,label){
         const lbl=document.createElement('label'),
-              cb =document.createElement('input');
+              cb=document.createElement('input');
         cb.type='checkbox'; cb.value=val; cb.checked=true;
         cb.onchange=()=>{cb.checked?setRef.add(val):setRef.delete(val); render();};
         lbl.append(cb,' ',label); return lbl;
       }
+
       function addPanel(title, items, isReg, toggleOnly=false){
         const p=document.createElement('div'); p.className='panel';
         const h=document.createElement('div'); h.className='panel-header';
 
-        // master-toggle hibiscus
         if(!toggleOnly){
           const master=document.createElement('span');
           master.className='master-toggle';
@@ -237,13 +236,11 @@
 
         h.append(document.createTextNode(title));
 
-        // color swatch
         if(!isReg && title!=='Visited?'){
           const sw=document.createElement('div'); sw.className='color-swatch';
           sw.style.background=colors[title]; h.append(sw);
         }
 
-        // arrow
         const arr=document.createElement('span'); arr.className='arrow';
         arr.textContent='▶'; h.append(arr);
 
