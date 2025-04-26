@@ -15,10 +15,14 @@
     @font-face {
       font-family: 'Bardy';
       src: url('/MapResources/fonts/Bardy.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
     }
     @font-face {
-      font-family: 'Balkey';
-      src: url('/MapResources/fonts/Balkey.woff') format('woff');
+      font-family: 'Dorgan';
+      src: url('/MapResources/fonts/Dorgan.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
     }
 
     /* Override default div-icon background */
@@ -40,11 +44,11 @@
       max-height:calc(100vh - 20px); width:280px;
       overflow-y:auto;
     }
-    /* Show/Hide Filters button in Balkey */
+    /* Show/Hide Filters button in Dorgan */
     #toggleFilters {
       display:block; width:100%; padding:8px;
       background:#FFECB3; border:none; border-bottom:1px solid #ddd;
-      font-family:'Balkey',cursive; cursor:pointer;
+      font-family:'Dorgan',cursive; cursor:pointer;
     }
 
     .panel { margin:8px; }
@@ -67,15 +71,16 @@
       border-radius:6px;
     }
     .panel-body.active { display:block; }
-    /* Subcategories in Balkey, increased to 1.1em */
+    /* Subcategories in Dorgan, increased to 1.1em */
     .panel-body label {
       display:block; margin-bottom:6px;
-      font-family:'Balkey',sans-serif;
+      font-family:'Dorgan',sans-serif;
       font-size:1.1em;
     }
 
     .leaflet-popup-content-wrapper {
       max-height:80vh; overflow:auto;
+      font-family:'Dorgan',sans-serif;
     }
     .review-carousel {
       display:flex; overflow-x:auto; gap:8px; padding:6px 0;
