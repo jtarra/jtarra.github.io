@@ -56,6 +56,9 @@
       background:#FFECB3; border-radius:6px;
       cursor:pointer; font-family:'Bardy',cursive;
       font-size:1.3em;
+      /* ✨ updated styles below: */
+      color: #e3b505;
+      text-shadow: 2px 2px 0 #db504a;
     }
     .panel-header input[type="checkbox"] {
       -webkit-appearance:none; appearance:none;
@@ -165,7 +168,7 @@
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy = {};
         rowsR.forEach(r => {
-          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));
+          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));  
           const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean);
           (reviewsBy[o.PlaceID] ||= []).push({
             date:   o.VisitDate,
@@ -178,6 +181,20 @@
         initialize(places, reviewsBy);
       })
       .catch(console.error);
+
+    function shuffle(arr) {
+      let m = arr.length;
+      while (m) {
+        const i = Math.floor(Math.random() * m--);
+        [arr[m], arr[i]] = [arr[i], arr[m]];
+      }
+      return arr;
+    }
+
+    function randomColor() {
+      const h = Math.floor(Math.random() * 360);
+      return `hsl(${h},60%,50%)`;
+    }
 
     function initialize(places, reviewsBy) {
       // Map setup
@@ -196,22 +213,14 @@
       });
       const categories = Object.keys(catMap);
 
-      // Alphabetical sort helper
-      const alpha = arr =>
-        arr.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-
-      // Color palette
-      const palette = alpha([...categories]);
-      const colors = {};
-      palette.forEach((cat, i) => {
-        const h = i * 360 / palette.length, s = 60, l = 50;
-        const a = s * Math.min(l/100, 1 - l/100) / 100;
-        const toHex = n => {
-          const k = (n + h/30) % 12;
-          const c = l/100 - a * Math.max(Math.min(k-3, 9-k, 1), -1);
-          return Math.round(255 * c).toString(16).padStart(2, '0');
-        };
-        colors[cat] = `#${toHex(0)}${toHex(8)}${toHex(4)}`;
+      // **NEW** assign from your hex list, shuffled, no repeats
+      const baseColors = ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#003049','#db504a'];
+      let pool = shuffle(baseColors.slice());
+      const categoryColors = {};
+      categories.forEach(cat => {
+        categoryColors[cat] = pool.length
+          ? pool.pop()
+          : randomColor();
       });
 
       // Filter state
@@ -275,7 +284,7 @@
         if (!isRegion && title !== 'Visited?') {
           const swatch = document.createElement('div');
           swatch.className = 'color-swatch';
-          swatch.style.background = colors[title];
+          swatch.style.background = categoryColors[title];
           header.append(swatch);
         }
 
@@ -310,12 +319,16 @@
       }
 
       // Build filter panels in order
-      if (regions.size) addPanel('Region', alpha([...regions]), true);
+      if (regions.size) addPanel('Region', [...regions].sort(), true);
       addPanel('Visited?', ['Been there', 'Not yet'], false, true);
-      if (categories.includes('Food'))         addPanel('Food',         alpha([...catMap.Food]), false);
-      if (categories.includes('Sweet Treats')) addPanel('Sweet Treats', alpha([...catMap['Sweet Treats']]), false);
-      alpha(categories.filter(c => c !== 'Food' && c !== 'Sweet Treats'))
-        .forEach(cat => addPanel(cat, alpha([...catMap[cat]]), false));
+      if (categories.includes('Food'))
+        addPanel('Food', [...catMap.Food].sort(), false);
+      if (categories.includes('Sweet Treats'))
+        addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort(), false);
+      categories
+        .filter(c => c !== 'Food' && c !== 'Sweet Treats')
+        .sort()
+        .forEach(cat => addPanel(cat, [...catMap[cat]].sort(), false));
 
       // Render markers based on filters
       function renderMarkers() {
@@ -332,13 +345,13 @@
                    (p.region ? ` / ${p.region}` : '') +
                    `</em><br>`;
 
-          const reviews = (reviewsBy[p.id] || []).slice()
+          const revs = (reviewsBy[p.id] || []).slice()
                            .sort((a, b) => b.date.localeCompare(a.date));
-          if (reviews.length) {
-            popup += '★'.repeat(reviews[0].rating) + '<br>';
-            popup += `<details><summary>${reviews.length} review${reviews.length > 1 ? 's' : ''}</summary>
+          if (revs.length) {
+            popup += '★'.repeat(revs[0].rating) + '<br>';
+            popup += `<details><summary>${revs.length} review${revs.length > 1 ? 's' : ''}</summary>
                       <div class="review-carousel">`;
-            reviews.forEach(r => {
+            revs.forEach(r => {
               popup += `<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
               r.photos.forEach(url => {
                 popup += `<a href="${url}" target="_blank">View photo</a>`;
@@ -348,17 +361,13 @@
             popup += `</div></details>`;
           }
 
-          if (p.mapsLink) {
-            popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-          }
-          if (p.appleLink) {
-            popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
-          }
+          if (p.mapsLink)  popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+          if (p.appleLink) popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
 
           const strokeColor = p.visited ? '#DAA520' : '#555';
           const svgIconHtml = `<svg width="24" height="35" viewBox="0 0 24 35"
                                  xmlns="http://www.w3.org/2000/svg">
-                                 <path fill="${colors[p.category]}"
+                                 <path fill="${categoryColors[p.category]}"
                                        stroke="${strokeColor}"
                                        stroke-width="2"
                                        d="M12 0C7.03 0 3 4.03 3 9
@@ -368,7 +377,6 @@
                                           zm0 13.5a4.5 4.5 0 1 1 0-9
                                           4.5 4.5 0 0 1 0 9z"/>
                                </svg>`;
-
           L.marker(p.latlng, {
             icon: L.divIcon({
               html: svgIconHtml,
