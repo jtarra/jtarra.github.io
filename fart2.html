@@ -56,7 +56,6 @@
       background:#FFECB3; border-radius:6px;
       cursor:pointer; font-family:'Bardy',cursive;
       font-size:1.3em;
-      /* updated styles */
       color: #e3b505;
       text-shadow: 2px 2px 0 #db504a;
     }
@@ -258,6 +257,8 @@
           const master = document.createElement('input');
           master.type       = 'checkbox';
           master.checked    = true;
+          // assign random emoji for the master toggle too
+          master.dataset.emoji = emojiList[Math.floor(Math.random() * emojiList.length)];
           master.addEventListener('click', e => e.stopPropagation());
           master.addEventListener('change', () => {
             const all = master.checked;
