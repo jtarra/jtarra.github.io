@@ -45,7 +45,7 @@
     /*— Toggle Button —*/
     #toggleFilters {
       display:block; width:100%; padding:8px;
-      background:#FFECB3; border:none; border-bottom:1px solid #ddd;
+      background:#E7D8C4; border:none; border-bottom:1px solid #ddd;
       font-family:'Dorgan',cursive; cursor:pointer;
     }
 
@@ -53,18 +53,17 @@
     .panel { margin:8px; }
     .panel-header {
       display:flex; align-items:center; padding:6px 8px;
-      background:#FFECB3; border-radius:6px;
+      background:#E7D8C4; border-radius:6px;
       cursor:pointer; font-family:'Bardy',cursive;
-      font-size:1.3em;
-      /* ✨ updated styles below: */
+      font-size:1.6em;
       color: #e3b505;
       text-shadow: 2px 2px 0 #db504a;
     }
     .panel-header input[type="checkbox"] {
       -webkit-appearance:none; appearance:none;
       width:18px; height:18px;
-      margin-right:12px;        /* increased gap */
-      border:2px solid #007bff;
+      margin-right:12px;
+      border:2px solid #D0B59A;
       border-radius:3px;
       position:relative; cursor:pointer;
     }
@@ -73,9 +72,10 @@
     .panel-body input[type="checkbox"]:checked {
       border: none;
     }
-    /* show hibiscus as before */
-    .panel-header input[type="checkbox"]:checked::after {
-      content:'🌺';
+    /* show random emoji */
+    .panel-header input[type="checkbox"]:checked::after,
+    .panel-body input[type="checkbox"]:checked::after {
+      content: attr(data-emoji);
       position:absolute; top:-2px; left:-2px;
       font-size:22px; line-height:18px;
       pointer-events:none;
@@ -88,7 +88,7 @@
 
     /*— Panel Bodies & Sub-checkboxes —*/
     .panel-body {
-      display:none; padding:8px 12px; background:#FFF8E1;
+      display:none; padding:8px 12px; background:#FAF1D2;
       border-radius:6px;
     }
     .panel-body.active { display:block; }
@@ -101,15 +101,9 @@
       -webkit-appearance:none; appearance:none;
       width:18px; height:18px;
       margin-right:8px;
-      border:2px solid #007bff;
+      border:2px solid #D0B59A;
       border-radius:3px;
       position:relative; cursor:pointer;
-    }
-    .panel-body input[type="checkbox"]:checked::after {
-      content:'🌺';
-      position:absolute; top:-2px; left:-2px;
-      font-size:22px; line-height:18px;
-      pointer-events:none;
     }
 
     /*— Popups —*/
@@ -196,6 +190,9 @@
       return `hsl(${h},60%,50%)`;
     }
 
+    // Emoji list
+    const emojiList = ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️','👩🏻‍❤️‍💋‍👨🏼','🦚','🐡','🐚','🦀','🦐','🦑','🐢','🐬','🦎','🌞','🌈','🌊','🍹','🧋','⛵','⚓'];
+
     function initialize(places, reviewsBy) {
       // Map setup
       const map = L.map('map', { zoomControl: false }).setView([21.3069, -157.8583], 11);
@@ -213,14 +210,12 @@
       });
       const categories = Object.keys(catMap);
 
-      // **NEW** assign from your hex list, shuffled, no repeats
-      const baseColors = ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#003049','#db504a'];
+      // Assign category colors
+      const baseColors = ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#deff8d'];
       let pool = shuffle(baseColors.slice());
       const categoryColors = {};
       categories.forEach(cat => {
-        categoryColors[cat] = pool.length
-          ? pool.pop()
-          : randomColor();
+        categoryColors[cat] = pool.length ? pool.pop() : randomColor();
       });
 
       // Filter state
@@ -228,7 +223,7 @@
       const selReg = new Set(regions);
       const selVis = new Set(['Been there', 'Not yet']);
 
-      // Filter panel DOM
+      // DOM refs
       const filtersDiv = document.getElementById('filters');
       const toggleBtn  = document.getElementById('toggleFilters');
       toggleBtn.addEventListener('click', () => {
@@ -240,10 +235,12 @@
 
       function makeCheckbox(value, setRef, labelText) {
         const label = document.createElement('label');
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = value;
-        cb.checked = true;
+        const cb    = document.createElement('input');
+        cb.type       = 'checkbox';
+        cb.value      = value;
+        cb.checked    = true;
+        // assign random emoji
+        cb.dataset.emoji = emojiList[Math.floor(Math.random() * emojiList.length)];
         cb.addEventListener('change', () => {
           cb.checked ? setRef.add(value) : setRef.delete(value);
           renderMarkers();
@@ -253,16 +250,15 @@
       }
 
       function addPanel(title, items, isRegion, toggleOnly = false) {
-        const panel = document.createElement('div');
-        panel.className = 'panel';
-
-        const header = document.createElement('div');
-        header.className = 'panel-header';
+        const panel  = document.createElement('div'); panel.className = 'panel';
+        const header = document.createElement('div'); header.className = 'panel-header';
 
         if (!toggleOnly) {
           const master = document.createElement('input');
-          master.type = 'checkbox';
-          master.checked = true;
+          master.type       = 'checkbox';
+          master.checked    = true;
+          // assign random emoji for the master toggle too
+          master.dataset.emoji = emojiList[Math.floor(Math.random() * emojiList.length)];
           master.addEventListener('click', e => e.stopPropagation());
           master.addEventListener('change', () => {
             const all = master.checked;
@@ -282,31 +278,19 @@
         header.append(document.createTextNode(title));
 
         if (!isRegion && title !== 'Visited?') {
-          const swatch = document.createElement('div');
-          swatch.className = 'color-swatch';
+          const swatch = document.createElement('div'); swatch.className = 'color-swatch';
           swatch.style.background = categoryColors[title];
           header.append(swatch);
         }
 
-        const arrow = document.createElement('span');
-        arrow.className = 'arrow';
-        arrow.textContent = '▶';
-        header.append(arrow);
+        const arrow = document.createElement('span'); arrow.className = 'arrow';
+        arrow.textContent = '▶'; header.append(arrow);
 
-        const body = document.createElement('div');
-        body.className = 'panel-body';
+        const body = document.createElement('div'); body.className = 'panel-body';
         items.forEach(item => {
-          const fullValue = isRegion
-            ? item
-            : title === 'Visited?'
-              ? item
-              : `${title} - ${item}`;
-          const refSet = isRegion
-            ? selReg
-            : title === 'Visited?'
-              ? selVis
-              : selSub;
-          body.append(makeCheckbox(fullValue, refSet, item));
+          const full  = isRegion ? item : title === 'Visited?' ? item : `${title} - ${item}`;
+          const ref   = isRegion ? selReg : title === 'Visited?' ? selVis : selSub;
+          body.append(makeCheckbox(full, ref, item));
         });
 
         header.addEventListener('click', () => {
@@ -318,22 +302,19 @@
         filtersDiv.append(panel);
       }
 
-      // Build filter panels in order
+      // Build panels
       if (regions.size) addPanel('Region', [...regions].sort(), true);
       addPanel('Visited?', ['Been there', 'Not yet'], false, true);
-      if (categories.includes('Food'))
-        addPanel('Food', [...catMap.Food].sort(), false);
-      if (categories.includes('Sweet Treats'))
-        addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort(), false);
+      if (categories.includes('Food'))         addPanel('Food',         [...catMap['Food']].sort(), false);
+      if (categories.includes('Sweet Treats')) addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort(), false);
       categories
         .filter(c => c !== 'Food' && c !== 'Sweet Treats')
         .sort()
         .forEach(cat => addPanel(cat, [...catMap[cat]].sort(), false));
 
-      // Render markers based on filters
+      // Render markers
       function renderMarkers() {
         markerLayer.clearLayers();
-
         places.forEach(p => {
           if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
           if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
