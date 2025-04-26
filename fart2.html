@@ -56,6 +56,9 @@
       background:#FFECB3; border-radius:6px;
       cursor:pointer; font-family:'Bardy',cursive;
       font-size:1.3em;
+      /* ✨ updated styles below: */
+      color: #e3b505;
+      text-shadow: 2px 2px 0 #db504a;
     }
     .panel-header input[type="checkbox"] {
       -webkit-appearance:none; appearance:none;
@@ -165,7 +168,7 @@
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy = {};
         rowsR.forEach(r => {
-          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));
+          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));  
           const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean);
           (reviewsBy[o.PlaceID] ||= []).push({
             date:   o.VisitDate,
@@ -211,7 +214,7 @@
       const categories = Object.keys(catMap);
 
       // **NEW** assign from your hex list, shuffled, no repeats
-      const baseColors = ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#deff8d'];
+      const baseColors = ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#003049','#db504a'];
       let pool = shuffle(baseColors.slice());
       const categoryColors = {};
       categories.forEach(cat => {
