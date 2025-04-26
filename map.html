@@ -5,57 +5,114 @@
   <title>Oahu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <!-- Leaflet CSS -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <!-- Google Font: Rock Salt -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- Google Font: Rock Salt (fallback) -->
   <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
         rel="stylesheet"/>
   <style>
-    /* Override default div-icon background */
-    .leaflet-div-icon {
-      background: transparent !important;
-      border: none !important;
+    /*— Custom Fonts —*/
+    @font-face {
+      font-family: 'Bardy';
+      src: url('/MapResources/fonts/Bardy.woff') format('woff');
+    }
+    @font-face {
+      font-family: 'Dorgan';
+      src: url('/MapResources/fonts/Dorgan.woff') format('woff');
     }
 
+    /*— Base & Leaflet Overrides —*/
     body, html { margin:0; height:100%; font-family:sans-serif; }
     #map { height:100%; }
+    .leaflet-div-icon {
+      background:transparent!important;
+      border:none!important;
+    }
 
+    /*— Filters Panel —*/
     .filters {
       position:absolute; top:10px; left:10px; z-index:1000;
       background:rgba(255,249,230,0.95); border-radius:8px;
       overflow:hidden; max-height:40px; width:auto;
-      transition: max-height 0.3s, width 0.3s;
+      transition:max-height .3s, width .3s;
     }
     .filters.expanded {
-      max-height:calc(100vh - 20px); width:280px;
-      overflow-y:auto;
+      max-height:calc(100vh - 20px);
+      width:280px; overflow-y:auto;
     }
+
+    /*— Toggle Button —*/
     #toggleFilters {
       display:block; width:100%; padding:8px;
       background:#FFECB3; border:none; border-bottom:1px solid #ddd;
-      font-family:'Rock Salt',cursive; cursor:pointer;
+      font-family:'Dorgan',cursive; cursor:pointer;
     }
+
+    /*— Panels & Headers —*/
     .panel { margin:8px; }
     .panel-header {
       display:flex; align-items:center; padding:6px 8px;
       background:#FFECB3; border-radius:6px;
-      cursor:pointer; font-family:'Rock Salt',cursive;
+      cursor:pointer; font-family:'Bardy',cursive;
+      font-size:1.3em;
     }
-    .panel-header input { margin-right:6px; }
+    .panel-header input[type="checkbox"] {
+      -webkit-appearance:none; appearance:none;
+      width:18px; height:18px;
+      margin-right:12px;        /* increased gap */
+      border:2px solid #007bff;
+      border-radius:3px;
+      position:relative; cursor:pointer;
+    }
+    /* hide box border when checked */
+    .panel-header input[type="checkbox"]:checked,
+    .panel-body input[type="checkbox"]:checked {
+      border: none;
+    }
+    /* show hibiscus as before */
+    .panel-header input[type="checkbox"]:checked::after {
+      content:'🌺';
+      position:absolute; top:-2px; left:-2px;
+      font-size:22px; line-height:18px;
+      pointer-events:none;
+    }
     .panel-header .color-swatch {
       margin-left:auto; width:14px; height:14px;
       border-radius:50%; border:1px solid #999;
     }
     .panel-header .arrow { margin-left:8px; font-weight:bold; }
+
+    /*— Panel Bodies & Sub-checkboxes —*/
     .panel-body {
       display:none; padding:8px 12px; background:#FFF8E1;
       border-radius:6px;
     }
     .panel-body.active { display:block; }
-    .panel-body label { display:block; margin-bottom:6px; }
+    .panel-body label {
+      display:block; margin-bottom:6px;
+      font-family:'Dorgan',sans-serif;
+      font-size:1.1em; position:relative;
+    }
+    .panel-body input[type="checkbox"] {
+      -webkit-appearance:none; appearance:none;
+      width:18px; height:18px;
+      margin-right:8px;
+      border:2px solid #007bff;
+      border-radius:3px;
+      position:relative; cursor:pointer;
+    }
+    .panel-body input[type="checkbox"]:checked::after {
+      content:'🌺';
+      position:absolute; top:-2px; left:-2px;
+      font-size:22px; line-height:18px;
+      pointer-events:none;
+    }
 
+    /*— Popups —*/
     .leaflet-popup-content-wrapper {
       max-height:80vh; overflow:auto;
+      font-family:'Dorgan',sans-serif;
     }
     .review-carousel {
       display:flex; overflow-x:auto; gap:8px; padding:6px 0;
@@ -81,15 +138,15 @@
     const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74';
     const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
     const ranges  = ['Places!A:J','Reviews!A:E'];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}` +
-                ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
+                + ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
 
     fetch(url)
-      .then(r=> r.ok ? r.json() : Promise.reject(r.statusText))
-      .then(data=>{
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(data => {
         const [hdrP, ...rowsP] = data.valueRanges[0].values;
-        const places = rowsP.map(r=>{
-          const o = Object.fromEntries(hdrP.map((h,i)=>[h, r[i]||'']));
+        const places = rowsP.map(r => {
+          const o = Object.fromEntries(hdrP.map((h,i) => [h, r[i]||'']));
           const [lat,lng] = o.Coordinates.split(',').map(Number);
           return {
             id:          o.PlaceID,
@@ -107,12 +164,9 @@
 
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy = {};
-        rowsR.forEach(r=>{
-          const o = Object.fromEntries(hdrR.map((h,i)=>[h, r[i]||'']));
-          const photos = (o.PhotoURL || '')
-                           .trim()
-                           .split(/\s*,\s*/)
-                           .filter(Boolean);
+        rowsR.forEach(r => {
+          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));
+          const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean);
           (reviewsBy[o.PlaceID] ||= []).push({
             date:   o.VisitDate,
             rating: +o.Rating || 0,
@@ -125,10 +179,9 @@
       })
       .catch(console.error);
 
-    function initialize(places, reviewsBy){
+    function initialize(places, reviewsBy) {
       // Map setup
-      const map = L.map('map', { zoomControl: false })
-                   .setView([21.3069, -157.8583], 11);
+      const map = L.map('map', { zoomControl: false }).setView([21.3069, -157.8583], 11);
       L.control.zoom({ position: 'topright' }).addTo(map);
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         attribution: '© Humanitarian OSM Team'
@@ -295,7 +348,6 @@
             popup += `</div></details>`;
           }
 
-          // Google & Apple Maps links
           if (p.mapsLink) {
             popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
           }
