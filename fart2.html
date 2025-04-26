@@ -5,31 +5,21 @@
   <title>Oahu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <!-- Google Font: Rock Salt -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet"/>
   <style>
-    /* -------------- POPUP: Torn-Edge “Paper-Fold” look -------------- */
+    /* ------ 1) PAPER-FOLD POPUPS (torn-edge) ------ */
     .leaflet-popup-content-wrapper {
       background: #fff;
-      border-width: 20px;
-      border-style: solid;
-      border-color: transparent;
-      border-image-source: url('/MapResources/pngs/strip.png');
-      border-image-slice: 20 fill;
-      border-image-repeat: repeat;
+      border: 20px solid transparent;
+      border-image: url('/MapResources/pngs/strip.png') 20 fill repeat;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       padding: 12px;
     }
     .leaflet-popup-tip { background: transparent; }
 
-    /* transparent markers */
+    /* keep markers transparent */
     .leaflet-div-icon {
       background: transparent !important;
       border: none !important;
@@ -38,13 +28,12 @@
     body, html { margin:0; height:100%; font-family:sans-serif; }
     #map { height:100%; }
 
-    /* ---------------- FILTER PANEL ---------------- */
+    /* ------ 2) FILTER PANEL BASE & TOGGLE ------ */
     .filters {
       position:absolute; top:10px; left:10px; z-index:1000;
       background:rgba(255,249,230,0.95); border-radius:8px;
       overflow:hidden; max-height:40px; width:auto;
-      transition: max-height 0.3s, width 0.3s;
-      border:0;
+      transition: max-height .3s, width .3s;
     }
     .filters.expanded {
       max-height:calc(100vh - 20px); width:280px;
@@ -52,7 +41,24 @@
       background-clip: padding-box;
     }
 
-    /* --------------- PALM-FROND CORNERS on expanded --------------- */
+    #toggleFilters {
+      display:block; width:100%; padding:8px;
+      background:#FFECB3; border:none; border-bottom:1px solid #ddd;
+      font-family:'Rock Salt',cursive; cursor:pointer;
+      position: relative;
+    }
+    /* 3) HIBISCUS STAMP BENEATH LABEL */
+    #toggleFilters::after {
+      content: '';
+      position: absolute; top:50%; left:50%;
+      width:80px; height:80px;
+      background: url('/MapResources/pngs/stamp.png') no-repeat center/contain;
+      opacity: 0.15;
+      transform: translate(-50%,-50%) rotate(-10deg);
+      pointer-events: none;
+    }
+
+    /* ------ 4) PALM FROND CORNERS ------ */
     .filters.expanded::before,
     .filters.expanded::after {
       content: '';
@@ -61,31 +67,35 @@
       background: url('/MapResources/pngs/frond.png') no-repeat center/contain;
       pointer-events: none;
     }
-    .filters.expanded::before {
-      top: -10px; left: -10px;
-    }
-    .filters.expanded::after {
-      top: -10px; right: -10px;
-      transform: scaleX(-1);
-    }
+    .filters.expanded::before { top:-10px; left:-10px; }
+    .filters.expanded::after  { top:-10px; right:-10px; transform: scaleX(-1); }
 
-    /* toggle button + hibiscus stamp */
-    #toggleFilters {
-      display:block; width:100%; padding:8px;
-      background:#FFECB3; border:none; border-bottom:1px solid #ddd;
-      font-family:'Rock Salt',cursive; cursor:pointer;
-      position: relative;
+    /* bottom corners via spans */
+    .corner-bl, .corner-br, .corner-flower {
+      position: absolute; pointer-events: none;
     }
-    #toggleFilters::after {
-      content: '';
-      position: absolute; top:50%; left:50%;
-      width:100px; height:100px;
+    .corner-bl {
+      bottom:-10px; left:-10px;
+      width:60px; height:60px;
+      background: url('/MapResources/pngs/frond.png') no-repeat center/contain;
+      transform: rotate(180deg);
+    }
+    .corner-br {
+      bottom:-10px; right:-10px;
+      width:60px; height:60px;
+      background: url('/MapResources/pngs/frond.png') no-repeat center/contain;
+      transform: rotate(180deg) scaleX(-1);
+    }
+    /* extra hibiscus flower at bottom center */
+    .corner-flower {
+      bottom:-20px; left:50%;
+      width:40px; height:40px;
       background: url('/MapResources/pngs/stamp.png') no-repeat center/contain;
-      opacity:0.15;
-      transform: translate(-50%,-50%) rotate(-10deg);
-      pointer-events:none;
+      transform: translateX(-50%);
+      opacity: 0.5;
     }
 
+    /* ------ 5) PANELS AS BEFORE ------ */
     .panel { margin:8px; }
     .panel-header {
       display:flex; align-items:center; padding:6px 8px;
@@ -112,196 +122,171 @@
       flex:0 0 180px; background:#fff; border:1px solid #ddd;
       padding:6px; border-radius:4px; box-sizing:border-box;
     }
-    .review-item a {
-      display:block; margin-top:4px; font-size:0.9em;
-    }
+    .review-item a { display:block; margin-top:4px; font-size:0.9em; }
   </style>
 </head>
 <body>
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
+    <!-- bottom decorations -->
+    <span class="corner-bl"></span>
+    <span class="corner-br"></span>
+    <span class="corner-flower"></span>
   </div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
   (function(){
-    const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74';
-    const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
-    const ranges  = ['Places!A:J','Reviews!A:E'];
-    const jsonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
-                  + ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
-
-    fetch(jsonUrl)
-      .then(r=> r.ok? r.json(): Promise.reject(r.statusText))
+    const sheetId='1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+          apiKey ='AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
+          ranges=['Places!A:J','Reviews!A:E'];
+    const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
+              + ranges.map(r=>'&ranges='+encodeURIComponent(r)).join('');
+    fetch(url)
+      .then(r=>r.ok? r.json():Promise.reject(r.statusText))
       .then(data=>{
-        const [pHdr, ...pRows] = data.valueRanges[0].values;
-        const places = pRows.map(r=>{
-          const o = Object.fromEntries(pHdr.map((h,i)=>[h,r[i]||'']));
-          const [lat,lng] = o.Coordinates.split(',').map(Number);
+        const [pHdr,...pRows]=data.valueRanges[0].values;
+        const places=pRows.map(r=>{
+          const o=Object.fromEntries(pHdr.map((h,i)=>[h,r[i]||'']));
+          const [lat,lng]=o.Coordinates.split(',').map(Number);
           return {
-            placeId:o.PlaceID, name:o.Name,
-            category:o.Category, subcategory:o.Subcategory,
-            region:o.Region, notes:o.Notes,
+            placeId:o.PlaceID,name:o.Name,
+            category:o.Category,subcategory:o.Subcategory,
+            region:o.Region,notes:o.Notes,
             visited:o.Visited.trim().toUpperCase()==='Y',
-            latlng:[lat,lng], mapsLink:o.MapsLink,
+            latlng:[lat,lng],mapsLink:o.MapsLink,
             appleLink:o.AppleMapsLink
           };
         });
-
-        const [rHdr, ...rRows] = data.valueRanges[1].values;
-        const reviewsByPlace = {};
+        const [rHdr,...rRows]=data.valueRanges[1].values;
+        const reviewsBy={};
         rRows.forEach(r=>{
-          const o = Object.fromEntries(rHdr.map((h,i)=>[h,r[i]||'']));
-          const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(u=>u);
-          (reviewsByPlace[o.PlaceID] ||= []).push({
-            date:o.VisitDate, rating:Number(o.Rating)||0,
+          const o=Object.fromEntries(rHdr.map((h,i)=>[h,r[i]||'']));
+          const photos=(o.PhotoURL||'').split(/\s*,\s*/).filter(Boolean);
+          (reviewsBy[o.PlaceID]||=[]).push({
+            date:o.VisitDate, rating:+o.Rating||0,
             review:o.Review, photos
           });
         });
+        initialize(places,reviewsBy);
+      }).catch(console.error);
 
-        initialize(places, reviewsByPlace);
-      })
-      .catch(console.error);
-
-    function initialize(places, reviewsByPlace){
-      // map
-      const map = L.map('map',{ zoomControl:false })
-                   .setView([21.3069,-157.8583],11);
-      L.control.zoom({ position:'topright' }).addTo(map);
+    function initialize(places,reviewsBy){
+      const map=L.map('map',{zoomControl:false}).setView([21.3069,-157.8583],11);
+      L.control.zoom({position:'topright'}).addTo(map);
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{
         attribution:'© Humanitarian OSM Team'
       }).addTo(map);
-      const markersLayer = L.layerGroup().addTo(map);
+      const markersLayer=L.layerGroup().addTo(map);
 
-      // filter DOM + toggle
-      const filtersDiv = document.getElementById('filters');
-      const toggleBtn  = document.getElementById('toggleFilters');
-      toggleBtn.addEventListener('click', ()=>{
+      const filtersDiv=document.getElementById('filters'),
+            toggleBtn=document.getElementById('toggleFilters');
+      toggleBtn.addEventListener('click',()=>{
         filtersDiv.classList.toggle('expanded');
-        toggleBtn.textContent = filtersDiv.classList.contains('expanded')
-                              ? 'Hide Filters' : 'Show Filters';
+        toggleBtn.textContent=filtersDiv.classList.contains('expanded')
+                              ?'Hide Filters':'Show Filters';
       });
-      // clear old panels only
       filtersDiv.querySelectorAll('.panel').forEach(p=>p.remove());
 
-      // build data sets
-      const catMap={}, allRegions=new Set();
-      places.forEach(p=>{
-        (catMap[p.category] ||= new Set()).add(p.subcategory);
-        if(p.region) allRegions.add(p.region);
-      });
-      const cats = Object.keys(catMap).sort();
+      const catMap={}, regions=new Set();
+      places.forEach(p=>{(catMap[p.category]||=new Set()).add(p.subcategory);
+                         if(p.region) regions.add(p.region);});
+      const cats=Object.keys(catMap).sort();
+      function hslToHex(h,s,l){l/=100;const a=s*Math.min(l,1-l)/100;
+        const f=n=>{const k=(n+h/30)%12,c=l - a*Math.max(Math.min(k-3,9-k,1),-1);
+                    return Math.round(255*c).toString(16).padStart(2,'0');};
+        return `#${f(0)}${f(8)}${f(4)}`;}
+      const categoryColors={}; cats.forEach((c,i)=>categoryColors[c]=hslToHex(i*360/cats.length,60,50));
 
-      // color helper
-      function hslToHex(h,s,l){ l/=100;
-        const a=s*Math.min(l,1-l)/100;
-        const f=n=>{
-          const k=(n+h/30)%12;
-          const c=l - a*Math.max(Math.min(k-3,9-k,1),-1);
-          return Math.round(255*c).toString(16).padStart(2,'0');
-        };
-        return `#${f(0)}${f(8)}${f(4)}`;
-      }
-      const categoryColors = {};
-      cats.forEach((c,i)=> categoryColors[c] = hslToHex(i*360/cats.length,60,50) );
-
-      const selectedSubs    = new Set(places.map(p=>`${p.category} - ${p.subcategory}`));
-      const selectedRegs    = new Set(allRegions);
-      const selectedVisited = new Set(['Been there','Not yet']);
+      const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)),
+            selReg=new Set(regions), selVis=new Set(['Been there','Not yet']);
 
       function makeCheckbox(val,set,label){
-        const lbl = document.createElement('label'),
-              cb  = document.createElement('input');
+        const lbl=document.createElement('label'),
+              cb =document.createElement('input');
         cb.type='checkbox'; cb.value=val; cb.checked=true;
-        cb.onchange = ()=>{ cb.checked? set.add(val): set.delete(val); drawMarkers(); };
-        lbl.append(cb,' ',label);
-        return lbl;
+        cb.onchange=()=>{cb.checked?set.add(val):set.delete(val); drawMarkers();};
+        lbl.append(cb,' ',label); return lbl;
       }
-
-      function addPanel(title, items, isRegion, toggleOnly=false){
-        const pnl = document.createElement('div'); pnl.className='panel';
-        const hdr = document.createElement('div'); hdr.className='panel-header';
+      function addPanel(title,items,isRegion,toggleOnly=false){
+        const pnl=document.createElement('div'); pnl.className='panel';
+        const hdr=document.createElement('div'); hdr.className='panel-header';
         if(!toggleOnly){
-          const master=document.createElement('input');
-          master.type='checkbox'; master.checked=true;
-          master.addEventListener('click',e=>e.stopPropagation());
-          master.onchange=()=>{
-            const all=master.checked;
+          const m=document.createElement('input');m.type='checkbox';m.checked=true;
+          m.addEventListener('click',e=>e.stopPropagation());
+          m.addEventListener('change',()=>{
+            const all=m.checked;
             pnl.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-              if(cb!==master){
+              if(cb!==m){
                 cb.checked=all;
-                const key=cb.value;
-                all? selectedSubs.add(key): selectedSubs.delete(key);
+                const k=cb.value;
+                isRegion? all?selReg.add(k):selReg.delete(k)
+                        : all?selSub.add(k):selSub.delete(k);
               }
             });
             drawMarkers();
-          };
-          hdr.append(master);
+          });
+          hdr.append(m);
         }
         hdr.append(document.createTextNode(title));
-        if(!isRegion && title!=='Visited?'){
-          const sw=document.createElement('div'); sw.className='color-swatch';
-          sw.style.background=categoryColors[title];
-          hdr.append(sw);
+        if(!isRegion){
+          const sw=document.createElement('div');sw.className='color-swatch';
+          sw.style.background=categoryColors[title];hdr.append(sw);
         }
-        const arrw=document.createElement('span'); arrw.className='arrow';
-        arrw.textContent='▶'; hdr.append(arrw);
+        const arrw=document.createElement('span');arrw.className='arrow';
+        arrw.textContent='▶';hdr.append(arrw);
 
-        const body=document.createElement('div'); body.className='panel-body';
-        items.forEach(item=>{
-          const full=isRegion? item: title==='Visited?'? item: `${title} - ${item}`;
-          const ref= isRegion? selectedRegs: title==='Visited?'? selectedVisited: selectedSubs;
-          body.append(makeCheckbox(full,ref,item));
+        const body=document.createElement('div');body.className='panel-body';
+        items.forEach(it=>{
+          const full=isRegion?it:it, ref=isRegion?selReg:selSub;
+          body.append(makeCheckbox(full,ref,it));
         });
         hdr.onclick=()=>{
           body.classList.toggle('active');
           arrw.textContent=body.classList.contains('active')?'▼':'▶';
         };
-        pnl.append(hdr, body);
+        pnl.append(hdr,body);
         filtersDiv.append(pnl);
       }
 
-      // build panels
-      if(allRegions.size) addPanel('Region', Array.from(allRegions).sort(), true, false);
-      addPanel('Visited?', ['Been there','Not yet'], false, true);
-      cats.forEach(c=> addPanel(c, Array.from(catMap[c]).sort(), false, false) );
+      // panels
+      if(regions.size)    addPanel('Region', Array.from(regions).sort(), true);
+      addPanel('Visited?',['Been there','Not yet'],false,true);
+      cats.forEach(c=>addPanel(c, Array.from(catMap[c]).sort(), false));
 
       function drawMarkers(){
         markersLayer.clearLayers();
         places.forEach(p=>{
-          if(!selectedVisited.has(p.visited?'Been there':'Not yet')) return;
-          if(!selectedSubs.has(`${p.category} - ${p.subcategory}`)) return;
-          if(p.region && !selectedRegs.has(p.region)) return;
+          if(!selVis.has(p.visited?'Been there':'Not yet')) return;
+          if(!selSub.has(`${p.category} - ${p.subcategory}`)) return;
+          if(p.region && !selReg.has(p.region)) return;
 
           let popup=`<strong>${p.name}</strong><br>`;
           if(p.notes) popup+=`${p.notes}<br>`;
           popup+=`<em>${p.category} – ${p.subcategory}`+
-                  (p.region?` / ${p.region}`:'')+
-                  `</em><br>`;
+                  (p.region?` / ${p.region}`:'')+`</em><br>`;
 
-          const revs=(reviewsByPlace[p.placeId]||[]).slice()
+          const revs=(reviewsBy[p.placeId]||[]).slice()
                      .sort((a,b)=>b.date.localeCompare(a.date));
           if(revs.length){
-            popup+= '★'.repeat(revs[0].rating) + '<br>';
-            popup+= `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
-                      <div class="review-carousel">`;
+            popup+='★'.repeat(revs[0].rating)+'<br>';
+            popup+=`<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>
+                    <div class="review-carousel">`;
             revs.forEach(r=>{
-              popup+= `<div class="review-item">
-                         <strong>${r.date}</strong>
-                         <p>${r.review}</p>`;
-              r.photos.forEach(url=>
-                popup+= `<a href="${url}" target="_blank">View photo</a>`);
-              popup+= `</div>`;
+              popup+=`<div class="review-item"><strong>${r.date}</strong>
+                        <p>${r.review}</p>`;
+              r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`);
+              popup+=`</div>`;
             });
-            popup+= `</div></details>`;
+            popup+=`</div></details>`;
           }
 
-          if(p.mapsLink)  popup+= `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-          if(p.appleLink) popup+= `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+          if(p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+          if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
 
           L.marker(p.latlng,{
-            icon: L.divIcon({
+            icon:L.divIcon({
               html:`<svg width="24" height="35" viewBox="0 0 24 35"
                            xmlns="http://www.w3.org/2000/svg">
                            <path fill="${categoryColors[p.category]}"
