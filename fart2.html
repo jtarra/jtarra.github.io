@@ -59,11 +59,18 @@
     }
     .panel-header input[type="checkbox"] {
       -webkit-appearance:none; appearance:none;
-      width:18px; height:18px; margin-right:6px;
-      border:2px solid #007bff; border-radius:3px;
+      width:18px; height:18px;
+      margin-right:12px;        /* increased gap */
+      border:2px solid #007bff;
+      border-radius:3px;
       position:relative; cursor:pointer;
     }
-    /* 🌺 instead of ✓ */
+    /* hide box border when checked */
+    .panel-header input[type="checkbox"]:checked,
+    .panel-body input[type="checkbox"]:checked {
+      border: none;
+    }
+    /* show hibiscus as before */
     .panel-header input[type="checkbox"]:checked::after {
       content:'🌺';
       position:absolute; top:-2px; left:-2px;
@@ -89,11 +96,12 @@
     }
     .panel-body input[type="checkbox"] {
       -webkit-appearance:none; appearance:none;
-      width:18px; height:18px; margin-right:8px;
-      border:2px solid #007bff; border-radius:3px;
+      width:18px; height:18px;
+      margin-right:8px;
+      border:2px solid #007bff;
+      border-radius:3px;
       position:relative; cursor:pointer;
     }
-    /* 🌺 instead of ✓ */
     .panel-body input[type="checkbox"]:checked::after {
       content:'🌺';
       position:absolute; top:-2px; left:-2px;
