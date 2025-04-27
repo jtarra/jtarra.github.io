@@ -186,6 +186,10 @@
 
         L.marker([latitude, longitude], { icon: userIcon })
           .addTo(map)
+          map.flyTo([latitude, longitude], map.getZoom(), {
+  animate: true,
+  duration: 1.0    // seconds
+});
           .bindPopup('You are here.')
           .openPopup();
       };
