@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
   <title>Oahu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -110,7 +111,7 @@
     .review-item strong { display: block; margin-bottom: 4px; }
     .review-item p { margin: 0 0 4px; }
     .leaflet-control-attribution {
-  bottom: 20px !important;
+  bottom: calc(20px + env(safe-area-inset-bottom)) !important;
 }
   </style>
 </head>
