@@ -9,7 +9,6 @@
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha512-somehash"
     crossorigin=""/>
 
   <!-- Fallback Google Font -->
@@ -69,7 +68,7 @@
       display: block;
       width: 100%;
       padding: 8px;
-      background: #E7D8C4;             /* easy-to-change color */
+      background: #E7D8C4;
       border: none;
       border-bottom: 1px solid #ddd;
       font-family: 'Dorgan', cursive;
@@ -84,13 +83,13 @@
       display: flex;
       align-items: center;
       padding: 6px 8px;
-      background: #E7D8C4;            /* header bg color */
+      background: #E7D8C4;
       border-radius: 6px;
       cursor: pointer;
       font-family: 'Bardy', cursive;
       font-size: 1.6em;
-      color: #e3b505;                  /* header text color */
-      text-shadow: 2px 2px 0 #db504a; /* header shadow */
+      color: #e3b505;
+      text-shadow: 2px 2px 0 #db504a;
     }
     .panel-header input[type="checkbox"],
     .panel-body input[type="checkbox"] {
@@ -98,13 +97,15 @@
       width: 18px;
       height: 18px;
       margin-right: 12px;
-      border: 2px solid #D0B59A;     /* checkbox border color */
+      border: 2px solid #D0B59A;
       border-radius: 3px;
       position: relative;
       cursor: pointer;
     }
     /* hide border when checked */
-    input[type="checkbox"]:checked { border: none; }
+    input[type="checkbox"]:checked {
+      border: none;
+    }
     /* display emoji when checked */
     input[type="checkbox"]:checked::after {
       content: attr(data-emoji);
@@ -122,7 +123,7 @@
     .panel-body {
       display: none;
       padding: 8px 12px;
-      background: #FAF1D2;            /* body bg color */
+      background: #FAF1D2;
       border-radius: 6px;
     }
     .panel-body.active { display: block; }
@@ -171,7 +172,6 @@
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha512-anotherhash"
           crossorigin=""></script>
 
   <script>
@@ -183,34 +183,19 @@
    * =============================
    */
   const CONFIG = {
-    // Google Sheets settings
     sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
     apiKey:  'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
     ranges:  ['Places!A:J', 'Reviews!A:E'],
-
-    // Map initial view [lat, lng] and zoom level
     mapCenter: [21.3069, -157.8583],
     mapZoom:   11,
-
-    // Tile layer URL & attribution
     tileUrl:    'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
     attribution: '© Humanitarian OSM Team',
-
-    // Category colors (hex array, no repeats)
     baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#003049','#db504a','#deff8d'],
-
-    // Emoji options for checkboxes
-    emojiList: [
-      '🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈',
-      '🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋',
-      '🏝️','🛵','👙','🌴','⛱️','⛵','⚓'
-    ]
+    emojiList: ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️','⛵','⚓']
   };
 
   (function(){
-    /*****************************************/
-    /*  Utility Functions: shuffle & random  */
-    /*****************************************/
+    // Utility
     function shuffle(arr) {
       let m = arr.length;
       while (m) {
@@ -224,9 +209,7 @@
       return `hsl(${h},60%,50%)`;
     }
 
-    /*******************************/
-    /*  Fetch & Parse Sheet Data   */
-    /*******************************/
+    // Fetch data
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}` +
                 `/values:batchGet?key=${CONFIG.apiKey}` +
                 CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
@@ -234,7 +217,6 @@
     fetch(url)
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data => {
-        // Parse places
         const [hdrP, ...rowsP] = data.valueRanges[0].values;
         const places = rowsP.map(r => {
           const o = Object.fromEntries(hdrP.map((h,i) => [h, r[i]||'']));
@@ -252,8 +234,6 @@
             appleLink: o.AppleMapsLink
           };
         });
-
-        // Parse reviews
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy = {};
         rowsR.forEach(r => {
@@ -266,53 +246,43 @@
             photos
           });
         });
-
-        // Kick off map initialization
         initializeMap(places, reviewsBy);
       })
       .catch(console.error);
 
-    /*********************************/
-    /*  Main: initializeMap          */
-    /*********************************/
+    // Initialize
     function initializeMap(places, reviewsBy) {
-      // Create map
       const map = L.map('map', { zoomControl: false })
                    .setView(CONFIG.mapCenter, CONFIG.mapZoom);
       L.control.zoom({ position: 'topright' }).addTo(map);
       L.tileLayer(CONFIG.tileUrl, { attribution: CONFIG.attribution }).addTo(map);
       const markerLayer = L.layerGroup().addTo(map);
 
-      // Build categories & region sets
+      // Categories & regions
       const catMap = {}, regions = new Set();
       places.forEach(p => {
         (catMap[p.category] ||= new Set()).add(p.subcategory);
         if (p.region) regions.add(p.region);
       });
-
-      // Assign unique colors to categories
-      const pool = shuffle(CONFIG.baseColors.slice());
-      const categoryColors = {};
+      const pool = shuffle(CONFIG.baseColors.slice()), categoryColors = {};
       Object.keys(catMap).forEach(cat => {
         categoryColors[cat] = pool.length ? pool.pop() : randomColor();
       });
 
-      // Filter state containers
+      // Filter state
       const selSub = new Set(places.map(p => `${p.category} - ${p.subcategory}`));
       const selReg = new Set(regions);
       const selVis = new Set(['Been there','Not yet']);
 
-      // UI references
+      // UI refs
       const filtersDiv = document.getElementById('filters');
       const toggleBtn  = document.getElementById('toggleFilters');
       toggleBtn.addEventListener('click', () => {
-        const exp = filtersDiv.classList.toggle('expanded');
-        toggleBtn.textContent = exp ? 'Hide Filters' : 'Show Filters';
+        const e = filtersDiv.classList.toggle('expanded');
+        toggleBtn.textContent = e ? 'Hide Filters' : 'Show Filters';
       });
 
-      /*=======================================================*/
-      /*  Helper: create a labeled checkbox with random emoji  */
-      /*=======================================================*/
+      // Checkbox helper
       function makeCheckbox(val, setRef, labelText) {
         const label = document.createElement('label');
         const cb    = document.createElement('input');
@@ -330,100 +300,102 @@
         return label;
       }
 
-      /*=======================================================*/
-      /*  Helper: build one filter panel block                */
-      /*=======================================================*/
+      // Panel builder
       function addPanel(title, items, isRegion=false, toggleOnly=false) {
-        const panel  = document.createElement('div'); panel.className='panel';
-        const head   = document.createElement('div'); head.className='panel-header';
+        const panel = document.createElement('div'); panel.className = 'panel';
+        const head  = document.createElement('div'); head.className = 'panel-header';
 
         if (!toggleOnly) {
-          const label = document.createElement('label');
-          const master= document.createElement('input');
-          master.type       = 'checkbox';
-          master.checked    = true;
-          master.dataset.emoji = CONFIG.emojiList[
+          const lab = document.createElement('label');
+          const m   = document.createElement('input');
+          m.type       = 'checkbox';
+          m.checked    = true;
+          m.dataset.emoji = CONFIG.emojiList[
             Math.floor(Math.random() * CONFIG.emojiList.length)
           ];
-          master.addEventListener('click', e=>e.stopPropagation());
-          master.addEventListener('change', ()=>{
-            const all = master.checked;
-            panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-              if (cb!==master) {
+          m.addEventListener('click', e => e.stopPropagation());
+          m.addEventListener('change', () => {
+            const all = m.checked;
+            panel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+              if (cb !== m) {
                 cb.checked = all;
-                const key = cb.value;
-                if (isRegion) all?selReg.add(key):selReg.delete(key);
-                else          all?selSub.add(key):selSub.delete(key);
+                const k = cb.value;
+                if (isRegion) all? selReg.add(k): selReg.delete(k);
+                else          all? selSub.add(k): selSub.delete(k);
               }
             });
             renderMarkers();
           });
-          label.append(master);
-          head.append(label);
+          lab.append(m);
+          head.append(lab);
         }
 
         head.append(document.createTextNode(title));
-        if (!isRegion && title!=='Visited?') {
+        if (!isRegion && title !== 'Visited?') {
           const sw = document.createElement('div');
-          sw.className='color-swatch';
+          sw.className = 'color-swatch';
           sw.style.background = categoryColors[title];
           head.append(sw);
         }
-        const arr = document.createElement('span');
-        arr.className='arrow'; arr.textContent='▶'; head.append(arr);
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.textContent = '▶';
+        head.append(arrow);
 
-        const body = document.createElement('div'); body.className='panel-body';
-        items.forEach(item=>{
-          const full = isRegion? item : title==='Visited?'? item : `${title} - ${item}`;
-          const ref = isRegion? selReg : title==='Visited?'? selVis : selSub;
+        const body = document.createElement('div');
+        body.className = 'panel-body';
+        items.forEach(item => {
+          const full = isRegion
+            ? item
+            : title === 'Visited?'
+              ? item
+              : `${title} - ${item}`;
+          const ref = isRegion ? selReg : title === 'Visited?' ? selVis : selSub;
           body.append(makeCheckbox(full, ref, item));
         });
 
-        head.addEventListener('click', ()=>{
+        head.addEventListener('click', () => {
           const open = body.classList.toggle('active');
-          arr.textContent = open? '▼':'▶';
+          arrow.textContent = open ? '▼' : '▶';
         });
 
         panel.append(head, body);
         filtersDiv.append(panel);
       }
 
-      /*=======================================================*/
-      /*  Build Panels: order: Region, Visited?, Food, Sweet, Others */
-      /*=======================================================*/
-      if (regions.size)   addPanel('Region', [...regions].sort(), true);
+      // Build panels
+      if (regions.size) addPanel('Region', [...regions].sort(), true);
       addPanel('Visited?', ['Been there','Not yet'], false, true);
       if (catMap['Food']) addPanel('Food', [...catMap['Food']].sort());
       if (catMap['Sweet Treats']) addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort());
       Object.keys(catMap)
-        .filter(c=>!['Food','Sweet Treats'].includes(c))
+        .filter(c => !['Food','Sweet Treats'].includes(c))
         .sort()
-        .forEach(c=> addPanel(c, [...catMap[c]].sort()));
+        .forEach(c => addPanel(c, [...catMap[c]].sort()));
 
-      /*=======================================================*/
-      /*  Render markers according to filter state            */
-      /*=======================================================*/
+      // Render markers
       function renderMarkers() {
         markerLayer.clearLayers();
-        places.forEach(p=>{
-          if (!selVis.has(p.visited?'Been there':'Not yet')) return;
+        places.forEach(p => {
+          if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
           if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
           if (p.region && !selReg.has(p.region)) return;
 
-          let popup = `<strong>${p.name}</strong><br>`+
-                      (p.notes? `${p.notes}<br>`:'')+
-                      `<em>${p.category} – ${p.subcategory}`+
-                      (p.region?` / ${p.region}`:'')+`</em><br>`;
+          let popup = `<strong>${p.name}</strong><br>` +
+                      (p.notes ? `${p.notes}<br>` : '') +
+                      `<em>${p.category} – ${p.subcategory}` +
+                      (p.region ? ` / ${p.region}` : '') +
+                      `</em><br>`;
 
-          const revs = (reviewsBy[p.id]||[]).slice()
-                         .sort((a,b)=>b.date.localeCompare(a.date));
+          const revs = (reviewsBy[p.id] || []).slice()
+                         .sort((a,b) => b.date.localeCompare(a.date));
           if (revs.length) {
-            popup += '★'.repeat(revs[0].rating)+'<br>'+
-                     `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>`+
+            popup += '★'.repeat(revs[0].rating) + '<br>' +
+                     `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>` +
                      `<div class="review-carousel">`;
-            revs.forEach(r=>{
+            revs.forEach(r => {
               popup += `<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
-              r.photos.forEach(url=> popup += `<a href="${url}" target="_blank">View photo</a>`);
+              r.photos.forEach(u => popup += `<a href="${u}" target="_blank">View photo</a>`);
               popup += `</div>`;
             });
             popup += `</div></details>`;
@@ -432,26 +404,32 @@
           if (p.mapsLink)  popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
           if (p.appleLink) popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
 
-          const stroke = p.visited? '#DAA520':'#555';
+          const stroke = p.visited ? '#DAA520' : '#555';
           const svg = `<svg width="24" height="35" viewBox="0 0 24 35"
                          xmlns="http://www.w3.org/2000/svg">
                          <path fill="${categoryColors[p.category]}"
                                stroke="${stroke}" stroke-width="2"
-                               d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
+                               d="M12 0C7.03 0 3 4.03 3 9
+                                  c0 6.75 9 19.5 9 19.5
+                                  s9-12.75 9-19.5
+                                  c0-4.97-4.03-9-9-9
+                                  zm0 13.5a4.5 4.5 0 1 1 0-9
+                                  4.5 4.5 0 0 1 0 9z"/>
                        </svg>`;
           L.marker(p.latlng, {
             icon: L.divIcon({
               html: svg,
-              className:'leaflet-div-icon',
-              iconSize:[24,35],
-              iconAnchor:[12,35],
-              popupAnchor:[0,-35]
+              className: 'leaflet-div-icon',
+              iconSize: [24, 35],
+              iconAnchor: [12, 35],
+              popupAnchor: [0, -35]
             })
-          }).bindPopup(popup,{autoPan:true}).addTo(markerLayer);
+          })
+          .bindPopup(popup, { autoPan: true })
+          .addTo(markerLayer);
         });
       }
 
-      // Initial draw
       renderMarkers();
     }
   })();
