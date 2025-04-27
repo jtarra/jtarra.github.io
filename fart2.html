@@ -129,26 +129,21 @@
      *    DATA & CONFIG       *
      **************************/
     const CONFIG = {
-      sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74', // 📊 Google Sheets ID
-      apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',          // 🔑 API Key
-      ranges: ['Places!A:J','Reviews!A:E'],                    // 📑 Sheet ranges
-
-      mapCenter: [21.3069, -157.8583], // 🌍 Initial map center (lat, lng)
-      mapZoom: 11,                     // 🔎 Initial zoom level
+      sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+      apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
+      ranges: ['Places!A:J','Reviews!A:E'],
+      mapCenter: [21.3069, -157.8583],
+      mapZoom: 11,
       tileUrl: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
       attribution: '© Humanitarian OSM Team',
-
-      baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#DEFF8D'], // 🎨 Category colors
-      emojiList: ['🤙🏼','🏄🏼‍♂️','🌺','🍍','🥥','🐠','🦈','⛱️'],                 // 😊 Toggle emojis
+      baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#DEFF8D'],
+      emojiList: ['🤙🏼','🏄🏼‍♂️','🌺','🍍','🥥','🐠','🦈','⛱️'],
     };
 
     (function(){
-      /* Shuffle array in place */
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
-      /* Random HSL color */
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
 
-      // Fetch spreadsheet data
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
                 + `/values:batchGet?key=${CONFIG.apiKey}`
                 + CONFIG.ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
@@ -156,127 +151,36 @@
       fetch(url)
         .then(r=>r.ok?r.json():Promise.reject(r.statusText))
         .then(data=>{
-          // Parse Places
           const [hdrP,...rowsP] = data.valueRanges[0].values;
-          const places = rowsP.map(r=>{
-            const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||'']));
-            const [lat,lng]=o.Coordinates.split(',').map(Number);
-            return { id:o.PlaceID, name:o.Name, category:o.Category, subcategory:o.Subcategory,
-                     region:o.Region, notes:o.Notes,
-                     visited:o.Visited.trim().toUpperCase()==='Y', latlng:[lat,lng],
-                     mapsLink:o.MapsLink, appleLink:o.AppleMapsLink };
-          });
-          // Parse Reviews
+          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
-          const reviewsBy = {};
-          rowsR.forEach(r=>{
-            const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||'']));
-            const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean);
-            (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos});
-          });
-
+          const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           initMap(places,reviewsBy);
-        })
-        .catch(console.error);
+        }).catch(console.error);
 
-      /**************************
-       *    MAP INITIALIZER     *
-       **************************/
       function initMap(places,reviewsBy){
-        // Create map
         const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
         L.control.zoom({position:'topright'}).addTo(map);
         L.tileLayer(CONFIG.tileUrl,{attribution:CONFIG.attribution}).addTo(map);
-
-        // Prepare filters & layers
         const markerLayer=L.layerGroup().addTo(map);
-        const catMap={}, regSet=new Set();
-        places.forEach(p=>{ (catMap[p.category]||(catMap[p.category]=new Set())).add(p.subcategory); if(p.region) regSet.add(p.region); });
-
-        const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`));
-        const selReg=new Set(regSet); const selVis=new Set(['Been there','Not yet']);
-
-        // Assign colors to categories for pin icons
-        const basePool = CONFIG.baseColors.slice();
-        shuffle(basePool);
-        const categoryColors = {};
-        Object.keys(catMap).forEach(cat => {
-          categoryColors[cat] = basePool.length ? basePool.pop() : randomColor();
-        });
-
+        const catMap={},regSet=new Set(); places.forEach(p=>{ (catMap[p.category]||(catMap[p.category]=new Set())).add(p.subcategory); if(p.region) regSet.add(p.region); });
+        const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)); const selReg=new Set(regSet); const selVis=new Set(['Been there','Not yet']);
+        const basePool=CONFIG.baseColors.slice(); shuffle(basePool);
+        const categoryColors={}; Object.keys(catMap).forEach(cat=>{ categoryColors[cat]=basePool.length?basePool.pop():randomColor(); });
         setupFilters(Object.keys(catMap),regSet,catMap);
         drawMarkers();
-
-        /* Build filter UI */
         function setupFilters(categories,regions,catMap){
-          const filtersDiv=document.getElementById('filters');
-          document.getElementById('toggleFilters').onclick=()=>{
-            const ex=filtersDiv.classList.toggle('expanded');
-            document.getElementById('toggleFilters').textContent=ex?'Hide Filters':'Show Filters';
-          };
-
-          function makeCB(val,setRef,label){
-            const lbl=document.createElement('label');
-            const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true;
-            cb.dataset.emoji = CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
-            cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); };
-            lbl.append(cb,' ',label); return lbl;
-          }
-
-          function addPanel(title,items,isRegion=false,master=false){
-            const p=document.createElement('div'); p.className='panel';
-            const h=document.createElement('div'); h.className='panel-header';
-            if(!master){
-              const m=document.createElement('input'); m.type='checkbox'; m.checked=true;
-              m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
-              m.onclick=e=>e.stopPropagation();
-              m.onchange=()=>{
-                p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }});
-                drawMarkers();
-              };
-              h.append(m);
-            }
-            h.append(document.createTextNode(title));
-            if(!isRegion&&title!=='Visited'){const sw=document.createElement('div');sw.className='color-swatch';sw.style.background=CONFIG.baseColors[categories.indexOf(title)]||randomColor();h.append(sw);}            
-            const arr=document.createElement('span');arr.className='arrow';arr.textContent='▶';h.append(arr);
-
-            const b=document.createElement('div'); b.className='panel-body';
-            items.forEach(it=>b.append(makeCB(isRegion?it:`${title} - ${it}`,isRegion?selReg:selSub,it)));
-            h.onclick=()=>{const o=b.classList.toggle('active');arr.textContent=o?'▼':'▶';};
-
-            p.append(h,b); filtersDiv.append(p);
-          }
-
+          const fd=document.getElementById('filters');
+          document.getElementById('toggleFilters').onclick=()=>{ const ex=fd.classList.toggle('expanded'); document.getElementById('toggleFilters').textContent=ex?'Hide Filters':'Show Filters'; };
+          function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
+          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; items.forEach(it=>b.append(makeCB(isRegion?it:`${title} - ${it}`, isRegion?selReg:selSub, it))); h.onclick=()=>{ const o=b.classList.toggle('active'); arr.textContent=o?'▼':'▶'; }; p.append(h,b); fd.append(p); }
           if(regions.size) addPanel('Region',[...regions].sort(),true);
           addPanel('Visited',['Been there','Not yet'],false,true);
-          categories.sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
+          if(categories.includes('Food')) addPanel('Food',[...catMap['Food']].sort(),false);
+          if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
+          categories.filter(c=>c!=='Food'&&c!=='Sweet Treats').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
         }
-
-        /* Render markers based on filters */
-        function drawMarkers(){
-          markerLayer.clearLayers();
-          places.forEach(p=>{
-            if(!selVis.has(p.visited?'Been there':'Not yet')) return;
-            if(!selSub.has(`${p.category} - ${p.subcategory}`)) return;
-            if(p.region&&!selReg.has(p.region)) return;
-
-            let popup=`<strong>${p.name}</strong><br>`+(p.notes?`${p.notes}<br>`:'')
-                     +`<em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`;
-            const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
-            if(revs.length){popup+= '★'.repeat(revs[0].rating)+ '<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">';
-              revs.forEach(r=>{popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`);popup+='</div>';});popup+='</div></details>';}            
-            if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-            if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
-
-                        // create colored pin icon
-            const strokeColor = p.visited ? '#DAA520' : '#555';
-            const svgIcon = `<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg">
-                <path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
-              </svg>`;
-            L.marker(p.latlng, { icon: L.divIcon({ html: svgIcon, className: 'leaflet-div-icon', iconSize: [24,35], iconAnchor: [12,35], popupAnchor: [0,-35] }) })
-              .bindPopup(popup,{autoPan:true}).addTo(markerLayer);
-          });
-        }
+        function drawMarkers(){ markerLayer.clearLayers(); places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; let popup=`<strong>${p.name}</strong><br>${p.notes||''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerLayer); }); }
       }
     })();
   </script>
