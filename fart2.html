@@ -189,16 +189,14 @@
 
         L.marker([latitude, longitude], { icon: userIcon })
           .addTo(map)
-          setTimeout(() => {
-            map.invalidateSize(); 
-            setTimeout(() => {
-              map.invalidateSize(); 
-              map.flyTo(
-              [latitude, longitude],
-              map.getZoom() + 1,
-              { animate: true, duration: 1 }
-              );
-            }, 200);
+         setTimeout(() => {
+  map.invalidateSize();  // force reflow on Mobile Safari
+  map.flyTo(
+    [latitude, longitude],
+    map.getZoom() + 1,    // zoom in one level
+    { animate: true, duration: 1 }
+  );
+}, 200);
           .bindPopup('You are here.')
           .openPopup();
       };
