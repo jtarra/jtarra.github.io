@@ -76,7 +76,7 @@
     }
 
     /* ============================= */
-    /*       Panel & Checkboxes      */
+    /*       Panel & Checkboxes     */
     /* ============================= */
     .panel { margin: 8px; }
     .panel-header {
@@ -114,6 +114,7 @@
       line-height: 18px;
       pointer-events: none;
     }
+    .panel-header .arrow { margin-left: 8px; font-weight: bold; }
 
     /* ============================= */
     /*    Panel Body & Labels       */
@@ -202,7 +203,7 @@
     attribution: '© Humanitarian OSM Team',
 
     /* Category color pool */
-    baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#003049','#db504a','#deff8d'],
+    baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#deff8d'],
 
     /* Checkbox emojis */
     emojiList:  ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈',
@@ -211,7 +212,7 @@
   };
 
   (function(){
-    /* Utility: shuffle array */
+    // Utility: shuffle array
     function shuffle(arr) {
       let m = arr.length;
       while (m) {
@@ -220,18 +221,18 @@
       }
       return arr;
     }
-    /* Utility: random fallback color */
+    // Utility: random fallback color
     function randomColor() {
       const h = Math.floor(Math.random() * 360);
       return `hsl(${h},60%,50%)`;
     }
 
-    /* Build Google Sheets API URL */
+    // Build Google Sheets API URL
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}` +
                 `/values:batchGet?key=${CONFIG.apiKey}` +
                 CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
 
-    /* Fetch data */
+    // Fetch data
     fetch(url)
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data => {
@@ -346,8 +347,8 @@
 
         // Master toggle checkbox
         if (!toggleOnly) {
-          const lab = document.createElement('label');
-          const master = document.createElement('input');
+          const lab    = document.createElement('label');
+          const master= document.createElement('input');
           master.type    = 'checkbox';
           master.checked = true;
           master.dataset.emoji = CONFIG.emojiList[
@@ -359,9 +360,9 @@
             panel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
               if (cb !== master) {
                 cb.checked = all;
-                const key = cb.value;
-                if (isRegion) all? selReg.add(key): selReg.delete(key);
-                else          all? selSub.add(key): selSub.delete(key);
+                const k = cb.value;
+                if (isRegion) all? selReg.add(k) : selReg.delete(k);
+                else          all? selSub.add(k) : selSub.delete(k);
               }
             });
             renderMarkers();
@@ -384,8 +385,12 @@
 
         const body = document.createElement('div'); body.className = 'panel-body';
         items.forEach(item => {
-          const full = isRegion ? item : title==='Visited?' ? item : `${title} - ${item}`;
-          const ref  = isRegion ? selReg : title==='Visited?' ? selVis : selSub;
+          const full = isRegion ? item
+                     : title === 'Visited?'   ? item
+                     : `${title} - ${item}`;
+          const ref  = isRegion ? selReg
+                     : title === 'Visited?' ? selVis
+                     : selSub;
           body.append(makeCheckbox(full, ref, item));
         });
 
@@ -401,7 +406,7 @@
       // Build panels
       if (regions.size) addPanel('Region', [...regions].sort(), true);
       addPanel('Visited?', ['Been there','Not yet'], false, true);
-      if (catMap['Food']) addPanel('Food', [...catMap['Food']].sort());
+      if (catMap['Food'])         addPanel('Food', [...catMap['Food']].sort());
       if (catMap['Sweet Treats']) addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort());
       Object.keys(catMap)
         .filter(c => !['Food','Sweet Treats'].includes(c))
@@ -427,7 +432,7 @@
                       (p.region ? ` / ${p.region}` : '') +
                       `</em><br>`;
 
-          const revs = (reviewsBy[p.id]||[]).slice()
+          const revs = (reviewsBy[p.id] || []).slice()
                          .sort((a,b)=>b.date.localeCompare(a.date));
           if (revs.length) {
             popup += '★'.repeat(revs[0].rating) + '<br>' +
