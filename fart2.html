@@ -179,9 +179,9 @@
 
         const userIcon = L.icon({
           iconUrl:     CONFIG.userIconUrl,
-          iconSize:    [w, h],
-          iconAnchor:  [w / 2, h],
-          popupAnchor: [0, -h]
+          iconSize:    [w/2, h/2],
+          iconAnchor:  [w / 4, h],
+          popupAnchor: [0, -h/2]
         });
 
         L.marker([latitude, longitude], { icon: userIcon })
