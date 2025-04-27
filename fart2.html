@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <meta charset="utf-8" />
   <title>Oahu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,15 +17,6 @@
     rel="stylesheet" />
 
   <style>
-    .leaflet-control-attribution {
-  z-index: 1000;
-}
-    html, body {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-    .leaflet-control-attribution {
-  bottom: calc(6px + env(safe-area-inset-bottom)) !important;
-}
     /**************************
      *  CONFIGURATION SECTION *
      **************************/
@@ -119,6 +109,9 @@
     .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
     .review-item strong { display: block; margin-bottom: 4px; }
     .review-item p { margin: 0 0 4px; }
+    .leaflet-control-attribution {
+  bottom: 20px !important;
+}
   </style>
 </head>
 <body>
@@ -171,8 +164,6 @@
 
       function initMap(places,reviewsBy){
         const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
-        map.invalidateSize();
-        window.addEventListener('resize', () => map.invalidateSize());
         map.attributionControl.setPrefix(''); 
         L.control.zoom({position:'topright'}).addTo(map);
         L.tileLayer(CONFIG.tileUrl,{attribution:CONFIG.attribution}).addTo(map);
@@ -198,7 +189,10 @@
 
         L.marker([latitude, longitude], { icon: userIcon })
           .addTo(map)
-          map.flyTo([latitude, longitude], map.getZoom() + 1, { animate:true, duration:1 })
+          setTimeout(() => {
+            map.invalidateSize(); 
+            map.flyTo([latitude, longitude],map.getZoom() + 1,{ animate: true, duration: 1 });
+            }, 200);
           .bindPopup('You are here.')
           .openPopup();
       };
