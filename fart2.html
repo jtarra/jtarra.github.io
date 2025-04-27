@@ -11,7 +11,7 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin=""/>
 
-  <!-- Fallback Google Font -->
+  <!-- Fallback Font from Google (optional) -->
   <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
         rel="stylesheet"/>
 
@@ -102,11 +102,9 @@
       position: relative;
       cursor: pointer;
     }
-    /* hide border when checked */
     input[type="checkbox"]:checked {
       border: none;
     }
-    /* display emoji when checked */
     input[type="checkbox"]:checked::after {
       content: attr(data-emoji);
       position: absolute;
@@ -176,26 +174,44 @@
 
   <script>
   /*
-   * =============================
-   *    Configuration Section     
-   *  (Customize these values for  
-   *   new maps/locations)
-   * =============================
+   * ====================================================================
+   * CONFIGURATION - Only change these values for a new map/location:
+   * --------------------------------------------------------------------
+   * sheetId     : your Google Sheet ID
+   * apiKey      : your Google API key with Sheets access
+   * ranges      : which sheets/ranges to load (Places!A:J, Reviews!A:E, etc)
+   * mapCenter   : [latitude, longitude]
+   * mapZoom     : initial zoom level
+   * tileUrl     : URL template for your tile layer
+   * attribution : tile layer attribution text
+   * baseColors  : array of hex strings for category colors (no repeats)
+   * emojiList   : array of emojis for random checkbox icons
+   * ====================================================================
    */
   const CONFIG = {
-    sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
-    apiKey:  'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
-    ranges:  ['Places!A:J', 'Reviews!A:E'],
-    mapCenter: [21.3069, -157.8583],
-    mapZoom:   11,
-    tileUrl:    'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    sheetId:    '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+    apiKey:     'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
+    ranges:     ['Places!A:J', 'Reviews!A:E'],
+
+    /* Map viewport settings */
+    mapCenter:  [21.3069, -157.8583],
+    mapZoom:    11,
+
+    /* Tile layer settings */
+    tileUrl:     'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
     attribution: '© Humanitarian OSM Team',
+
+    /* Category color pool */
     baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#003049','#db504a','#deff8d'],
-    emojiList: ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️','⛵','⚓']
+
+    /* Checkbox emojis */
+    emojiList:  ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈',
+                 '🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋',
+                 '🏝️','🛵','👙','🌴','⛱️','⛵','⚓']
   };
 
   (function(){
-    // Utility
+    /* Utility: shuffle array */
     function shuffle(arr) {
       let m = arr.length;
       while (m) {
@@ -204,19 +220,22 @@
       }
       return arr;
     }
+    /* Utility: random fallback color */
     function randomColor() {
       const h = Math.floor(Math.random() * 360);
       return `hsl(${h},60%,50%)`;
     }
 
-    // Fetch data
+    /* Build Google Sheets API URL */
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}` +
                 `/values:batchGet?key=${CONFIG.apiKey}` +
                 CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
 
+    /* Fetch data */
     fetch(url)
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data => {
+        // Parse 'Places' sheet
         const [hdrP, ...rowsP] = data.valueRanges[0].values;
         const places = rowsP.map(r => {
           const o = Object.fromEntries(hdrP.map((h,i) => [h, r[i]||'']));
@@ -234,6 +253,7 @@
             appleLink: o.AppleMapsLink
           };
         });
+        // Parse 'Reviews' sheet
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy = {};
         rowsR.forEach(r => {
@@ -246,49 +266,62 @@
             photos
           });
         });
+        // Initialize the map now that data is ready
         initializeMap(places, reviewsBy);
       })
       .catch(console.error);
 
-    // Initialize
+    /**
+     * initializeMap
+     * @param {Array} places       - array of place objects
+     * @param {Object} reviewsBy   - map from PlaceID to review array
+     */
     function initializeMap(places, reviewsBy) {
+      // Create Leaflet map
       const map = L.map('map', { zoomControl: false })
                    .setView(CONFIG.mapCenter, CONFIG.mapZoom);
       L.control.zoom({ position: 'topright' }).addTo(map);
       L.tileLayer(CONFIG.tileUrl, { attribution: CONFIG.attribution }).addTo(map);
       const markerLayer = L.layerGroup().addTo(map);
 
-      // Categories & regions
+      // Build category→subcategories map & region set
       const catMap = {}, regions = new Set();
       places.forEach(p => {
         (catMap[p.category] ||= new Set()).add(p.subcategory);
         if (p.region) regions.add(p.region);
       });
-      const pool = shuffle(CONFIG.baseColors.slice()), categoryColors = {};
+      // Assign unique colors to categories
+      const colorPool = shuffle(CONFIG.baseColors.slice());
+      const categoryColors = {};
       Object.keys(catMap).forEach(cat => {
-        categoryColors[cat] = pool.length ? pool.pop() : randomColor();
+        categoryColors[cat] = colorPool.length ? colorPool.pop() : randomColor();
       });
 
-      // Filter state
+      // Filter state sets
       const selSub = new Set(places.map(p => `${p.category} - ${p.subcategory}`));
       const selReg = new Set(regions);
       const selVis = new Set(['Been there','Not yet']);
 
-      // UI refs
+      // DOM references
       const filtersDiv = document.getElementById('filters');
       const toggleBtn  = document.getElementById('toggleFilters');
       toggleBtn.addEventListener('click', () => {
-        const e = filtersDiv.classList.toggle('expanded');
-        toggleBtn.textContent = e ? 'Hide Filters' : 'Show Filters';
+        const exp = filtersDiv.classList.toggle('expanded');
+        toggleBtn.textContent = exp ? 'Hide Filters' : 'Show Filters';
       });
 
-      // Checkbox helper
+      /**
+       * makeCheckbox
+       * Creates a <label><input type="checkbox" ...> LabelText</label>
+       * assigns a random emoji via data-emoji
+       */
       function makeCheckbox(val, setRef, labelText) {
         const label = document.createElement('label');
         const cb    = document.createElement('input');
-        cb.type    = 'checkbox';
-        cb.value   = val;
-        cb.checked = true;
+        cb.type       = 'checkbox';
+        cb.value      = val;
+        cb.checked    = true;
+        // Random emoji icon for this checkbox
         cb.dataset.emoji = CONFIG.emojiList[
           Math.floor(Math.random() * CONFIG.emojiList.length)
         ];
@@ -300,33 +333,40 @@
         return label;
       }
 
-      // Panel builder
+      /**
+       * addPanel
+       * @param {string} title       - panel title
+       * @param {Array} items        - labels inside
+       * @param {boolean} isRegion   - treat items as regions
+       * @param {boolean} toggleOnly - no master checkbox if true
+       */
       function addPanel(title, items, isRegion=false, toggleOnly=false) {
         const panel = document.createElement('div'); panel.className = 'panel';
         const head  = document.createElement('div'); head.className = 'panel-header';
 
+        // Master toggle checkbox
         if (!toggleOnly) {
           const lab = document.createElement('label');
-          const m   = document.createElement('input');
-          m.type       = 'checkbox';
-          m.checked    = true;
-          m.dataset.emoji = CONFIG.emojiList[
+          const master = document.createElement('input');
+          master.type    = 'checkbox';
+          master.checked = true;
+          master.dataset.emoji = CONFIG.emojiList[
             Math.floor(Math.random() * CONFIG.emojiList.length)
           ];
-          m.addEventListener('click', e => e.stopPropagation());
-          m.addEventListener('change', () => {
-            const all = m.checked;
+          master.addEventListener('click', e => e.stopPropagation());
+          master.addEventListener('change', () => {
+            const all = master.checked;
             panel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-              if (cb !== m) {
+              if (cb !== master) {
                 cb.checked = all;
-                const k = cb.value;
-                if (isRegion) all? selReg.add(k): selReg.delete(k);
-                else          all? selSub.add(k): selSub.delete(k);
+                const key = cb.value;
+                if (isRegion) all? selReg.add(key): selReg.delete(key);
+                else          all? selSub.add(key): selSub.delete(key);
               }
             });
             renderMarkers();
           });
-          lab.append(m);
+          lab.append(master);
           head.append(lab);
         }
 
@@ -337,26 +377,21 @@
           sw.style.background = categoryColors[title];
           head.append(sw);
         }
-        const arrow = document.createElement('span');
-        arrow.className = 'arrow';
-        arrow.textContent = '▶';
-        head.append(arrow);
+        const arr = document.createElement('span');
+        arr.className = 'arrow';
+        arr.textContent = '▶';
+        head.append(arr);
 
-        const body = document.createElement('div');
-        body.className = 'panel-body';
+        const body = document.createElement('div'); body.className = 'panel-body';
         items.forEach(item => {
-          const full = isRegion
-            ? item
-            : title === 'Visited?'
-              ? item
-              : `${title} - ${item}`;
-          const ref = isRegion ? selReg : title === 'Visited?' ? selVis : selSub;
+          const full = isRegion ? item : title==='Visited?' ? item : `${title} - ${item}`;
+          const ref  = isRegion ? selReg : title==='Visited?' ? selVis : selSub;
           body.append(makeCheckbox(full, ref, item));
         });
 
         head.addEventListener('click', () => {
           const open = body.classList.toggle('active');
-          arrow.textContent = open ? '▼' : '▶';
+          arr.textContent = open ? '▼' : '▶';
         });
 
         panel.append(head, body);
@@ -373,22 +408,27 @@
         .sort()
         .forEach(c => addPanel(c, [...catMap[c]].sort()));
 
-      // Render markers
+      /**
+       * renderMarkers
+       * Clears and re-adds markers based on the filter state.
+       */
       function renderMarkers() {
         markerLayer.clearLayers();
         places.forEach(p => {
+          // Visibility checks
           if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
           if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
           if (p.region && !selReg.has(p.region)) return;
 
+          // Build popup content
           let popup = `<strong>${p.name}</strong><br>` +
                       (p.notes ? `${p.notes}<br>` : '') +
                       `<em>${p.category} – ${p.subcategory}` +
                       (p.region ? ` / ${p.region}` : '') +
                       `</em><br>`;
 
-          const revs = (reviewsBy[p.id] || []).slice()
-                         .sort((a,b) => b.date.localeCompare(a.date));
+          const revs = (reviewsBy[p.id]||[]).slice()
+                         .sort((a,b)=>b.date.localeCompare(a.date));
           if (revs.length) {
             popup += '★'.repeat(revs[0].rating) + '<br>' +
                      `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>` +
@@ -404,32 +444,29 @@
           if (p.mapsLink)  popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
           if (p.appleLink) popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
 
+          // Custom SVG icon
           const stroke = p.visited ? '#DAA520' : '#555';
-          const svg = `<svg width="24" height="35" viewBox="0 0 24 35"
-                         xmlns="http://www.w3.org/2000/svg">
-                         <path fill="${categoryColors[p.category]}"
-                               stroke="${stroke}" stroke-width="2"
-                               d="M12 0C7.03 0 3 4.03 3 9
-                                  c0 6.75 9 19.5 9 19.5
-                                  s9-12.75 9-19.5
-                                  c0-4.97-4.03-9-9-9
-                                  zm0 13.5a4.5 4.5 0 1 1 0-9
-                                  4.5 4.5 0 0 1 0 9z"/>
-                       </svg>`;
+          const svg = `<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg">` +
+                      `<path fill="${categoryColors[p.category]}" stroke="${stroke}" stroke-width="2"` +
+                      ` d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9` +
+                      `zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>` +
+                      `</svg>`;
+
           L.marker(p.latlng, {
             icon: L.divIcon({
               html: svg,
               className: 'leaflet-div-icon',
-              iconSize: [24, 35],
-              iconAnchor: [12, 35],
-              popupAnchor: [0, -35]
+              iconSize: [24,35],
+              iconAnchor: [12,35],
+              popupAnchor: [0,-35]
             })
           })
-          .bindPopup(popup, { autoPan: true })
+          .bindPopup(popup,{autoPan:true})
           .addTo(markerLayer);
         });
       }
 
+      // Initial draw
       renderMarkers();
     }
   })();
