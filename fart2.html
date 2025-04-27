@@ -187,18 +187,20 @@
           popupAnchor: [0, -h]
         });
 
-        L.marker([latitude, longitude], { icon: userIcon })
-          .addTo(map)
-         setTimeout(() => {
-  map.invalidateSize();  // force reflow on Mobile Safari
+        const userMarker = L.marker([latitude, longitude], { icon: userIcon })
+  .addTo(map)
+  .bindPopup('You are here.')
+  .openPopup();
+
+// Delay + invalidateSize + flyTo as its own statement:
+setTimeout(() => {
+  map.invalidateSize();  // force a layout refresh
   map.flyTo(
     [latitude, longitude],
     map.getZoom() + 1,    // zoom in one level
     { animate: true, duration: 1 }
   );
 }, 200);
-          .bindPopup('You are here.')
-          .openPopup();
       };
     }, err => {
       console.warn('Geolocation failed:', err.message);
