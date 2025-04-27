@@ -17,6 +17,9 @@
     rel="stylesheet" />
 
   <style>
+    .leaflet-control-attribution {
+  z-index: 1000;
+}
     /**************************
      *  CONFIGURATION SECTION *
      **************************/
@@ -161,6 +164,8 @@
 
       function initMap(places,reviewsBy){
         const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
+        map.invalidateSize();
+        window.addEventListener('resize', () => map.invalidateSize());
         map.attributionControl.setPrefix(''); 
         L.control.zoom({position:'topright'}).addTo(map);
         L.tileLayer(CONFIG.tileUrl,{attribution:CONFIG.attribution}).addTo(map);
