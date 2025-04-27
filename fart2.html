@@ -1,18 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Oahu</title>
+  <title>Oahu Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <!-- Google Font: Rock Salt (fallback) -->
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha512-somehash"
+    crossorigin=""/>
+
+  <!-- Fallback Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
         rel="stylesheet"/>
+
   <style>
-    /*— Custom Fonts —*/
+    /* ============================= */
+    /*        Custom Fonts          */
+    /* ============================= */
     @font-face {
       font-family: 'Bardy';
       src: url('/MapResources/fonts/Bardy.woff') format('woff');
@@ -22,147 +29,235 @@
       src: url('/MapResources/fonts/Dorgan.woff') format('woff');
     }
 
-    /*— Base & Leaflet Overrides —*/
-    body, html { margin:0; height:100%; font-family:sans-serif; }
-    #map { height:100%; }
+    /* ============================= */
+    /*   Base & Leaflet Overrides   */
+    /* ============================= */
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: sans-serif;
+    }
+    #map { height: 100%; }
     .leaflet-div-icon {
-      background:transparent!important;
-      border:none!important;
+      background: transparent !important;
+      border: none !important;
     }
 
-    /*— Filters Panel —*/
+    /* ============================= */
+    /*        Filters Panel         */
+    /* ============================= */
     .filters {
-      position:absolute; top:10px; left:10px; z-index:1000;
-      background:rgba(255,249,230,0.95); border-radius:8px;
-      overflow:hidden; max-height:40px; width:auto;
-      transition:max-height .3s, width .3s;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(255, 249, 230, 0.95);
+      border-radius: 8px;
+      overflow: hidden;
+      max-height: 40px;
+      width: auto;
+      transition: max-height .3s, width .3s;
     }
     .filters.expanded {
-      max-height:calc(100vh - 20px);
-      width:280px; overflow-y:auto;
+      max-height: calc(100vh - 20px);
+      width: 280px;
+      overflow-y: auto;
     }
 
-    /*— Toggle Button —*/
+    /* Toggle button style */
     #toggleFilters {
-      display:block; width:100%; padding:8px;
-      background:#E7D8C4; border:none; border-bottom:1px solid #ddd;
-      font-family:'Dorgan',cursive; cursor:pointer;
-    }
-
-    /*— Panels & Headers —*/
-    .panel { margin:8px; }
-    .panel-header {
-      display:flex; align-items:center; padding:6px 8px;
-      background:#E7D8C4; border-radius:6px;
-      cursor:pointer; font-family:'Bardy',cursive;
-      font-size:1.6em;
-      color: #e3b505;
-      text-shadow: -2px 2px 0 #db504a;
-    }
-    .panel-header input[type="checkbox"] {
-      -webkit-appearance:none; appearance:none;
-      width:18px; height:18px;
-      margin-right:12px;
-      border:2px solid #D0B59A;
-      border-radius:3px;
-      position:relative; cursor:pointer;
-    }
-    /* hide box border when checked */
-    .panel-header input[type="checkbox"]:checked,
-    .panel-body input[type="checkbox"]:checked {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      background: #E7D8C4;             /* easy-to-change color */
       border: none;
+      border-bottom: 1px solid #ddd;
+      font-family: 'Dorgan', cursive;
+      cursor: pointer;
     }
-    /* show random emoji */
-    .panel-header input[type="checkbox"]:checked::after,
-    .panel-body input[type="checkbox"]:checked::after {
-      content: attr(data-emoji);
-      position:absolute; top:-2px; left:-5px;
-      font-size:22px; line-height:18px;
-      pointer-events:none;
-    }
-    .panel-header .color-swatch {
-      margin-left:auto; width:14px; height:14px;
-      border-radius:50%; border:1px solid #999;
-    }
-    .panel-header .arrow { margin-left:8px; font-weight:bold; }
 
-    /*— Panel Bodies & Sub-checkboxes —*/
-    .panel-body {
-      display:none; padding:8px 12px; background:#FAF1D2;
-      border-radius:6px;
+    /* ============================= */
+    /*       Panel & Checkboxes      */
+    /* ============================= */
+    .panel { margin: 8px; }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      padding: 6px 8px;
+      background: #E7D8C4;            /* header bg color */
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Bardy', cursive;
+      font-size: 1.6em;
+      color: #e3b505;                  /* header text color */
+      text-shadow: 2px 2px 0 #db504a; /* header shadow */
     }
-    .panel-body.active { display:block; }
-    .panel-body label {
-      display:block; margin-bottom:6px;
-      font-family:'Dorgan',sans-serif;
-      font-size:1.1em; position:relative;
-    }
+    .panel-header input[type="checkbox"],
     .panel-body input[type="checkbox"] {
-      -webkit-appearance:none; appearance:none;
-      width:18px; height:18px;
-      margin-right:8px;
-      border:2px solid #D0B59A;
-      border-radius:3px;
-      position:relative; cursor:pointer;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      margin-right: 12px;
+      border: 2px solid #D0B59A;     /* checkbox border color */
+      border-radius: 3px;
+      position: relative;
+      cursor: pointer;
+    }
+    /* hide border when checked */
+    input[type="checkbox"]:checked { border: none; }
+    /* display emoji when checked */
+    input[type="checkbox"]:checked::after {
+      content: attr(data-emoji);
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      font-size: 22px;
+      line-height: 18px;
+      pointer-events: none;
     }
 
-    /*— Popups —*/
+    /* ============================= */
+    /*    Panel Body & Labels       */
+    /* ============================= */
+    .panel-body {
+      display: none;
+      padding: 8px 12px;
+      background: #FAF1D2;            /* body bg color */
+      border-radius: 6px;
+    }
+    .panel-body.active { display: block; }
+    .panel-body label {
+      display: block;
+      margin-bottom: 6px;
+      font-family: 'Dorgan', sans-serif;
+      font-size: 1.1em;
+      position: relative;
+    }
+
+    /* ============================= */
+    /*         Popups Styles        */
+    /* ============================= */
     .leaflet-popup-content-wrapper {
-      max-height:80vh; overflow:auto;
-      font-family:'Dorgan',sans-serif;
+      max-height: 80vh;
+      overflow: auto;
+      font-family: 'Dorgan', sans-serif;
     }
     .review-carousel {
-      display:flex; overflow-x:auto; gap:8px; padding:6px 0;
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      padding: 6px 0;
     }
     .review-item {
-      flex:0 0 180px; background:#fff; border:1px solid #ddd;
-      padding:6px; border-radius:4px; box-sizing:border-box;
+      flex: 0 0 180px;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 6px;
+      border-radius: 4px;
+      box-sizing: border-box;
     }
-    .review-item a { display:block; margin-top:4px; font-size:0.9em; }
-    .review-item strong { display:block; margin-bottom:4px; }
-    .review-item p { margin:0 0 4px; }
+    .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
+    .review-item strong { display: block; margin-bottom: 4px; }
+    .review-item p { margin: 0 0 4px; }
   </style>
 </head>
 <body>
+  <!-- Filter toggle and container -->
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
   </div>
+  <!-- Main map element -->
   <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha512-anotherhash"
+          crossorigin=""></script>
+
   <script>
+  /*
+   * =============================
+   *    Configuration Section     
+   *  (Customize these values for  
+   *   new maps/locations)
+   * =============================
+   */
+  const CONFIG = {
+    // Google Sheets settings
+    sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+    apiKey:  'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
+    ranges:  ['Places!A:J', 'Reviews!A:E'],
+
+    // Map initial view [lat, lng] and zoom level
+    mapCenter: [21.3069, -157.8583],
+    mapZoom:   11,
+
+    // Tile layer URL & attribution
+    tileUrl:    'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    attribution: '© Humanitarian OSM Team',
+
+    // Category colors (hex array, no repeats)
+    baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#003049','#db504a','#deff8d'],
+
+    // Emoji options for checkboxes
+    emojiList: [
+      '🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈',
+      '🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋',
+      '🏝️','🛵','👙','🌴','⛱️','⛵','⚓'
+    ]
+  };
+
   (function(){
-    const sheetId = '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74';
-    const apiKey  = 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw';
-    const ranges  = ['Places!A:J','Reviews!A:E'];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?key=${apiKey}`
-                + ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
+    /*****************************************/
+    /*  Utility Functions: shuffle & random  */
+    /*****************************************/
+    function shuffle(arr) {
+      let m = arr.length;
+      while (m) {
+        const i = Math.floor(Math.random() * m--);
+        [arr[m], arr[i]] = [arr[i], arr[m]];
+      }
+      return arr;
+    }
+    function randomColor() {
+      const h = Math.floor(Math.random() * 360);
+      return `hsl(${h},60%,50%)`;
+    }
+
+    /*******************************/
+    /*  Fetch & Parse Sheet Data   */
+    /*******************************/
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}` +
+                `/values:batchGet?key=${CONFIG.apiKey}` +
+                CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
 
     fetch(url)
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data => {
+        // Parse places
         const [hdrP, ...rowsP] = data.valueRanges[0].values;
         const places = rowsP.map(r => {
           const o = Object.fromEntries(hdrP.map((h,i) => [h, r[i]||'']));
-          const [lat,lng] = o.Coordinates.split(',').map(Number);
+          const [lat, lng] = o.Coordinates.split(',').map(Number);
           return {
-            id:          o.PlaceID,
-            name:        o.Name,
-            category:    o.Category,
+            id:        o.PlaceID,
+            name:      o.Name,
+            category:  o.Category,
             subcategory: o.Subcategory,
-            region:      o.Region,
-            notes:       o.Notes,
-            visited:     o.Visited.trim().toUpperCase() === 'Y',
-            latlng:      [lat,lng],
-            mapsLink:    o.MapsLink,
-            appleLink:   o.AppleMapsLink
+            region:    o.Region,
+            notes:     o.Notes,
+            visited:   o.Visited.trim().toUpperCase() === 'Y',
+            latlng:    [lat, lng],
+            mapsLink:  o.MapsLink,
+            appleLink: o.AppleMapsLink
           };
         });
 
+        // Parse reviews
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy = {};
         rowsR.forEach(r => {
-          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));  
+          const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));
           const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean);
           (reviewsBy[o.PlaceID] ||= []).push({
             date:   o.VisitDate,
@@ -172,171 +267,163 @@
           });
         });
 
-        initialize(places, reviewsBy);
+        // Kick off map initialization
+        initializeMap(places, reviewsBy);
       })
       .catch(console.error);
 
-    function shuffle(arr) {
-      let m = arr.length;
-      while (m) {
-        const i = Math.floor(Math.random() * m--);
-        [arr[m], arr[i]] = [arr[i], arr[m]];
-      }
-      return arr;
-    }
-
-    function randomColor() {
-      const h = Math.floor(Math.random() * 360);
-      return `hsl(${h},60%,50%)`;
-    }
-
-    // Emoji list
-    const emojiList = ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️','👩🏻‍❤️‍💋‍👨🏼','🦚','🐡','🐚','🦀','🦐','🦑','🐢','🐬','🦎','🌞','🌈','🌊','🍹','🧋','⛵','⚓'];
-
-    function initialize(places, reviewsBy) {
-      // Map setup
-      const map = L.map('map', { zoomControl: false }).setView([21.3069, -157.8583], 11);
+    /*********************************/
+    /*  Main: initializeMap          */
+    /*********************************/
+    function initializeMap(places, reviewsBy) {
+      // Create map
+      const map = L.map('map', { zoomControl: false })
+                   .setView(CONFIG.mapCenter, CONFIG.mapZoom);
       L.control.zoom({ position: 'topright' }).addTo(map);
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        attribution: '© Humanitarian OSM Team'
-      }).addTo(map);
+      L.tileLayer(CONFIG.tileUrl, { attribution: CONFIG.attribution }).addTo(map);
       const markerLayer = L.layerGroup().addTo(map);
 
-      // Build category & region sets
+      // Build categories & region sets
       const catMap = {}, regions = new Set();
       places.forEach(p => {
         (catMap[p.category] ||= new Set()).add(p.subcategory);
         if (p.region) regions.add(p.region);
       });
-      const categories = Object.keys(catMap);
 
-      // Assign category colors
-      const baseColors = ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#deff8d'];
-      let pool = shuffle(baseColors.slice());
+      // Assign unique colors to categories
+      const pool = shuffle(CONFIG.baseColors.slice());
       const categoryColors = {};
-      categories.forEach(cat => {
+      Object.keys(catMap).forEach(cat => {
         categoryColors[cat] = pool.length ? pool.pop() : randomColor();
       });
 
-      // Filter state
+      // Filter state containers
       const selSub = new Set(places.map(p => `${p.category} - ${p.subcategory}`));
       const selReg = new Set(regions);
-      const selVis = new Set(['Been there', 'Not yet']);
+      const selVis = new Set(['Been there','Not yet']);
 
-      // DOM refs
+      // UI references
       const filtersDiv = document.getElementById('filters');
       const toggleBtn  = document.getElementById('toggleFilters');
       toggleBtn.addEventListener('click', () => {
-        filtersDiv.classList.toggle('expanded');
-        toggleBtn.textContent = filtersDiv.classList.contains('expanded')
-                              ? 'Hide Filters'
-                              : 'Show Filters';
+        const exp = filtersDiv.classList.toggle('expanded');
+        toggleBtn.textContent = exp ? 'Hide Filters' : 'Show Filters';
       });
 
-      function makeCheckbox(value, setRef, labelText) {
+      /*=======================================================*/
+      /*  Helper: create a labeled checkbox with random emoji  */
+      /*=======================================================*/
+      function makeCheckbox(val, setRef, labelText) {
         const label = document.createElement('label');
         const cb    = document.createElement('input');
-        cb.type       = 'checkbox';
-        cb.value      = value;
-        cb.checked    = true;
-        // assign random emoji
-        cb.dataset.emoji = emojiList[Math.floor(Math.random() * emojiList.length)];
+        cb.type    = 'checkbox';
+        cb.value   = val;
+        cb.checked = true;
+        cb.dataset.emoji = CONFIG.emojiList[
+          Math.floor(Math.random() * CONFIG.emojiList.length)
+        ];
         cb.addEventListener('change', () => {
-          cb.checked ? setRef.add(value) : setRef.delete(value);
+          cb.checked ? setRef.add(val) : setRef.delete(val);
           renderMarkers();
         });
         label.append(cb, ' ', labelText);
         return label;
       }
 
-      function addPanel(title, items, isRegion, toggleOnly = false) {
-        const panel  = document.createElement('div'); panel.className = 'panel';
-        const header = document.createElement('div'); header.className = 'panel-header';
+      /*=======================================================*/
+      /*  Helper: build one filter panel block                */
+      /*=======================================================*/
+      function addPanel(title, items, isRegion=false, toggleOnly=false) {
+        const panel  = document.createElement('div'); panel.className='panel';
+        const head   = document.createElement('div'); head.className='panel-header';
 
         if (!toggleOnly) {
-          const master = document.createElement('input');
+          const label = document.createElement('label');
+          const master= document.createElement('input');
           master.type       = 'checkbox';
           master.checked    = true;
-          // assign random emoji for the master toggle too
-          master.dataset.emoji = emojiList[Math.floor(Math.random() * emojiList.length)];
-          master.addEventListener('click', e => e.stopPropagation());
-          master.addEventListener('change', () => {
+          master.dataset.emoji = CONFIG.emojiList[
+            Math.floor(Math.random() * CONFIG.emojiList.length)
+          ];
+          master.addEventListener('click', e=>e.stopPropagation());
+          master.addEventListener('change', ()=>{
             const all = master.checked;
-            panel.querySelectorAll('input[type=checkbox]').forEach(cb => {
-              if (cb !== master) {
+            panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+              if (cb!==master) {
                 cb.checked = all;
                 const key = cb.value;
-                if (isRegion) all ? selReg.add(key) : selReg.delete(key);
-                else          all ? selSub.add(key) : selSub.delete(key);
+                if (isRegion) all?selReg.add(key):selReg.delete(key);
+                else          all?selSub.add(key):selSub.delete(key);
               }
             });
             renderMarkers();
           });
-          header.append(master);
+          label.append(master);
+          head.append(label);
         }
 
-        header.append(document.createTextNode(title));
-
-        if (!isRegion && title !== 'Visited?') {
-          const swatch = document.createElement('div'); swatch.className = 'color-swatch';
-          swatch.style.background = categoryColors[title];
-          header.append(swatch);
+        head.append(document.createTextNode(title));
+        if (!isRegion && title!=='Visited?') {
+          const sw = document.createElement('div');
+          sw.className='color-swatch';
+          sw.style.background = categoryColors[title];
+          head.append(sw);
         }
+        const arr = document.createElement('span');
+        arr.className='arrow'; arr.textContent='▶'; head.append(arr);
 
-        const arrow = document.createElement('span'); arrow.className = 'arrow';
-        arrow.textContent = '▶'; header.append(arrow);
-
-        const body = document.createElement('div'); body.className = 'panel-body';
-        items.forEach(item => {
-          const full  = isRegion ? item : title === 'Visited?' ? item : `${title} - ${item}`;
-          const ref   = isRegion ? selReg : title === 'Visited?' ? selVis : selSub;
+        const body = document.createElement('div'); body.className='panel-body';
+        items.forEach(item=>{
+          const full = isRegion? item : title==='Visited?'? item : `${title} - ${item}`;
+          const ref = isRegion? selReg : title==='Visited?'? selVis : selSub;
           body.append(makeCheckbox(full, ref, item));
         });
 
-        header.addEventListener('click', () => {
-          body.classList.toggle('active');
-          arrow.textContent = body.classList.contains('active') ? '▼' : '▶';
+        head.addEventListener('click', ()=>{
+          const open = body.classList.toggle('active');
+          arr.textContent = open? '▼':'▶';
         });
 
-        panel.append(header, body);
+        panel.append(head, body);
         filtersDiv.append(panel);
       }
 
-      // Build panels
-      if (regions.size) addPanel('Region', [...regions].sort(), true);
-      addPanel('Visited?', ['Been there', 'Not yet'], false, true);
-      if (categories.includes('Food'))         addPanel('Food',         [...catMap['Food']].sort(), false);
-      if (categories.includes('Sweet Treats')) addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort(), false);
-      categories
-        .filter(c => c !== 'Food' && c !== 'Sweet Treats')
+      /*=======================================================*/
+      /*  Build Panels: order: Region, Visited?, Food, Sweet, Others */
+      /*=======================================================*/
+      if (regions.size)   addPanel('Region', [...regions].sort(), true);
+      addPanel('Visited?', ['Been there','Not yet'], false, true);
+      if (catMap['Food']) addPanel('Food', [...catMap['Food']].sort());
+      if (catMap['Sweet Treats']) addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort());
+      Object.keys(catMap)
+        .filter(c=>!['Food','Sweet Treats'].includes(c))
         .sort()
-        .forEach(cat => addPanel(cat, [...catMap[cat]].sort(), false));
+        .forEach(c=> addPanel(c, [...catMap[c]].sort()));
 
-      // Render markers
+      /*=======================================================*/
+      /*  Render markers according to filter state            */
+      /*=======================================================*/
       function renderMarkers() {
         markerLayer.clearLayers();
-        places.forEach(p => {
-          if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
+        places.forEach(p=>{
+          if (!selVis.has(p.visited?'Been there':'Not yet')) return;
           if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
           if (p.region && !selReg.has(p.region)) return;
 
-          let popup = `<strong>${p.name}</strong><br>`;
-          if (p.notes) popup += `${p.notes}<br>`;
-          popup += `<em>${p.category} – ${p.subcategory}` +
-                   (p.region ? ` / ${p.region}` : '') +
-                   `</em><br>`;
+          let popup = `<strong>${p.name}</strong><br>`+
+                      (p.notes? `${p.notes}<br>`:'')+
+                      `<em>${p.category} – ${p.subcategory}`+
+                      (p.region?` / ${p.region}`:'')+`</em><br>`;
 
-          const revs = (reviewsBy[p.id] || []).slice()
-                           .sort((a, b) => b.date.localeCompare(a.date));
+          const revs = (reviewsBy[p.id]||[]).slice()
+                         .sort((a,b)=>b.date.localeCompare(a.date));
           if (revs.length) {
-            popup += '★'.repeat(revs[0].rating) + '<br>';
-            popup += `<details><summary>${revs.length} review${revs.length > 1 ? 's' : ''}</summary>
-                      <div class="review-carousel">`;
-            revs.forEach(r => {
+            popup += '★'.repeat(revs[0].rating)+'<br>'+
+                     `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>`+
+                     `<div class="review-carousel">`;
+            revs.forEach(r=>{
               popup += `<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
-              r.photos.forEach(url => {
-                popup += `<a href="${url}" target="_blank">View photo</a>`;
-              });
+              r.photos.forEach(url=> popup += `<a href="${url}" target="_blank">View photo</a>`);
               popup += `</div>`;
             });
             popup += `</div></details>`;
@@ -345,33 +432,26 @@
           if (p.mapsLink)  popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
           if (p.appleLink) popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
 
-          const strokeColor = p.visited ? '#DAA520' : '#555';
-          const svgIconHtml = `<svg width="24" height="35" viewBox="0 0 24 35"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                 <path fill="${categoryColors[p.category]}"
-                                       stroke="${strokeColor}"
-                                       stroke-width="2"
-                                       d="M12 0C7.03 0 3 4.03 3 9
-                                          c0 6.75 9 19.5 9 19.5
-                                          s9-12.75 9-19.5
-                                          c0-4.97-4.03-9-9-9
-                                          zm0 13.5a4.5 4.5 0 1 1 0-9
-                                          4.5 4.5 0 0 1 0 9z"/>
-                               </svg>`;
+          const stroke = p.visited? '#DAA520':'#555';
+          const svg = `<svg width="24" height="35" viewBox="0 0 24 35"
+                         xmlns="http://www.w3.org/2000/svg">
+                         <path fill="${categoryColors[p.category]}"
+                               stroke="${stroke}" stroke-width="2"
+                               d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
+                       </svg>`;
           L.marker(p.latlng, {
             icon: L.divIcon({
-              html: svgIconHtml,
-              className: 'leaflet-div-icon',
-              iconSize: [24, 35],
-              iconAnchor: [12, 35],
-              popupAnchor: [0, -35]
+              html: svg,
+              className:'leaflet-div-icon',
+              iconSize:[24,35],
+              iconAnchor:[12,35],
+              popupAnchor:[0,-35]
             })
-          })
-          .bindPopup(popup, { autoPan: true })
-          .addTo(markerLayer);
+          }).bindPopup(popup,{autoPan:true}).addTo(markerLayer);
         });
       }
 
+      // Initial draw
       renderMarkers();
     }
   })();
