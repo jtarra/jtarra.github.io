@@ -191,7 +191,13 @@
           .addTo(map)
           setTimeout(() => {
             map.invalidateSize(); 
-            map.flyTo([latitude, longitude],map.getZoom() + 1,{ animate: true, duration: 1 });
+            setTimeout(() => {
+              map.invalidateSize(); 
+              map.flyTo(
+              [latitude, longitude],
+              map.getZoom() + 1,
+              { animate: true, duration: 1 }
+              );
             }, 200);
           .bindPopup('You are here.')
           .openPopup();
