@@ -21,144 +21,143 @@
     /* ============================= */
     @font-face {
       font-family: 'Bardy';
+      /* Change this path to your Bardy font file */
       src: url('/MapResources/fonts/Bardy.woff') format('woff');
     }
     @font-face {
       font-family: 'Dorgan';
+      /* Change this path to your Dorgan font file */
       src: url('/MapResources/fonts/Dorgan.woff') format('woff');
     }
 
     /* ============================= */
     /*   Base & Leaflet Overrides   */
     /* ============================= */
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: sans-serif;
-    }
-    #map { height: 100%; }
-    .leaflet-div-icon {
-      background: transparent !important;
-      border: none !important;
-    }
+    html, body { margin:0; height:100%; font-family:sans-serif; }
+    #map { height:100%; }
+    .leaflet-div-icon { background:transparent!important; border:none!important; }
 
     /* ============================= */
     /*        Filters Panel         */
     /* ============================= */
     .filters {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
-      background: rgba(255, 249, 230, 0.95);
-      border-radius: 8px;
-      overflow: hidden;
-      max-height: 40px;
-      width: auto;
-      transition: max-height .3s, width .3s;
+      position:absolute;
+      top:10px; left:10px;
+      z-index:1000;
+      /* Background color: change if desired */
+      background:rgba(255,249,230,0.95);
+      border-radius:8px;
+      overflow:hidden;
+      max-height:40px;
+      width:auto;
+      transition:max-height .3s, width .3s;
     }
     .filters.expanded {
-      max-height: calc(100vh - 20px);
-      width: 280px;
-      overflow-y: auto;
+      max-height:calc(100vh - 20px);
+      width:280px;
+      overflow-y:auto;
     }
 
     /* Toggle button style */
     #toggleFilters {
-      display: block;
-      width: 100%;
-      padding: 8px;
-      background: #E7D8C4;
-      border: none;
-      border-bottom: 1px solid #ddd;
-      font-family: 'Dorgan', cursive;
-      cursor: pointer;
+      display:block; width:100%; padding:8px;
+      /* Button background color */
+      background:#E7D8C4;
+      border:none; border-bottom:1px solid #ddd;
+      font-family:'Dorgan',cursive;
+      cursor:pointer;
     }
 
     /* ============================= */
     /*       Panel & Checkboxes     */
     /* ============================= */
-    .panel { margin: 8px; }
+    .panel { margin:8px; }
     .panel-header {
-      display: flex;
-      align-items: center;
-      padding: 6px 8px;
-      background: #E7D8C4;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: 'Bardy', cursive;
-      font-size: 1.6em;
+      display:flex;
+      align-items:center;
+      padding:6px 8px;
+      /* Header background color */
+      background:#E7D8C4;
+      border-radius:6px;
+      cursor:pointer;
+      font-family:'Bardy',cursive;
+      /* Header font size */
+      font-size:1.6em;
+      /* Text color */
       color: #e3b505;
+      /* Text shadow: horizontal, vertical, blur, color */
       text-shadow: 2px 2px 0 #db504a;
     }
     .panel-header input[type="checkbox"],
     .panel-body input[type="checkbox"] {
-      appearance: none;
-      width: 18px;
-      height: 18px;
-      margin-right: 12px;
-      border: 2px solid #D0B59A;
-      border-radius: 3px;
-      position: relative;
-      cursor: pointer;
+      appearance:none;
+      width:18px; height:18px;
+      margin-right:12px;
+      /* Checkbox border color */
+      border:2px solid #D0B59A;
+      border-radius:3px;
+      position:relative;
+      cursor:pointer;
     }
-    input[type="checkbox"]:checked {
-      border: none;
-    }
+    input[type="checkbox"]:checked { border:none; }
     input[type="checkbox"]:checked::after {
+      /* Emoji icon on check: controlled by data-emoji in JS */
       content: attr(data-emoji);
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      font-size: 22px;
-      line-height: 18px;
-      pointer-events: none;
+      position:absolute;
+      top:-2px; left:-2px;
+      font-size:22px; line-height:18px;
+      pointer-events:none;
     }
-    .panel-header .arrow { margin-left: 8px; font-weight: bold; }
+    .panel-header .arrow {
+      /* Arrow margin: keep baseline spacing here */
+      margin-left:8px;
+      font-weight:bold;
+    }
 
     /* ============================= */
     /*    Panel Body & Labels       */
     /* ============================= */
     .panel-body {
-      display: none;
-      padding: 8px 12px;
-      background: #FAF1D2;
-      border-radius: 6px;
+      display:none;
+      padding:8px 12px;
+      /* Body background color */
+      background:#FAF1D2;
+      border-radius:6px;
     }
-    .panel-body.active { display: block; }
+    .panel-body.active { display:block; }
     .panel-body label {
-      display: block;
-      margin-bottom: 6px;
-      font-family: 'Dorgan', sans-serif;
-      font-size: 1.1em;
-      position: relative;
+      display:block;
+      margin-bottom:6px;
+      font-family:'Dorgan',sans-serif;
+      font-size:1.1em;
+      position:relative;
     }
 
     /* ============================= */
-    /*         Popups Styles        */
+    /*         Popup Styles         */
     /* ============================= */
     .leaflet-popup-content-wrapper {
-      max-height: 80vh;
-      overflow: auto;
-      font-family: 'Dorgan', sans-serif;
+      max-height:80vh;
+      overflow:auto;
+      font-family:'Dorgan',sans-serif;
     }
     .review-carousel {
-      display: flex;
-      overflow-x: auto;
-      gap: 8px;
-      padding: 6px 0;
+      display:flex;
+      overflow-x:auto;
+      gap:8px;
+      padding:6px 0;
     }
     .review-item {
-      flex: 0 0 180px;
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 6px;
-      border-radius: 4px;
-      box-sizing: border-box;
+      flex:0 0 180px;
+      background:#fff;
+      border:1px solid #ddd;
+      padding:6px;
+      border-radius:4px;
+      box-sizing:border-box;
     }
-    .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
-    .review-item strong { display: block; margin-bottom: 4px; }
-    .review-item p { margin: 0 0 4px; }
+    .review-item a { display:block; margin-top:4px; font-size:0.9em; }
+    .review-item strong { display:block; margin-bottom:4px; }
+    .review-item p { margin:0 0 4px; }
   </style>
 </head>
 <body>
@@ -170,49 +169,39 @@
   <div id="map"></div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <script>
-  /*
-   * ====================================================================
-   * CONFIGURATION - Only change these values for a new map/location:
-   * --------------------------------------------------------------------
-   * sheetId     : your Google Sheet ID
-   * apiKey      : your Google API key with Sheets access
-   * ranges      : which sheets/ranges to load (Places!A:J, Reviews!A:E, etc)
-   * mapCenter   : [latitude, longitude]
-   * mapZoom     : initial zoom level
-   * tileUrl     : URL template for your tile layer
-   * attribution : tile layer attribution text
-   * baseColors  : array of hex strings for category colors (no repeats)
-   * emojiList   : array of emojis for random checkbox icons
-   * ====================================================================
-   */
+  /* =========================================================== */
+  /*                       CONFIGURATION                        */
+  /*   Swap out values below for a new map:                     */
+  /* ----------------------------------------------------------- */
   const CONFIG = {
-    sheetId:    '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
-    apiKey:     'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
-    ranges:     ['Places!A:J', 'Reviews!A:E'],
+    // Google Sheets settings
+    sheetId:    '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',  // <--- update sheet ID
+    apiKey:     'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',      // <--- update API key
+    ranges:     ['Places!A:J','Reviews!A:E'],                 // <--- update sheet ranges
 
-    /* Map viewport settings */
-    mapCenter:  [21.3069, -157.8583],
-    mapZoom:    11,
+    // Map viewport
+    mapCenter:  [21.3069, -157.8583],  // <--- update center [lat, lng]
+    mapZoom:    11,                    // <--- update zoom level
 
-    /* Tile layer settings */
+    // Tile layer
     tileUrl:     'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-    attribution: '© Humanitarian OSM Team',
+    attribution: '© Humanitarian OSM Team',                            
 
-    /* Category color pool */
-    baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#deff8d'],
+    // Category colors (no repeats until exhausted)
+    baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#deff8d'],  // <--- update hex list
 
-    /* Checkbox emojis */
+    // Checkbox emojis
     emojiList:  ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐳','🐠','🦈',
                  '🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋',
-                 '🏝️','🛵','👙','🌴','⛱️','⛵','⚓']
+                 '🏝️','🛵','👙','🌴','⛱️','⛵','⚓']           // <--- update emojis
   };
+  /* =========================================================== */
 
   (function(){
-    // Utility: shuffle array
+    // Shuffle helper
     function shuffle(arr) {
       let m = arr.length;
       while (m) {
@@ -221,13 +210,13 @@
       }
       return arr;
     }
-    // Utility: random fallback color
+    // Fallback random color
     function randomColor() {
       const h = Math.floor(Math.random() * 360);
       return `hsl(${h},60%,50%)`;
     }
 
-    // Build Google Sheets API URL
+    // Build Sheets API URL
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}` +
                 `/values:batchGet?key=${CONFIG.apiKey}` +
                 CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
@@ -236,97 +225,82 @@
     fetch(url)
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data => {
-        // Parse 'Places' sheet
+        /* Parse Places sheet */
         const [hdrP, ...rowsP] = data.valueRanges[0].values;
         const places = rowsP.map(r => {
           const o = Object.fromEntries(hdrP.map((h,i) => [h, r[i]||'']));
-          const [lat, lng] = o.Coordinates.split(',').map(Number);
+          const [lat,lng] = o.Coordinates.split(',').map(Number);
           return {
-            id:        o.PlaceID,
-            name:      o.Name,
-            category:  o.Category,
+            id: o.PlaceID,
+            name: o.Name,
+            category: o.Category,
             subcategory: o.Subcategory,
-            region:    o.Region,
-            notes:     o.Notes,
-            visited:   o.Visited.trim().toUpperCase() === 'Y',
-            latlng:    [lat, lng],
-            mapsLink:  o.MapsLink,
+            region: o.Region,
+            notes: o.Notes,
+            visited: o.Visited.trim().toUpperCase() === 'Y',
+            latlng: [lat,lng],
+            mapsLink: o.MapsLink,
             appleLink: o.AppleMapsLink
           };
         });
-        // Parse 'Reviews' sheet
+        /* Parse Reviews sheet */
         const [hdrR, ...rowsR] = data.valueRanges[1].values;
         const reviewsBy = {};
         rowsR.forEach(r => {
           const o = Object.fromEntries(hdrR.map((h,i) => [h, r[i]||'']));
           const photos = (o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean);
           (reviewsBy[o.PlaceID] ||= []).push({
-            date:   o.VisitDate,
+            date: o.VisitDate,
             rating: +o.Rating || 0,
-            text:   o.Review,
+            text: o.Review,
             photos
           });
         });
-        // Initialize the map now that data is ready
+        // Initialize map
         initializeMap(places, reviewsBy);
       })
       .catch(console.error);
 
-    /**
-     * initializeMap
-     * @param {Array} places       - array of place objects
-     * @param {Object} reviewsBy   - map from PlaceID to review array
-     */
+    /* Creates the map, filters, and markers */
     function initializeMap(places, reviewsBy) {
-      // Create Leaflet map
-      const map = L.map('map', { zoomControl: false })
+      const map = L.map('map', { zoomControl:false })
                    .setView(CONFIG.mapCenter, CONFIG.mapZoom);
-      L.control.zoom({ position: 'topright' }).addTo(map);
-      L.tileLayer(CONFIG.tileUrl, { attribution: CONFIG.attribution }).addTo(map);
+      L.control.zoom({ position:'topright' }).addTo(map);
+      L.tileLayer(CONFIG.tileUrl, { attribution:CONFIG.attribution }).addTo(map);
       const markerLayer = L.layerGroup().addTo(map);
 
-      // Build category→subcategories map & region set
+      // Build category/subcategory map & regions set
       const catMap = {}, regions = new Set();
       places.forEach(p => {
         (catMap[p.category] ||= new Set()).add(p.subcategory);
         if (p.region) regions.add(p.region);
       });
-      // Assign unique colors to categories
-      const colorPool = shuffle(CONFIG.baseColors.slice());
+      // Assign colors
+      const pool = shuffle(CONFIG.baseColors.slice());
       const categoryColors = {};
-      Object.keys(catMap).forEach(cat => {
-        categoryColors[cat] = colorPool.length ? colorPool.pop() : randomColor();
+      Object.keys(catMap).forEach(c => {
+        categoryColors[c] = pool.length ? pool.pop() : randomColor();
       });
 
-      // Filter state sets
+      // Filter states
       const selSub = new Set(places.map(p => `${p.category} - ${p.subcategory}`));
       const selReg = new Set(regions);
       const selVis = new Set(['Been there','Not yet']);
 
-      // DOM references
+      // Build filter UI
       const filtersDiv = document.getElementById('filters');
       const toggleBtn  = document.getElementById('toggleFilters');
-      toggleBtn.addEventListener('click', () => {
-        const exp = filtersDiv.classList.toggle('expanded');
-        toggleBtn.textContent = exp ? 'Hide Filters' : 'Show Filters';
+      toggleBtn.addEventListener('click', ()=>{
+        const e = filtersDiv.classList.toggle('expanded');
+        toggleBtn.textContent = e ? 'Hide Filters' : 'Show Filters';
       });
 
-      /**
-       * makeCheckbox
-       * Creates a <label><input type="checkbox" ...> LabelText</label>
-       * assigns a random emoji via data-emoji
-       */
       function makeCheckbox(val, setRef, labelText) {
         const label = document.createElement('label');
         const cb    = document.createElement('input');
-        cb.type       = 'checkbox';
-        cb.value      = val;
-        cb.checked    = true;
-        // Random emoji icon for this checkbox
-        cb.dataset.emoji = CONFIG.emojiList[
-          Math.floor(Math.random() * CONFIG.emojiList.length)
-        ];
-        cb.addEventListener('change', () => {
+        cb.type    = 'checkbox'; cb.value  = val; cb.checked = true;
+        cb.dataset.emoji = CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+        cb.addEventListener('change', ()=>{
           cb.checked ? setRef.add(val) : setRef.delete(val);
           renderMarkers();
         });
@@ -334,33 +308,21 @@
         return label;
       }
 
-      /**
-       * addPanel
-       * @param {string} title       - panel title
-       * @param {Array} items        - labels inside
-       * @param {boolean} isRegion   - treat items as regions
-       * @param {boolean} toggleOnly - no master checkbox if true
-       */
       function addPanel(title, items, isRegion=false, toggleOnly=false) {
         const panel = document.createElement('div'); panel.className = 'panel';
         const head  = document.createElement('div'); head.className = 'panel-header';
-
-        // Master toggle checkbox
         if (!toggleOnly) {
           const lab    = document.createElement('label');
           const master= document.createElement('input');
-          master.type    = 'checkbox';
-          master.checked = true;
-          master.dataset.emoji = CONFIG.emojiList[
-            Math.floor(Math.random() * CONFIG.emojiList.length)
-          ];
-          master.addEventListener('click', e => e.stopPropagation());
-          master.addEventListener('change', () => {
+          master.type    = 'checkbox'; master.checked = true;
+          master.dataset.emoji = CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+          master.addEventListener('click', e=>e.stopPropagation());
+          master.addEventListener('change', ()=>{
             const all = master.checked;
-            panel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-              if (cb !== master) {
+            panel.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+              if (cb!==master) {
                 cb.checked = all;
-                const k = cb.value;
+                const k=cb.value;
                 if (isRegion) all? selReg.add(k) : selReg.delete(k);
                 else          all? selSub.add(k) : selSub.delete(k);
               }
@@ -370,111 +332,67 @@
           lab.append(master);
           head.append(lab);
         }
-
         head.append(document.createTextNode(title));
-        if (!isRegion && title !== 'Visited?') {
-          const sw = document.createElement('div');
-          sw.className = 'color-swatch';
+        if (!isRegion && title!=="Visited?") {
+          const sw=document.createElement('div');
+          sw.className='color-swatch';
           sw.style.background = categoryColors[title];
           head.append(sw);
         }
-        const arr = document.createElement('span');
-        arr.className = 'arrow';
-        arr.textContent = '▶';
+        const arr=document.createElement('span');
+        arr.className='arrow';
+        arr.textContent='▶';
         head.append(arr);
-
-        const body = document.createElement('div'); body.className = 'panel-body';
-        items.forEach(item => {
-          const full = isRegion ? item
-                     : title === 'Visited?'   ? item
-                     : `${title} - ${item}`;
-          const ref  = isRegion ? selReg
-                     : title === 'Visited?' ? selVis
-                     : selSub;
-          body.append(makeCheckbox(full, ref, item));
+        const body=document.createElement('div');
+        body.className='panel-body';
+        items.forEach(item=>{
+          const full=isRegion?item:title==="Visited?"?item:`${title} - ${item}`;
+          const ref= isRegion?selReg:title==="Visited?"?selVis:selSub;
+          body.append(makeCheckbox(full,ref,item));
         });
-
-        head.addEventListener('click', () => {
-          const open = body.classList.toggle('active');
-          arr.textContent = open ? '▼' : '▶';
+        head.addEventListener('click', ()=>{
+          const open= body.classList.toggle('active');
+          arr.textContent= open?'▼':'▶';
         });
-
-        panel.append(head, body);
+        panel.append(head,body);
         filtersDiv.append(panel);
       }
 
-      // Build panels
-      if (regions.size) addPanel('Region', [...regions].sort(), true);
-      addPanel('Visited?', ['Been there','Not yet'], false, true);
-      if (catMap['Food'])         addPanel('Food', [...catMap['Food']].sort());
-      if (catMap['Sweet Treats']) addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort());
+      // Build all panels
+      if (regions.size) addPanel('Region',[...regions].sort(),true);
+      addPanel('Visited?',['Been there','Not yet'],false,true);
+      if (catMap['Food']) addPanel('Food',[...catMap['Food']].sort());
+      if (catMap['Sweet Treats']) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort());
       Object.keys(catMap)
-        .filter(c => !['Food','Sweet Treats'].includes(c))
+        .filter(c=>!['Food','Sweet Treats'].includes(c))
         .sort()
-        .forEach(c => addPanel(c, [...catMap[c]].sort()));
+        .forEach(c=> addPanel(c,[...catMap[c]].sort()));
 
-      /**
-       * renderMarkers
-       * Clears and re-adds markers based on the filter state.
-       */
+      // Render map markers based on filters
       function renderMarkers() {
         markerLayer.clearLayers();
-        places.forEach(p => {
-          // Visibility checks
-          if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
+        places.forEach(p=>{
+          if (!selVis.has(p.visited?'Been there':'Not yet')) return;
           if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
           if (p.region && !selReg.has(p.region)) return;
+        let popup=`<strong>${p.name}</strong><br>` +
+                  (p.notes?`${p.notes}<br>`:'') +
+                  `<em>${p.category} – ${p.subcategory}` +
+                  (p.region?` / ${p.region}`:'') + `</em><br>`;
+        const revs=(reviewsBy[p.id]||[]).slice()
+                     .sort((a,b)=>b.date.localeCompare(a.date));
+        if (revs.length) {
+          popup+='★'.repeat(revs[0].rating)+'<br>' +
+                 `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>` +
+                 `<div class="review-carousel">`;
+          revs.forEach(r=>{
+            popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
+            r.photos.forEach( u=> popup+=`<a href="${u}" target="_blank">View photo</a>`);
+            popup+=`</div>`;
+          });
+          popup+=`</div></details>`;
+        }
+        if (p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+        if (p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+```}]}
 
-          // Build popup content
-          let popup = `<strong>${p.name}</strong><br>` +
-                      (p.notes ? `${p.notes}<br>` : '') +
-                      `<em>${p.category} – ${p.subcategory}` +
-                      (p.region ? ` / ${p.region}` : '') +
-                      `</em><br>`;
-
-          const revs = (reviewsBy[p.id] || []).slice()
-                         .sort((a,b)=>b.date.localeCompare(a.date));
-          if (revs.length) {
-            popup += '★'.repeat(revs[0].rating) + '<br>' +
-                     `<details><summary>${revs.length} review${revs.length>1?'s':''}</summary>` +
-                     `<div class="review-carousel">`;
-            revs.forEach(r => {
-              popup += `<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
-              r.photos.forEach(u => popup += `<a href="${u}" target="_blank">View photo</a>`);
-              popup += `</div>`;
-            });
-            popup += `</div></details>`;
-          }
-
-          if (p.mapsLink)  popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-          if (p.appleLink) popup += `<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
-
-          // Custom SVG icon
-          const stroke = p.visited ? '#DAA520' : '#555';
-          const svg = `<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg">` +
-                      `<path fill="${categoryColors[p.category]}" stroke="${stroke}" stroke-width="2"` +
-                      ` d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9` +
-                      `zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>` +
-                      `</svg>`;
-
-          L.marker(p.latlng, {
-            icon: L.divIcon({
-              html: svg,
-              className: 'leaflet-div-icon',
-              iconSize: [24,35],
-              iconAnchor: [12,35],
-              popupAnchor: [0,-35]
-            })
-          })
-          .bindPopup(popup,{autoPan:true})
-          .addTo(markerLayer);
-        });
-      }
-
-      // Initial draw
-      renderMarkers();
-    }
-  })();
-  </script>
-</body>
-</html>
