@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🏠 Home 🏠</title>
+  <title>My 90s Geocities Site</title>
   <style>
     /* Reset margins and padding */
     * {
@@ -12,20 +12,28 @@
       padding: 0;
       box-sizing: border-box;
     }
-    html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      border: 40px solid transparent;
-      border-image: url('/homeResources/GIFs/flameline.gif') 40 round;
-    }
-
-    /* Apply a flame border using border-image */
+    
+    /* Body positioning and base styles */
     body {
+      position: relative;
       background-color: #000;
       color: #fff;
       font-family: 'Courier New', monospace;
       min-height: 100vh;
+    }
+
+    /* Fixed pseudo-element for flame border */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 40px solid transparent;
+      border-image: url('/homeResources/GIFs/flameline.gif') 40 round;
+      pointer-events: none;
+      z-index: 9999;
     }
 
     /* Centered container for site content */
@@ -54,7 +62,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Welcome to Jonah's Website</h1>
+    <h1>Welcome to My 90s Geocities Site</h1>
     <p>This is just the beginning of our journey. More content to come!</p>
   </div>
 </body>
