@@ -171,6 +171,10 @@
     };
 
     (async function(){
+      // Initialize map and marker layer
+      const map = L.map('map').setView(CONFIG.mapCenter, CONFIG.mapZoom);
+      L.tileLayer(CONFIG.tileUrl, { attribution: CONFIG.attribution }).addTo(map);
+      const markerLayer = L.layerGroup().addTo(map);{
       /**************************
        *  EMBEDDED SEARCH LOGIC *
        **************************/
