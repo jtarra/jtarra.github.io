@@ -113,6 +113,8 @@
     .leaflet-control-attribution {
   bottom: env(safe-area-inset-bottom) !important;
 }
+.place-carousel{display:flex;overflow-x:auto;gap:8px;padding:8px;border-top:1px solid #ddd}
+.place-card{flex:0 0 200px;background:#fff;border:1px solid #ccc;border-radius:6px;padding:6px;cursor:pointer}
   </style>
 </head>
 <body>
@@ -120,12 +122,7 @@
   <!-- Filters Container -->
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
-    <input
-    type="search"
-    id="textSearch"
-    placeholder="Search…"
-    style="width: calc(100% - 16px); margin: 8px;"
-  />
+    <div id="placeCarousel" class="place-carousel"></div>
   </div>
 
   <!-- Map Container -->
@@ -135,19 +132,13 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <script>
-    let currentSearch = '';
-    document.getElementById('textSearch')
-      .addEventListener('input', e => {
-        currentSearch = e.target.value.toLowerCase().trim();
-        drawMarkers();
-      });
     /**************************
      *    DATA & CONFIG       *
      **************************/
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
-      ranges: ['Places!A:K','Reviews!A:E'],
+      ranges: ['Places!A:J','Reviews!A:E'],
       mapCenter: [21.4559, -157.9519],
       mapZoom: 10,
       tileUrl: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
@@ -239,29 +230,18 @@ setTimeout(() => {
           if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
           categories.filter(c=>c!=='Food'&&c!=='Sweet Treats').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
         }
-        function drawMarkers(){ markerLayer.clearLayers();
-        places.forEach(p => {
-  // 1) FILTER OUT anything that doesn't match the search query
-  if (currentSearch) {
-    const haystack = [
-      p.name,
-      p.category,
-      p.subcategory,
-      p.region,
-      p.notes,
-      ...(p.tags || [])
-    ]
-      .join(' ')
-      .toLowerCase();
-    if (!haystack.includes(currentSearch)) return;
-  }
-
-  // 2) YOUR ORIGINAL MARKER CODE:
-  L.marker([p.lat, p.lng], { icon: icons[p.category] })
-    .addTo(markerLayer)
-    .bindPopup(renderPopup(p));
-});
-// ——— end replacement ———
+function renderCarousel(v){
+  const c = document.getElementById('placeCarousel');
+  c.innerHTML = '';
+  v.forEach(p => c.insertAdjacentHTML('beforeend',
+    `<div class="place-card">
+       <h4>${p.name}</h4>
+       ${p.notes ? `<p>${p.notes}</p>` : ''}
+       <p><em>${p.category} – ${p.subcategory}${p.region?` / ${p.region}`:''}</em></p>
+     </div>`
+  ));
+}        
+function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; visible.push(p); let popup=`<strong>${p.name}</strong>${p.notes ? `<br>${p.notes}` : ''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerLayer); }); renderCarousel(visible); }
       }
     })();
   </script>
