@@ -255,7 +255,7 @@ function renderCarousel(v){
       .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
       ?.openPopup();
   };
-  ));
+  });
   const cardEl = c.lastElementChild;
   cardEl.onclick = () => {
     map.flyTo(p.latlng, map.getZoom(), { animate: true });
