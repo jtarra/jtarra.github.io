@@ -43,32 +43,37 @@
       z-index: 1000;
     }
 
-    /* Search panel styles */
-    #search-panel {
-      margin: 8px;
+    /* Toggle Button */
+    #toggleFilters {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      background: #E7D8C4;
+      border: none;
+      border-bottom: 1px solid #ddd;
+      font-family: 'Dorgan', cursive;
+      cursor: pointer;
     }
-    #search-panel .panel-header {
+
+    /* Search Box Styling */
+    #search-container {
+      order: 1;
       display: flex;
       align-items: center;
-      padding: 6px 8px;
-      background: #E7D8C4;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: 'Bardy', cursive;
-      font-size: 1.6em;
-      color: #E3B505;
-      text-shadow: 2px 2px 0 #DB504A;
+      padding: 0.5em;
+      background: #FAF1D2;
+      border-bottom: 1px solid #ddd;
     }
-    #search-input {
-      width: 100%;
-      padding: 6px 8px;
-      border: 1px solid #bbb;
+    #search-box {
+      flex: 1;
+      padding: 0.5em;
+      border: 1px solid #ccc;
       border-radius: 4px 0 0 4px;
       font-family: sans-serif;
       font-size: 1em;
     }
     #clear-search {
-      padding: 0 0.75em;
+      padding: 0.5em;
       border: 1px solid #ccc;
       border-left: none;
       border-radius: 0 4px 4px 0;
@@ -80,7 +85,6 @@
       background: #f8f8f8;
     }
 
-    /* Panel Headers */
     .panel { margin: 8px; }
     .panel-header {
       display: flex;
@@ -94,26 +98,45 @@
       color: #E3B505;
       text-shadow: 2px 2px 0 #DB504A;
     }
-    /* ... other existing styles ... */
+    .panel-header .arrow { margin-left: 8px; font-weight: bold; }
+
+    .panel-body {
+      display: none;
+      padding: 8px 12px;
+      background: #FAF1D2;
+      border-radius: 6px;
+    }
+    .panel-body.active { display: block; }
+
+    /* Review carousel */
+    .review-carousel {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      padding: 6px 0;
+    }
+    .review-item {
+      flex: 0 0 180px;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 6px;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
+    .review-item strong { display: block; margin-bottom: 4px; }
+    .review-item p { margin: 0 0 4px; }
   </style>
 </head>
 <body>
   <div class="filters">
-    <!-- Existing filter panels -->
-    
-    <!-- Search panel: modified placeholder -->
-    <div id="search-panel" class="panel">
-      <div class="panel-header">Search</div>
-      <input
-        id="search-input"
-        type="search"
-        placeholder="🔍 Search name, category, notes, or tags…"
-        aria-label="Search places by name, category, notes, or tags"
-      />
-      <button id="clear-search" aria-label="Clear search" title="Clear search">✕</button>
+    <!-- Search Box -->
+    <div id="search-container">
+      <input id="search-box" type="search" placeholder="🔍 Search name, location, category, notes or tags…" aria-label="Search places" />
+      <button id="clear-search" aria-label="Clear search">✕</button>
     </div>
 
-    <!-- (All your dynamic panels will still be injected here by your existing JS) -->
+    <!-- Dynamic filter panels injected here -->
   </div>
 
   <!-- Map Container -->
@@ -147,11 +170,31 @@
       ],
     };
 
-    (async function() {
-      // --- Your existing fetch & parse logic populates `places[]` ---
-      const places = []; // filled by existing code
+    (async function(){
+      /**************************
+       *  EMBEDDED SEARCH LOGIC *
+       **************************/
+      const searchBox   = document.getElementById('search-box');
+      const clearBtn    = document.getElementById('clear-search');
+      let   searchTerm  = '';
 
-      // 1) Build search index including Tags
+      function debounce(fn, delay) {
+        let timer = null;
+        return function(...args) {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+      }
+
+      // Original IIFE continues...
+
+      /**************************
+       *     ORIGINAL IIFE      *
+       **************************/
+      // … your existing shuffle(), map init, fetch logic populate `places[]` …
+      const places = []; // filled by your fetch code
+
+      // Build hidden search index including Tags
       places.forEach(p => {
         p._searchText = [
           p.Name,
@@ -163,7 +206,7 @@
         ].join(' ').toLowerCase();
       });
 
-      // 2) Initialize Fuse for fuzzy+substring search
+      // Initialize Fuse for fuzzy & substring matching
       const fuse = new Fuse(places, {
         keys: ['_searchText'],
         threshold: 0.4,
@@ -171,43 +214,40 @@
         minMatchCharLength: 2
       });
 
-      let currentSearch = '';
-
-      // 3) Wire up the search input
-      const searchInput = document.getElementById('search-input');
-      const clearBtn = document.getElementById('clear-search');
-      searchInput.addEventListener('input', debounce(e => {
-        currentSearch = e.target.value.trim().toLowerCase();
+      // Wire up search box
+      searchBox.addEventListener('input', debounce(e => {
+        searchTerm = e.target.value.trim().toLowerCase();
         drawMarkers();
       }, 300));
       clearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        currentSearch = '';
+        searchBox.value = '';
+        searchTerm = '';
         drawMarkers();
       });
 
-      // 4) Patch drawMarkers to respect search
-      const _origDrawMarkers = drawMarkers;
-      drawMarkers = function() {
-        markersLayer.clearLayers();
+      function drawMarkers(){
+        markerLayer.clearLayers();
         places.forEach(place => {
-          // Search filter
-          if (currentSearch) {
-            const found = fuse.search(currentSearch).some(r => r.item === place);
+          // Existing filters for visited, region, category…
+
+          // New search filter using Fuse
+          if (searchTerm) {
+            const found = fuse.search(searchTerm).some(r => r.item === place);
             if (!found) return;
           }
-          // Other existing filters...
 
-          // Draw marker
-          const marker = L.marker([place.Latitude, place.Longitude], { icon: getIcon(place) });
+          // Then your original marker creation and popup binding:
+          const marker = L.marker([place.Latitude, place.Longitude], { icon: placeIcon });
           marker.bindPopup(renderPopupHTML(place));
           marker.on('popupopen', () => highlightMatches(marker.getPopup().getContentNode()));
-          markersLayer.addLayer(marker);
+          markerLayer.addLayer(marker);
         });
-      };
+      }
 
       // Initial draw
       drawMarkers();
+
+      // … rest of your original IIFE (map controls, etc.) …
     })();
   </script>
 </body>
