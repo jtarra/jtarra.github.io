@@ -250,7 +250,7 @@ function renderCarousel(v){
     );
   const cardEl = c.lastElementChild;
   cardEl.onclick = () => {
-    map.flyTo(p.latlng, map.getZoom(), { animate: true });
+    map.flyTo(p.latlng, 14, { animate: true });
     markerLayer.getLayers()
       .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
       ?.openPopup();
