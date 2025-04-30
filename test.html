@@ -1,93 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My 90s Geocities Site</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta charset="utf-8" />
+  <title>Oahu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin="" />
+
+  <!-- Fallback / Custom Fonts -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" />
+
+  <!-- Custom Styles -->
   <style>
-    /* Reset margins and padding */
-    * {
+    html, body {
       margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    /* Base body styles */
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: 'Courier New', monospace;
-      min-height: 100vh;
-      position: relative;
-      overflow: hidden;
-    }
-    /* Flame image common */
-    .flame {
-      position: fixed;
-      pointer-events: none;
-      z-index: 9999;
-    }
-    .flame.top,
-    .flame.bottom {
       width: 100%;
-      height: auto;
-    }
-    .flame.left,
-    .flame.right {
       height: 100%;
-      width: auto;
     }
-    .flame.top {
-      top: 0;
-      left: 0;
+    body {
+      font-family: sans-serif;
     }
-    .flame.bottom {
-      bottom: 0;
-      left: 0;
-      transform: rotate(180deg);
+    #map {
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
     }
-    .flame.left {
-      top: 0;
-      left: 0;
-      transform: rotate(90deg);
+    .filters {
+      position: absolute;
+      top: 10px; left: 10px;
+      max-height: calc(100% - 20px);
+      width: 250px;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.9);
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
     }
-    .flame.right {
-      top: 0;
-      right: 0;
-      transform: rotate(270deg);
+
+    /* Search panel styles */
+    #search-panel {
+      margin: 8px;
     }
-    /* Centered container for site content */
-    .container {
-      width: 960px;
-      max-width: 90%;
-      margin: 20px auto;
-      padding: 20px;
-      background-color: rgba(0, 0, 0, 0.8);
-      border: 2px dashed #fff;
+    #search-panel .panel-header {
+      display: flex;
+      align-items: center;
+      padding: 6px 8px;
+      background: #E7D8C4;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Bardy', cursive;
+      font-size: 1.6em;
+      color: #E3B505;
+      text-shadow: 2px 2px 0 #DB504A;
     }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      text-align: center;
-      text-shadow: 2px 2px #f00;
+    #search-input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #bbb;
+      border-radius: 4px 0 0 4px;
+      font-family: sans-serif;
+      font-size: 1em;
     }
-    p {
-      font-size: 1rem;
-      line-height: 1.5;
-      text-align: center;
+    #clear-search {
+      padding: 0 0.75em;
+      border: 1px solid #ccc;
+      border-left: none;
+      border-radius: 0 4px 4px 0;
+      background: white;
+      cursor: pointer;
+      font-size: 1em;
     }
+    #clear-search:hover {
+      background: #f8f8f8;
+    }
+
+    /* Panel Headers */
+    .panel { margin: 8px; }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      padding: 6px 8px;
+      background: #E7D8C4;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Bardy', cursive;
+      font-size: 1.6em;
+      color: #E3B505;
+      text-shadow: 2px 2px 0 #DB504A;
+    }
+    /* ... other existing styles ... */
   </style>
 </head>
 <body>
-  <!-- Flames around the viewport -->
-  <img src="/homeResources/GIFs/flameline.gif" alt="" class="flame top">
-  <img src="/homeResources/GIFs/flameline.gif" alt="" class="flame bottom">
-  <img src="/homeResources/GIFs/flameline.gif" alt="" class="flame left">
-  <img src="/homeResources/GIFs/flameline.gif" alt="" class="flame right">
+  <div class="filters">
+    <!-- Existing filter panels -->
+    
+    <!-- Search panel: modified placeholder -->
+    <div id="search-panel" class="panel">
+      <div class="panel-header">Search</div>
+      <input
+        id="search-input"
+        type="search"
+        placeholder="🔍 Search name, category, notes, or tags…"
+        aria-label="Search places by name, category, notes, or tags"
+      />
+      <button id="clear-search" aria-label="Clear search" title="Clear search">✕</button>
+    </div>
 
-  <div class="container">
-    <h1>Welcome to My 90s Geocities Site</h1>
-    <p>This is just the beginning of our journey. More content to come!</p>
+    <!-- (All your dynamic panels will still be injected here by your existing JS) -->
   </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <!-- Fuse.js for fuzzy search -->
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
+
+  <script>
+    /**************************
+     *    DATA & CONFIG       *
+     **************************/
+    const CONFIG = {
+      sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+      apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
+      ranges: ['Places!A:J','Reviews!A:E'],
+      mapCenter: [21.4559, -157.9519],
+      mapZoom: 10,
+      tileUrl: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      attribution: '<a href="https://www.youtube.com/watch?v=rzLIUgnKY40">Home</a>',
+      baseColors: ['#FCBF49','#D62828','#E8B5BD','#4D7D5C','#528ED1','#DEFF8D'],
+      emojiList: ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐋','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️'],
+      userIconUrls: [
+        '/MapResources/PNGs/Hula1.png',
+        '/MapResources/PNGs/Hula2.png',
+        '/MapResources/PNGs/Hula3.png',
+        '/MapResources/PNGs/Hula4.png',
+        '/MapResources/PNGs/Hula5.png'
+      ],
+    };
+
+    (async function() {
+      // --- Your existing fetch & parse logic populates `places[]` ---
+      const places = []; // filled by existing code
+
+      // 1) Build search index including Tags
+      places.forEach(p => {
+        p._searchText = [
+          p.Name,
+          p.Location,
+          p.Category,
+          p.Subcategory,
+          p.Notes,
+          p.Tags || ''
+        ].join(' ').toLowerCase();
+      });
+
+      // 2) Initialize Fuse for fuzzy+substring search
+      const fuse = new Fuse(places, {
+        keys: ['_searchText'],
+        threshold: 0.4,
+        ignoreLocation: true,
+        minMatchCharLength: 2
+      });
+
+      let currentSearch = '';
+
+      // 3) Wire up the search input
+      const searchInput = document.getElementById('search-input');
+      const clearBtn = document.getElementById('clear-search');
+      searchInput.addEventListener('input', debounce(e => {
+        currentSearch = e.target.value.trim().toLowerCase();
+        drawMarkers();
+      }, 300));
+      clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        currentSearch = '';
+        drawMarkers();
+      });
+
+      // 4) Patch drawMarkers to respect search
+      const _origDrawMarkers = drawMarkers;
+      drawMarkers = function() {
+        markersLayer.clearLayers();
+        places.forEach(place => {
+          // Search filter
+          if (currentSearch) {
+            const found = fuse.search(currentSearch).some(r => r.item === place);
+            if (!found) return;
+          }
+          // Other existing filters...
+
+          // Draw marker
+          const marker = L.marker([place.Latitude, place.Longitude], { icon: getIcon(place) });
+          marker.bindPopup(renderPopupHTML(place));
+          marker.on('popupopen', () => highlightMatches(marker.getPopup().getContentNode()));
+          markersLayer.addLayer(marker);
+        });
+      };
+
+      // Initial draw
+      drawMarkers();
+    })();
+  </script>
 </body>
 </html>
