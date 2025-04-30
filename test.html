@@ -240,18 +240,18 @@ setTimeout(() => {
 function renderCarousel(v){
   const c = document.getElementById('placeCarousel');
   c.innerHTML = '';
-  card.onclick = () => {
-    map.flyTo(p.latlng, 14, { animate: true });
-    markerLayer.getLayers()
-    .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
-    ?.openPopup();
-    };
   v.forEach(p => c.insertAdjacentHTML('beforeend',
     `<div class="place-card">
        <h4>${p.name}</h4>
        ${p.notes ? `<p>${p.notes}</p>` : ''}
        <p><em>${p.category} – ${p.subcategory}${p.region?` / ${p.region}`:''}</em></p>
      </div>`
+  card.onclick = () => {
+    map.flyTo(p.latlng, 14, { animate: true });
+    markerLayer.getLayers()
+    .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
+    ?.openPopup();
+    };
   ));
 }        
 function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; visible.push(p); let popup=`<strong>${p.name}</strong>${p.notes ? `<br>${p.notes}` : ''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerLayer); }); renderCarousel(visible); }
