@@ -227,6 +227,9 @@ setTimeout(() => {
         setupFilters(Object.keys(catMap),regSet,catMap);
         drawMarkers();
         function setupFilters(categories,regions,catMap){
+          document.getElementById('filters').appendChild(
+          document.getElementById('placeCarousel')
+          );
           const fd=document.getElementById('filters');
           document.getElementById('toggleFilters').onclick=()=>{ const ex=fd.classList.toggle('expanded'); document.getElementById('toggleFilters').textContent=ex?'Hide Filters':'Show Filters'; };
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
