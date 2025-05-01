@@ -47,7 +47,8 @@
       flex-direction: column;
     }
     .filters.expanded {
-      max-height: calc(100vh - 20px); width: 280px; overflow-y: auto;
+      max-height: calc(100vh - 20px);
+      width: 280px;
     }
   
   .panel-container {
@@ -55,9 +56,15 @@
     overflow-y: auto;   /* scroll only the panels */
   }
   
-  .place-carousel {
-    flex: none;         /* fixed height */
-    position: sticky;
+   .place-carousel {
+    display: flex;          /* horizontal cards */
+    overflow-x: auto;       /* scroll overflow */
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid #ddd;
+
+    flex: none;             /* fixed height in flex layout */
+    position: sticky;       /* pin to bottom */
     bottom: 0;
     background: rgba(255,249,230,0.95);
     z-index: 10;
@@ -127,15 +134,6 @@
     .review-item p { margin: 0 0 4px; }
     .leaflet-control-attribution {
   bottom: env(safe-area-inset-bottom) !important;
-}
-.place-carousel{display:flex;overflow-x:auto;gap:8px;padding:8px;border-top:1px solid #ddd}
-.place-card{flex:0 0 200px;background:#fff;border:1px solid #ccc;border-radius:3px;padding:3px;cursor:pointer;font-family:'Dorgan',sans-serif;}
-.filters {
-  display: flex;
-  flex-direction: column;
-}
-.place-carousel {
-  order: 1;
 }
   </style>
 </head>
