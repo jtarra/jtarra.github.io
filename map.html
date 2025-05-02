@@ -41,13 +41,37 @@
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
       background: rgba(255,249,230,0.95); border-radius: 8px;
-      overflow: hidden; max-height: 40px; width: auto;
+      overflow: hidden; max-height: 40px; width: 120px;
       transition: max-height 0.3s, width 0.3s;
+      display: flex;
+      flex-direction: column;
     }
     .filters.expanded {
-      max-height: calc(100vh - 20px); width: 280px; overflow-y: auto;
+      max-height: calc(100vh - 20px);
+      width: 280px;
     }
+  
+  .panel-container {
+    flex: 1;            /* fill remaining vertical space */
+    overflow-y: auto;   /* scroll only the panels */
+  }
+  
+   .place-carousel {
+    display: flex;          /* horizontal cards */
+    overflow-x: auto;       /* scroll overflow */
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid #ddd;
 
+    flex: none;             /* fixed height in flex layout */
+    position: sticky;       /* pin to bottom */
+    bottom: 0;
+    background: rgba(255,249,230,0.95);
+    z-index: 10;
+  }
+    .filters:not(.expanded) .place-carousel {
+        display: none;
+    }
     /* Toggle Button */
     #toggleFilters {
       display: block; width: 100%; padding: 8px;
@@ -113,6 +137,24 @@
     .leaflet-control-attribution {
   bottom: env(safe-area-inset-bottom) !important;
 }
+    .place-card {
+    flex: 0 0 200px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-family: 'Dorgan', sans-serif;
+    }
+    /* Only scroll panels when expanded */
+    .filters:not(.expanded) .panel-container {
+    display: none;
+    }
+    /* Hide carousel when collapsed */
+    .filters:not(.expanded) .place-carousel {
+    display: none;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +162,8 @@
   <!-- Filters Container -->
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
+    <div id="panelContainer" class="panel-container"></div>
+    <div id="placeCarousel" class="place-carousel"></div>
   </div>
 
   <!-- Map Container -->
@@ -215,19 +259,47 @@ setTimeout(() => {
         const basePool=CONFIG.baseColors.slice(); shuffle(basePool);
         const categoryColors={}; Object.keys(catMap).forEach(cat=>{ categoryColors[cat]=basePool.length?basePool.pop():randomColor(); });
         setupFilters(Object.keys(catMap),regSet,catMap);
+        document.getElementById('placeCarousel').style.display = 'none';
         drawMarkers();
         function setupFilters(categories,regions,catMap){
           const fd=document.getElementById('filters');
-          document.getElementById('toggleFilters').onclick=()=>{ const ex=fd.classList.toggle('expanded'); document.getElementById('toggleFilters').textContent=ex?'Hide Filters':'Show Filters'; };
+          const wrapper=document.getElementById('panelContainer');
+          document.getElementById('toggleFilters').onclick = () => {
+            const ex = fd.classList.toggle('expanded');
+            document.getElementById('toggleFilters').textContent =
+              ex ? 'Hide Filters' : 'Show Filters';
+            document.getElementById('placeCarousel').style.display =
+              ex ? 'flex' : 'none';
+            };
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
-          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; items.forEach(it=>b.append(makeCB(isRegion?it:`${title} - ${it}`, isRegion?selReg:selSub, it))); h.onclick=()=>{ const o=b.classList.toggle('active'); arr.textContent=o?'▼':'▶'; }; p.append(h,b); fd.append(p); }
+          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; items.forEach(it=>b.append(makeCB(isRegion?it:`${title} - ${it}`, isRegion?selReg:selSub, it))); h.onclick=()=>{ const o=b.classList.toggle('active'); arr.textContent=o?'▼':'▶'; }; p.append(h,b); wrapper.append(p); }
           if(regions.size) addPanel('Region',[...regions].sort(),true);
           addPanel('Visited?',['Been there','Not yet'],false,true);
           if(categories.includes('Food')) addPanel('Food',[...catMap['Food']].sort(),false);
           if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
           categories.filter(c=>c!=='Food'&&c!=='Sweet Treats').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
         }
-        function drawMarkers(){ markerLayer.clearLayers(); places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; let popup=`<strong>${p.name}</strong><br>${p.notes||''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerLayer); }); }
+function renderCarousel(v){
+  const c = document.getElementById('placeCarousel');
+  c.innerHTML = '';
+  v.forEach(p => {
+    c.insertAdjacentHTML('beforeend',
+      `<div class="place-card">
+          <h4>${p.name}</h4>
+          ${p.notes ? `<p>${p.notes}</p>` : ''}
+          <p><em>${p.category} – ${p.subcategory}${p.region?` / ${p.region}`:''}</em></p>
+          </div>`
+    );
+  const cardEl = c.lastElementChild;
+  cardEl.onclick = () => {
+    map.flyTo(p.latlng, 14, { animate: true });
+    markerLayer.getLayers()
+      .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
+      ?.openPopup();
+  };
+  });
+}        
+function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; visible.push(p); let popup=`<strong>${p.name}</strong>${p.notes ? `<br>${p.notes}` : ''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerLayer); }); renderCarousel(visible); }
       }
     })();
   </script>
