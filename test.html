@@ -5,24 +5,18 @@
   <meta charset="utf-8" />
   <title>Hawaii</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin="" />
-
-  <!-- Fallback Font -->
   <link
     href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
     rel="stylesheet" />
-
   <style>
 	/* V Add Fonts here V */
     @font-face { font-family: 'Bardy'; src: url('/MapResources/fonts/Bardy.woff') format('woff'); }
     @font-face { font-family: 'Dorgan'; src: url('/MapResources/fonts/Dorgan.woff') format('woff'); }
 	/* ^ Add Fonts here ^ */
-
     html, body {
       margin: 0;
       width: 100%;
@@ -31,8 +25,6 @@
     }
     #map { width: 100%; height: 100%; }
     .leaflet-div-icon { background: transparent !important; border: none !important; }
-
-    /* Filters container */
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
       background: #FFF9E6; border-radius: 8px;						/* Filters tab BG color*/
@@ -45,12 +37,10 @@
       max-height: calc(100vh - 20px);
       width: 280px;
     }
-  
   .panel-container {
     flex: 1;
     overflow-y: auto;
   }
-  
    .place-carousel {
     display: flex;
     overflow-x: auto;
@@ -215,7 +205,6 @@
         map.attributionControl.setPrefix(''); 
         L.control.zoom({position:'topright'}).addTo(map);
         L.tileLayer(CONFIG.tileUrl,{attribution:CONFIG.attribution}).addTo(map);
-         // ★ Dynamically load & size the user-location icon ★
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude, longitude } = pos.coords;
@@ -225,7 +214,7 @@
       img.src = chosenUrl;  
 
       img.onload = () => {
-        const maxWidth = 32;                   // desired width in px
+        const maxWidth = 32;
         const ratio    = img.height / img.width;
         const w        = maxWidth;
         const h        = Math.round(maxWidth * ratio);
@@ -242,10 +231,10 @@
   .bindPopup('You are here.')
   .openPopup();
 setTimeout(() => {
-  map.invalidateSize();  // force a layout refresh
+  map.invalidateSize();
   map.flyTo(
     [latitude, longitude],
-    map.getZoom() + 1,    // zoom in one level
+    map.getZoom() + 1,
     { animate: true, duration: 1 }
   );
 }, 200);
@@ -266,7 +255,7 @@ setTimeout(() => {
         placeSearch.addEventListener('input', e => {
           const q = e.target.value.trim().toLowerCase();
           if (!q) {
-            drawMarkers();  // back to normal filter mode
+            drawMarkers();
             } else {
             const matches = places.filter(p =>
               p.name.toLowerCase().includes(q) ||
