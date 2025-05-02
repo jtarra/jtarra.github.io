@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
-  <title>Oahu</title>
+  <title>Hawaii</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Leaflet CSS -->
@@ -18,21 +18,16 @@
     rel="stylesheet" />
 
   <style>
-    /**************************
-     *  CONFIGURATION SECTION *
-     **************************/
-    /* Fonts to swap easily */
+	/* V Add Fonts here V */
     @font-face { font-family: 'Bardy'; src: url('/MapResources/fonts/Bardy.woff') format('woff'); }
     @font-face { font-family: 'Dorgan'; src: url('/MapResources/fonts/Dorgan.woff') format('woff'); }
+	/* ^ Add Fonts here ^ */
 
-    /**************************
-     *    STYLE SECTION       *
-     **************************/
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      font-family: sans-serif; /* fallback */
+      font-family: sans-serif;
     }
     #map { width: 100%; height: 100%; }
     .leaflet-div-icon { background: transparent !important; border: none !important; }
@@ -40,7 +35,7 @@
     /* Filters container */
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
-      background: rgba(255,249,230,0.95); border-radius: 8px;
+      background: #FFF9E6; border-radius: 8px;						/* Filters tab BG color*/
       overflow: hidden; max-height: 40px; width: 120px;
       transition: max-height 0.3s, width 0.3s;
       display: flex;
@@ -52,19 +47,19 @@
     }
   
   .panel-container {
-    flex: 1;            /* fill remaining vertical space */
-    overflow-y: auto;   /* scroll only the panels */
+    flex: 1;
+    overflow-y: auto;
   }
   
    .place-carousel {
-    display: flex;          /* horizontal cards */
-    overflow-x: auto;       /* scroll overflow */
+    display: flex;
+    overflow-x: auto;
     gap: 8px;
     padding: 8px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #D0B59A;							/* Color of Small Border line between Categories and Carousel */
 
-    flex: none;             /* fixed height in flex layout */
-    position: sticky;       /* pin to bottom */
+    flex: none;
+    position: sticky;
     bottom: 0;
     background: rgba(255,249,230,0.95);
     z-index: 10;
@@ -75,23 +70,22 @@
     /* Toggle Button */
     #toggleFilters {
       display: block; width: 100%; padding: 8px;
-      background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;
-      font-family: 'Dorgan', cursive; cursor: pointer;
+      background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;			/* Show/Hide Filters button color */
+      font-family: 'Dorgan', cursive; cursor: pointer;					/* Show/Hide Filters button font */
     }
 
     /* Panel Headers */
     .panel { margin: 8px; }
     .panel-header {
       display: flex; align-items: center; padding: 6px 8px;
-      background: #E7D8C4; border-radius: 6px; cursor: pointer;
-      font-family: 'Bardy', cursive; font-size: 1.6em;
-      color: #E3B505; text-shadow: 2px 2px 0 #DB504A;
+      background: #E7D8C4; border-radius: 6px; cursor: pointer;				/* Category Tabs BG color */
+      font-family: 'Bardy', cursive; font-size: 1.6em;					/* Category Tabs font */
+      color: #E3B505; text-shadow: 2px 2px 0 #DB504A;					/* Category Tabs Text color & shadow color */
     }
-    /* Checkbox & Emoji */
     .panel-header input[type="checkbox"],
     .panel-body input[type="checkbox"] {
       appearance: none; width: 18px; height: 18px;
-      margin-right: 12px; border: 2px solid #D0B59A;
+      margin-right: 12px; border: 2px solid #D0B59A;					/* Empty checkbox blank square color */
       border-radius: 3px; position: relative; cursor: pointer;
     }
     input[type="checkbox"]:checked { border: none; }
@@ -103,84 +97,74 @@
     }
     .panel-header .color-swatch {
       margin-left: auto; width: 14px; height: 14px;
-      border-radius: 50%; border: 1px solid #999;
+      border-radius: 50%; border: 1px solid #999;					
     }
     .panel-header .arrow { margin-left: 8px; font-weight: bold; }
 
     /* Panel Bodies */
     .panel-body { display: none; padding: 8px 12px;
-      background: #FAF1D2; border-radius: 6px;
+      background: #F8E9D5; border-radius: 6px;						/* Expanded Categories BG color */
     }
     .panel-body.active { display: block; }
     .panel-body label {
       display: block; margin-bottom: 6px;
-      font-family: 'Dorgan', sans-serif; font-size: 1.1em;
+      font-family: 'Dorgan', sans-serif; font-size: 1.1em;				/* Subcategory Font */
       position: relative;
     }
 
     /* Popup Styling */
     .leaflet-popup-content-wrapper {
       max-height: 80vh; overflow: auto;
-      font-family: 'Dorgan', sans-serif;
+      font-family: 'Dorgan', sans-serif;						/* Map Popup Font */
     }
     .review-carousel {
       display: flex; overflow-x: auto; gap: 8px; padding: 6px 0;
     }
     .review-item {
       flex: 0 0 180px; background: #fff;
-      border: 1px solid #ddd; padding: 6px;
+      border: 1px solid #ccc; padding: 6px;
       border-radius: 4px; box-sizing: border-box;
     }
     .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
     .review-item strong { display: block; margin-bottom: 4px; }
     .review-item p { margin: 0 0 4px; }
     .leaflet-control-attribution {
-  bottom: env(safe-area-inset-bottom) !important;
-}
+      bottom: env(safe-area-inset-bottom) !important;
+    }
     .place-card {
     flex: 0 0 200px;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: #FAF1D2;								/* Carousel Cards' BG Color */
+    border: 1px solid #D0B59A;								/* Carousel Cards' Outline Color */
     border-radius: 6px;
     padding: 6px;
     box-sizing: border-box;
     cursor: pointer;
-    font-family: 'Dorgan', sans-serif;
+    font-family: 'Dorgan', sans-serif;							/* Carousel Cards' Font */
     }
-    /* Only scroll panels when expanded */
     .filters:not(.expanded) .panel-container {
     display: none;
     }
-    /* Hide carousel when collapsed */
     .filters:not(.expanded) .place-carousel {
     display: none;
     }
-    /* ─────── Search Box Styling ─────── */
     #placeSearch {
-      width: calc(100% - 16px);           /* full width minus panel padding */
-      margin: 8px;                        /* same gutter as cards */
-      padding: 6px 10px;                  /* comfortable click/tap area */
-      border: 1px solid #ccc;             /* subtle border */
-      border-radius: 4px;                 /* rounded corners */
+      width: calc(100% - 16px);
+      margin: 8px;
+      padding: 6px 10px;
+      border: 1px solid #D0B59A;							/* Search Outline Color */
+      border-radius: 4px;
       backdrop-filter: blur(4px);
-      background-color: rgba(250,241,210, 0.6);          /* light gray fill */
-      font-family: 'Dorgan', sans-serif;  /* match your popups */
-      font-size: 1em;                     /* readable text size */
+      background-color: #FAF1D2;							/* Search Box Color */
+      font-family: 'Dorgan', sans-serif;						/* Search Box Font */
+      font-size: 1em;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    #placeSearch:focus {
-      outline: none;                      /* remove default glow */
-      border-color: #E7D8C4;              /* golden highlight on focus */
-      box-shadow: 0 0 4px rgba(231,216,196,0.6);
-    }
     #placeSearch::placeholder {
-      color: #999;                        /* softer placeholder text */
+      color: #999;									/* Search Placeholder Text Color */
     }
   </style>
 </head>
 <body>
-
-  <!-- Filters Container -->
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
     <input type="search" id="placeSearch"
@@ -189,17 +173,11 @@
     <div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
-
-  <!-- Map Container -->
   <div id="map"></div>
-
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
   <script>
-    /**************************
-     *    DATA & CONFIG       *
-     **************************/
+
+/* MAIN USER CONFIG */
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
@@ -212,6 +190,7 @@
       emojiList: ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐋','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️'],
       userIconUrls: ['/MapResources/PNGs/Hula1.png','/MapResources/PNGs/Hula2.png','/MapResources/PNGs/Hula3.png','/MapResources/PNGs/Hula4.png','/MapResources/PNGs/Hula5.png'],
     };
+/* MAIN USER CONFIG */
 
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
@@ -262,8 +241,6 @@
   .addTo(map)
   .bindPopup('You are here.')
   .openPopup();
-
-// Delay + invalidateSize + flyTo as its own statement:
 setTimeout(() => {
   map.invalidateSize();  // force a layout refresh
   map.flyTo(
