@@ -8,12 +8,6 @@
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin="" />
-<link
-	rel="stylesheet"
-	href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
-<link
-	rel="stylesheet"
-	href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
   <style>
 
 	/* V Add Fonts here V */
@@ -168,8 +162,7 @@
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
   <div id="map"></div>
-	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-	<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
 
 /* MAIN USER CONFIG */
@@ -189,7 +182,7 @@
 
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
-      function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h60%,50%)`; }
+      function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
 
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
                 + `/values:batchGet?key=${CONFIG.apiKey}`
@@ -242,26 +235,13 @@ setTimeout(() => {
     map.getZoom() + 1,
     { animate: true, duration: 1 }
   );
- 200);
+}, 200);
       };
-     err => {
+    }, err => {
       console.warn('Geolocation failed:', err.message);
     });
   }
-	const markerCluster = L.markerClusterGroup({
- 	   spiderfyOnMaxZoom: true,
- 	   showCoverageOnHover: false,
-	   maxClusterRadius:       (marker) => {
-		   const threshold = 500; // meters
-		   const latlng = marker.getLatLng();
-		   const latOffset = threshold / 111320;
-		   const p1 = map.latLngToLayerPoint(latlng);
-		   const p2 = map.latLngToLayerPoint([latlng.lat + latOffset, latlng.lng]);
-		   return p1.distanceTo(p2);
-		},
-	   disableClusteringAtZoom: 15
- 	 });
-	map.addLayer(markerCluster);
+        const markerLayer=L.layerGroup().addTo(map);
         const catMap={},regSet=new Set(); places.forEach(p=>{ (catMap[p.category]||(catMap[p.category]=new Set())).add(p.subcategory); if(p.region) regSet.add(p.region); });
         const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)); const selReg=new Set(regSet); const selVis=new Set(['Been there','Not yet']);
         const basePool=CONFIG.baseColors.slice(); shuffle(basePool);
@@ -316,13 +296,13 @@ function renderCarousel(v){
   const cardEl = c.lastElementChild;
   cardEl.onclick = () => {
     map.flyTo(p.latlng, 14, { animate: true });
-    markerCluster.getLayers()
+    markerLayer.getLayers()
       .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
       ?.openPopup();
   };
   });
 }        
-function drawMarkers(){ markerCluster.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; visible.push(p); let popup=`<strong>${p.name}</strong>${p.notes ? `<br>${p.notes}` : ''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerCluster); }); renderCarousel(visible); }
+function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; visible.push(p); let popup=`<strong>${p.name}</strong>${p.notes ? `<br>${p.notes}` : ''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerLayer); }); renderCarousel(visible); }
       }
     })();
   </script>
