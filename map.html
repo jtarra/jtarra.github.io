@@ -3,44 +3,29 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
-  <title>Oahu</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Leaflet CSS -->
-  <link
+  <title>Hawaii</title>
+   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin="" />
-
-  <!-- Fallback Font -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap"
-    rel="stylesheet" />
-
   <style>
-    /**************************
-     *  CONFIGURATION SECTION *
-     **************************/
-    /* Fonts to swap easily */
+
+	/* V Add Fonts here V */
     @font-face { font-family: 'Bardy'; src: url('/MapResources/fonts/Bardy.woff') format('woff'); }
     @font-face { font-family: 'Dorgan'; src: url('/MapResources/fonts/Dorgan.woff') format('woff'); }
+	/* ^ Add Fonts here ^ */
 
-    /**************************
-     *    STYLE SECTION       *
-     **************************/
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      font-family: sans-serif; /* fallback */
+      font-family: sans-serif;
     }
     #map { width: 100%; height: 100%; }
     .leaflet-div-icon { background: transparent !important; border: none !important; }
-
-    /* Filters container */
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
-      background: rgba(255,249,230,0.95); border-radius: 8px;
+      background: #FFF9E6; border-radius: 8px;						/* Filters tab BG color*/
       overflow: hidden; max-height: 40px; width: 120px;
       transition: max-height 0.3s, width 0.3s;
       display: flex;
@@ -50,21 +35,19 @@
       max-height: calc(100vh - 20px);
       width: 280px;
     }
-  
   .panel-container {
-    flex: 1;            /* fill remaining vertical space */
-    overflow-y: auto;   /* scroll only the panels */
+    flex: 1;
+    overflow-y: auto;
   }
-  
    .place-carousel {
-    display: flex;          /* horizontal cards */
-    overflow-x: auto;       /* scroll overflow */
+    display: flex;
+    overflow-x: auto;
     gap: 8px;
     padding: 8px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #D0B59A;							/* Color of Small Border line between Categories and Carousel */
 
-    flex: none;             /* fixed height in flex layout */
-    position: sticky;       /* pin to bottom */
+    flex: none;
+    position: sticky;
     bottom: 0;
     background: rgba(255,249,230,0.95);
     z-index: 10;
@@ -75,23 +58,22 @@
     /* Toggle Button */
     #toggleFilters {
       display: block; width: 100%; padding: 8px;
-      background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;
-      font-family: 'Dorgan', cursive; cursor: pointer;
+      background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;			/* Show/Hide Filters button color */
+      font-family: 'Dorgan', cursive; cursor: pointer;					/* Show/Hide Filters button font */
     }
 
     /* Panel Headers */
     .panel { margin: 8px; }
     .panel-header {
       display: flex; align-items: center; padding: 6px 8px;
-      background: #E7D8C4; border-radius: 6px; cursor: pointer;
-      font-family: 'Bardy', cursive; font-size: 1.6em;
-      color: #E3B505; text-shadow: 2px 2px 0 #DB504A;
+      background: #E7D8C4; border-radius: 6px; cursor: pointer;				/* Category Tabs BG color */
+      font-family: 'Bardy', cursive; font-size: 1.6em;					/* Category Tabs font */
+      color: #E3B505; text-shadow: 2px 2px 0 #DB504A;					/* Category Tabs Text color & shadow color */
     }
-    /* Checkbox & Emoji */
     .panel-header input[type="checkbox"],
     .panel-body input[type="checkbox"] {
       appearance: none; width: 18px; height: 18px;
-      margin-right: 12px; border: 2px solid #D0B59A;
+      margin-right: 12px; border: 2px solid #D0B59A;					/* Empty checkbox blank square color */
       border-radius: 3px; position: relative; cursor: pointer;
     }
     input[type="checkbox"]:checked { border: none; }
@@ -103,83 +85,91 @@
     }
     .panel-header .color-swatch {
       margin-left: auto; width: 14px; height: 14px;
-      border-radius: 50%; border: 1px solid #999;
+      border-radius: 50%; border: 1px solid #999;					
     }
     .panel-header .arrow { margin-left: 8px; font-weight: bold; }
 
     /* Panel Bodies */
     .panel-body { display: none; padding: 8px 12px;
-      background: #FAF1D2; border-radius: 6px;
+      background: #F8E9D5; border-radius: 6px;						/* Expanded Categories BG color */
     }
     .panel-body.active { display: block; }
     .panel-body label {
       display: block; margin-bottom: 6px;
-      font-family: 'Dorgan', sans-serif; font-size: 1.1em;
+      font-family: 'Dorgan', sans-serif; font-size: 1.1em;				/* Subcategory Font */
       position: relative;
     }
 
     /* Popup Styling */
     .leaflet-popup-content-wrapper {
       max-height: 80vh; overflow: auto;
-      font-family: 'Dorgan', sans-serif;
+      font-family: 'Dorgan', sans-serif;						/* Map Popup Font */
     }
     .review-carousel {
       display: flex; overflow-x: auto; gap: 8px; padding: 6px 0;
     }
     .review-item {
       flex: 0 0 180px; background: #fff;
-      border: 1px solid #ddd; padding: 6px;
+      border: 1px solid #ccc; padding: 6px;
       border-radius: 4px; box-sizing: border-box;
     }
     .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
     .review-item strong { display: block; margin-bottom: 4px; }
     .review-item p { margin: 0 0 4px; }
     .leaflet-control-attribution {
-  bottom: env(safe-area-inset-bottom) !important;
-}
+      bottom: env(safe-area-inset-bottom) !important;
+    }
     .place-card {
     flex: 0 0 200px;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: #FAF1D2;								/* Carousel Cards' BG Color */
+    border: 1px solid #D0B59A;								/* Carousel Cards' Outline Color */
     border-radius: 6px;
     padding: 6px;
     box-sizing: border-box;
     cursor: pointer;
-    font-family: 'Dorgan', sans-serif;
+    font-family: 'Dorgan', sans-serif;							/* Carousel Cards' Font */
     }
-    /* Only scroll panels when expanded */
     .filters:not(.expanded) .panel-container {
     display: none;
     }
-    /* Hide carousel when collapsed */
     .filters:not(.expanded) .place-carousel {
     display: none;
+    }
+    #placeSearch {
+      width: calc(100% - 16px);
+      margin: 8px;
+      padding: 6px 10px;
+      border: 1px solid #D0B59A;							/* Search Outline Color */
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+      background-color: #FAF1D2;							/* Search Box Color */
+      font-family: 'Dorgan', sans-serif;						/* Search Box Font */
+      font-size: 1em;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #placeSearch::placeholder {
+      color: #999;									/* Search Placeholder Text Color */
     }
   </style>
 </head>
 <body>
-
-  <!-- Filters Container -->
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
+    <input type="search" id="placeSearch"
+      placeholder="Search…"
+      style="display:none; width: calc(100% - 16px); margin: 8px;" />
     <div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
-
-  <!-- Map Container -->
   <div id="map"></div>
-
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
   <script>
-    /**************************
-     *    DATA & CONFIG       *
-     **************************/
+
+/* MAIN USER CONFIG */
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
-      ranges: ['Places!A:J','Reviews!A:E'],
+      ranges: ['Places!A:K','Reviews!A:E'],
       mapCenter: [21.4559, -157.9519],
       mapZoom: 10,
       tileUrl: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
@@ -188,6 +178,7 @@
       emojiList: ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐋','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️'],
       userIconUrls: ['/MapResources/PNGs/Hula1.png','/MapResources/PNGs/Hula2.png','/MapResources/PNGs/Hula3.png','/MapResources/PNGs/Hula4.png','/MapResources/PNGs/Hula5.png'],
     };
+/* MAIN USER CONFIG */
 
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
@@ -201,7 +192,7 @@
         .then(r=>r.ok?r.json():Promise.reject(r.statusText))
         .then(data=>{
           const [hdrP,...rowsP] = data.valueRanges[0].values;
-          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
+          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           initMap(places,reviewsBy);
@@ -212,7 +203,6 @@
         map.attributionControl.setPrefix(''); 
         L.control.zoom({position:'topright'}).addTo(map);
         L.tileLayer(CONFIG.tileUrl,{attribution:CONFIG.attribution}).addTo(map);
-         // ★ Dynamically load & size the user-location icon ★
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude, longitude } = pos.coords;
@@ -222,7 +212,7 @@
       img.src = chosenUrl;  
 
       img.onload = () => {
-        const maxWidth = 32;                   // desired width in px
+        const maxWidth = 32;
         const ratio    = img.height / img.width;
         const w        = maxWidth;
         const h        = Math.round(maxWidth * ratio);
@@ -238,13 +228,11 @@
   .addTo(map)
   .bindPopup('You are here.')
   .openPopup();
-
-// Delay + invalidateSize + flyTo as its own statement:
 setTimeout(() => {
-  map.invalidateSize();  // force a layout refresh
+  map.invalidateSize();
   map.flyTo(
     [latitude, longitude],
-    map.getZoom() + 1,    // zoom in one level
+    map.getZoom() + 1,
     { animate: true, duration: 1 }
   );
 }, 200);
@@ -261,6 +249,19 @@ setTimeout(() => {
         setupFilters(Object.keys(catMap),regSet,catMap);
         document.getElementById('placeCarousel').style.display = 'none';
         drawMarkers();
+        const placeSearch = document.getElementById('placeSearch');
+        placeSearch.addEventListener('input', e => {
+          const q = e.target.value.trim().toLowerCase();
+          if (!q) {
+            drawMarkers();
+            } else {
+            const matches = places.filter(p =>
+              p.name.toLowerCase().includes(q) ||
+              (p.tags || []).some(t => t.toLowerCase().includes(q))
+              );
+            renderCarousel(matches);
+            }
+          });
         function setupFilters(categories,regions,catMap){
           const fd=document.getElementById('filters');
           const wrapper=document.getElementById('panelContainer');
@@ -270,6 +271,8 @@ setTimeout(() => {
               ex ? 'Hide Filters' : 'Show Filters';
             document.getElementById('placeCarousel').style.display =
               ex ? 'flex' : 'none';
+            document.getElementById('placeSearch').style.display =
+              ex ? 'block' : 'none';
             };
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
           function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; items.forEach(it=>b.append(makeCB(isRegion?it:`${title} - ${it}`, isRegion?selReg:selSub, it))); h.onclick=()=>{ const o=b.classList.toggle('active'); arr.textContent=o?'▼':'▶'; }; p.append(h,b); wrapper.append(p); }
