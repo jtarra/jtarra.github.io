@@ -251,6 +251,9 @@ setTimeout(() => {
 	const markerCluster = L.markerClusterGroup({
  	   spiderfyOnMaxZoom: true,
  	   showCoverageOnHover: false
+	   maxClusterRadius:   30,
+	   disableClusteringAtZoom: 15
+	   
  	 });
 	map.addLayer(markerCluster);
         const catMap={},regSet=new Set(); places.forEach(p=>{ (catMap[p.category]||(catMap[p.category]=new Set())).add(p.subcategory); if(p.region) regSet.add(p.region); });
