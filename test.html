@@ -189,7 +189,7 @@
 
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
-      function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
+      function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h60%,50%)`; }
 
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
                 + `/values:batchGet?key=${CONFIG.apiKey}`
@@ -242,9 +242,9 @@ setTimeout(() => {
     map.getZoom() + 1,
     { animate: true, duration: 1 }
   );
-}, 200);
+ 200);
       };
-    }, err => {
+     err => {
       console.warn('Geolocation failed:', err.message);
     });
   }
@@ -316,7 +316,7 @@ function renderCarousel(v){
   const cardEl = c.lastElementChild;
   cardEl.onclick = () => {
     map.flyTo(p.latlng, 14, { animate: true });
-    markerLayer.getLayers()
+    markerCluster.getLayers()
       .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
       ?.openPopup();
   };
