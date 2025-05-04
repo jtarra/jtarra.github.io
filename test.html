@@ -251,7 +251,14 @@ setTimeout(() => {
 	const markerCluster = L.markerClusterGroup({
  	   spiderfyOnMaxZoom: true,
  	   showCoverageOnHover: false,
-	   maxClusterRadius:   10,
+	   maxClusterRadius:       (marker) => {
+		   const threshold = 500; // meters
+		   const latlng = marker.getLatLng();
+		   const latOffset = threshold / 111320;
+		   const p1 = map.latLngToLayerPoint(latlng);
+		   const p2 = map.latLngToLayerPoint([latlng.lat + latOffset, latlng.lng]);
+		   return p1.distanceTo(p2);
+		},
 	   disableClusteringAtZoom: 15
  	 });
 	map.addLayer(markerCluster);
