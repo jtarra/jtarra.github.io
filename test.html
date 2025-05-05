@@ -193,12 +193,12 @@
         .then(r=>r.ok?r.json():Promise.reject(r.statusText))
         .then(data=>{
           const [hdrP,...rowsP] = data.valueRanges[0].values;
-          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
-	  const fuse = new Fuse(places, {
- 		 keys: ['name','notes','tags'],
-  		 threshold: 0.3,
- 		 includeScore: true
+		const fuse = new Fuse(places, {
+		  keys: ['name','notes','tags'],
+		  threshold: 0.3,
+		  includeScore: true
 		});
+          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
 	  const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
@@ -264,7 +264,7 @@ setTimeout(() => {
 		   : places;
 
 		 selSub.clear();
-		results.forEach(p => selSub.add(${p.category} - ${p.subcategory}));
+		results.forEach(p => selSub.add(`${p.category} - ${p.subcategory}`));
 	      drawMarkers();
 	      });
         function setupFilters(categories,regions,catMap){
