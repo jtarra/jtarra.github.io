@@ -295,7 +295,10 @@ setTimeout(() => {
           addPanel('Visited?',['Been there','Not yet'],false,true);
           if(categories.includes('Food')) addPanel('Food',[...catMap['Food']].sort(),false);
           if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
-          categories.filter(c=>c!=='Food'&&c!=='Sweet Treats').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
+          categories.filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
+	  if (categories.includes('Miscellaneous')) {
+  		addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
+		}
         }
 function renderCarousel(v){
   const c = document.getElementById('placeCarousel');
