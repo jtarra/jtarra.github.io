@@ -203,8 +203,12 @@
       function initMap(places,reviewsBy){
 	const fuse = new Fuse(places, {
 		  keys: ['name','notes','tags'],
-		  threshold: 0.25,
-		  distance: 70,
+		  threshold: 0.2, 
+		  distance: 50,
+		  ignoreLocation: true,
+		  tokenize: true,
+		  tokenSeparator: /[\s\-\/\.,;:!?]+/,
+		  minMatchCharLength: 2, 
 		  includeScore: true
 		});
         const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
