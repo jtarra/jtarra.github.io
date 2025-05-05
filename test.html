@@ -193,11 +193,6 @@
         .then(r=>r.ok?r.json():Promise.reject(r.statusText))
         .then(data=>{
           const [hdrP,...rowsP] = data.valueRanges[0].values;
-		const fuse = new Fuse(places, {
-		  keys: ['name','notes','tags'],
-		  threshold: 0.3,
-		  includeScore: true
-		});
           const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
 	  const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
@@ -206,6 +201,11 @@
         }).catch(console.error);
 
       function initMap(places,reviewsBy){
+	const fuse = new Fuse(places, {
+		  keys: ['name','notes','tags'],
+		  threshold: 0.3,
+		  includeScore: true
+		});
         const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
         map.attributionControl.setPrefix(''); 
         L.control.zoom({position:'topright'}).addTo(map);
