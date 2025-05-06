@@ -262,16 +262,13 @@ setTimeout(() => {
         document.getElementById('placeCarousel').style.display = 'none';
         drawMarkers();
         const placeSearch = document.getElementById('placeSearch');
-        placeSearch.addEventListener('input', e => {
-          const q = placeSearch.value.trim();
-	  const results = q
-	    ? fuse.search(q).map(r => r.item)
-		   : places;
-
-		 selSub.clear();
-		results.forEach(p => selSub.add(`${p.category} - ${p.subcategory}`));
-	      drawMarkers();
-	      });
+        placeSearch.addEventListener('input', () => {
+		  const q = placeSearch.value.trim();
+		  const results = q
+		    ? fuse.search(q).map(r => r.item)
+		    : places;
+		  renderCarousel(results);
+		});
         function setupFilters(categories,regions,catMap){
           const fd=document.getElementById('filters');
           const wrapper=document.getElementById('panelContainer');
