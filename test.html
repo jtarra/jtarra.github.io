@@ -202,6 +202,16 @@
 
       function initMap(places,reviewsBy){
 	const fuse = new Fuse(places, {
+		getFn: (obj, path) => {
+		    const v = Fuse.configs.getFn(obj, path);
+		    if (typeof v === 'string') {
+		      return v.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+		    }
+		    if (Array.isArray(v)) {
+		      return v.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
+		    }
+		    return v;
+		  }, 
 		  keys: ['name','notes','tags'],
 		  threshold: 0.15, 
 		  distance: 20,
@@ -264,6 +274,7 @@ setTimeout(() => {
         const placeSearch = document.getElementById('placeSearch');
         placeSearch.addEventListener('input', () => {
 		  const q = placeSearch.value.trim();
+		  const q = raw.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
 		  const results = q
 		    ? fuse.search(q).map(r => r.item)
 		    : places;
