@@ -307,7 +307,7 @@ function renderCarousel(v){
     c.insertAdjacentHTML('beforeend',
       `<div class="place-card">
           <h4>${p.name}</h4>
-          ${p.notes ? `<p>${p.notes}</p>` : ''}
+       /*   ${p.notes ? `<p>${p.notes}</p>` : ''}	*/
           <p><em>${p.category} – ${p.subcategory}${p.region?` / ${p.region}`:''}</em></p>
           </div>`
     );
