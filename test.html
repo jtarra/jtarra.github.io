@@ -202,16 +202,16 @@
 
       function initMap(places,reviewsBy){
 	const fuse = new Fuse(places, {
-		getFn: (obj, path) => {
-		    const v = Fuse.configs.getFn(obj, path);
-		    if (typeof v === 'string') {
-		      return v.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
-		    }
-		    if (Array.isArray(v)) {
-		      return v.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
-		    }
-		    return v;
-		  }, 
+		   getFn: (obj, path) => {
+		     const value = obj[path];
+		     if (typeof value === 'string') {
+		       return value.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+		     }
+		     if (Array.isArray(value)) {
+		       return value.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
+		     }
+		     return value;
+		   },
 		  keys: ['name','notes','tags'],
 		  threshold: 0.15, 
 		  distance: 20,
