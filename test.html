@@ -275,7 +275,6 @@ setTimeout(() => {
         placeSearch.addEventListener('input', () => {
 		  const raw = placeSearch.value.trim();
 		  const q   = raw.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
-   	          const results = q
 		  const results = q
 		    ? fuse.search(q).map(r => r.item)
 		    : places;
