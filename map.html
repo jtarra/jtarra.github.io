@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6/dist/fuse.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
   <title>Hawaii</title>
@@ -192,13 +193,24 @@
         .then(r=>r.ok?r.json():Promise.reject(r.statusText))
         .then(data=>{
           const [hdrP,...rowsP] = data.valueRanges[0].values;
-          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
+          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
+	  const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           initMap(places,reviewsBy);
         }).catch(console.error);
 
       function initMap(places,reviewsBy){
+	const fuse = new Fuse(places, {
+		  keys: ['name','notes','tags'],
+		  threshold: 0.2, 
+		  distance: 50,
+		  ignoreLocation: true,
+		  tokenize: true,
+		  tokenSeparator: /[\s\-\/\.,;:!?\"'“”‘’]+/,
+		  minMatchCharLength: 2, 
+		  includeScore: true
+		});
         const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
         map.attributionControl.setPrefix(''); 
         L.control.zoom({position:'topright'}).addTo(map);
@@ -251,17 +263,15 @@ setTimeout(() => {
         drawMarkers();
         const placeSearch = document.getElementById('placeSearch');
         placeSearch.addEventListener('input', e => {
-          const q = e.target.value.trim().toLowerCase();
-          if (!q) {
-            drawMarkers();
-            } else {
-            const matches = places.filter(p =>
-              p.name.toLowerCase().includes(q) ||
-              (p.tags || []).some(t => t.toLowerCase().includes(q))
-              );
-            renderCarousel(matches);
-            }
-          });
+          const q = placeSearch.value.trim();
+	  const results = q
+	    ? fuse.search(q).map(r => r.item)
+		   : places;
+
+		 selSub.clear();
+		results.forEach(p => selSub.add(`${p.category} - ${p.subcategory}`));
+	      drawMarkers();
+	      });
         function setupFilters(categories,regions,catMap){
           const fd=document.getElementById('filters');
           const wrapper=document.getElementById('panelContainer');
@@ -275,12 +285,20 @@ setTimeout(() => {
               ex ? 'block' : 'none';
             };
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
-          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; items.forEach(it=>b.append(makeCB(isRegion?it:`${title} - ${it}`, isRegion?selReg:selSub, it))); h.onclick=()=>{ const o=b.classList.toggle('active'); arr.textContent=o?'▼':'▶'; }; p.append(h,b); wrapper.append(p); }
+          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
+		if (title === 'Visited?') {
+			items.forEach(it => b.append(makeCB(it,selVis,it)));
+				} else {
+					items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));}
+		h.onclick=()=>{ const o=b.classList.toggle('active'); arr.textContent=o?'▼':'▶'; }; p.append(h,b); wrapper.append(p); }
           if(regions.size) addPanel('Region',[...regions].sort(),true);
           addPanel('Visited?',['Been there','Not yet'],false,true);
           if(categories.includes('Food')) addPanel('Food',[...catMap['Food']].sort(),false);
           if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
-          categories.filter(c=>c!=='Food'&&c!=='Sweet Treats').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
+          categories.filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
+	  if (categories.includes('Miscellaneous')) {
+  		addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
+		}
         }
 function renderCarousel(v){
   const c = document.getElementById('placeCarousel');
@@ -302,7 +320,23 @@ function renderCarousel(v){
   };
   });
 }        
-function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; visible.push(p); let popup=`<strong>${p.name}</strong>${p.notes ? `<br>${p.notes}` : ''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`; L.marker(p.latlng,{icon:L.divIcon({html:svgIcon,className:'leaflet-div-icon',iconSize:[24,35],iconAnchor:[12,35],popupAnchor:[0,-35]})}).bindPopup(popup,{autoPan:true}).addTo(markerLayer); }); renderCarousel(visible); }
+function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if(p.region&&!selReg.has(p.region)) return; visible.push(p); let popup=`<strong>${p.name}</strong>${p.notes ? `<br>${p.notes}` : ''}<br><em>${p.category} – ${p.subcategory}`+(p.region?` / ${p.region}`:'')+`</em><br>`; const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; 
+const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
+L.marker(p.latlng, {
+	icon: L.divIcon({
+	html: svgIcon,
+	iconSize: [18, 28],
+	iconAnchor: [9, 28],
+	popupAnchor: [0, -35]
+ 	})
+ 	})
+	.on('click', () => {
+	map.flyTo(p.latlng, 12, { animate: true });
+	})
+	.bindPopup(popup, { autoPan: true })
+	.addTo(markerLayer);
+	 });
+renderCarousel(visible); }
       }
     })();
   </script>
