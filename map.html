@@ -170,7 +170,7 @@
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
-      ranges: ['Places!A:K','Reviews!A:E'],
+      ranges: ['HawaiiPlaces!A:K','HawaiiReviews!A:E'],
       mapCenter: [21.4559, -157.9519],
       mapZoom: 10,
       tileUrl: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
@@ -202,13 +202,23 @@
 
       function initMap(places,reviewsBy){
 	const fuse = new Fuse(places, {
+		   getFn: (obj, path) => {
+		     const value = obj[path];
+		     if (typeof value === 'string') {
+		       return value.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+		     }
+		     if (Array.isArray(value)) {
+		       return value.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
+		     }
+		     return value;
+		   },
 		  keys: ['name','notes','tags'],
-		  threshold: 0.2, 
-		  distance: 50,
+		  threshold: 0.15, 
+		  distance: 20,
 		  ignoreLocation: true,
 		  tokenize: true,
 		  tokenSeparator: /[\s\-\/\.,;:!?\"'“”‘’]+/,
-		  minMatchCharLength: 2, 
+		  minMatchCharLength: 3, 
 		  includeScore: true
 		});
         const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
@@ -262,16 +272,14 @@ setTimeout(() => {
         document.getElementById('placeCarousel').style.display = 'none';
         drawMarkers();
         const placeSearch = document.getElementById('placeSearch');
-        placeSearch.addEventListener('input', e => {
-          const q = placeSearch.value.trim();
-	  const results = q
-	    ? fuse.search(q).map(r => r.item)
-		   : places;
-
-		 selSub.clear();
-		results.forEach(p => selSub.add(`${p.category} - ${p.subcategory}`));
-	      drawMarkers();
-	      });
+        placeSearch.addEventListener('input', () => {
+		  const raw = placeSearch.value.trim();
+		  const q   = raw.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+		  const results = q
+		    ? fuse.search(q).map(r => r.item)
+		    : places;
+		  renderCarousel(results);
+		});
         function setupFilters(categories,regions,catMap){
           const fd=document.getElementById('filters');
           const wrapper=document.getElementById('panelContainer');
@@ -307,7 +315,7 @@ function renderCarousel(v){
     c.insertAdjacentHTML('beforeend',
       `<div class="place-card">
           <h4>${p.name}</h4>
-          ${p.notes ? `<p>${p.notes}</p>` : ''}
+       		${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
           <p><em>${p.category} – ${p.subcategory}${p.region?` / ${p.region}`:''}</em></p>
           </div>`
     );
