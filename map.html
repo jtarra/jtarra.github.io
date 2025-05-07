@@ -139,7 +139,7 @@
     #placeSearch {
       width: calc(100% - 16px);
       margin: 8px;
-      padding: 6px 10px;
+      padding: 10px 10px 6px;
       border: 1px solid #D0B59A;							/* Search Outline Color */
       border-radius: 4px;
       backdrop-filter: blur(4px);
@@ -151,15 +151,44 @@
     #placeSearch::placeholder {
       color: #999;									/* Search Placeholder Text Color */
     }
+	.search-toggle-container {
+	  display: flex;
+	}
+	.search-toggle-container input#placeSearch {
+	  flex: 2;
+	  width: auto;
+	  border-radius: 8px;
+	}
+	.search-toggle-container button#toggleSubcats {
+	  flex: 1;
+	  margin: 0;
+	  background: #E7D8C4;								 /* Filter select/unselect all button color */
+	  padding-top: 6px;
+	  border-radius: 8px;
+	  border: none;
+	  border-bottom: 1px solid #ddd;
+	  font-family: 'Dorgan', cursive;						/* Filter select/unselect all button font */
+	  cursor: pointer;
+	}
   </style>
 </head>
 <body>
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
-    <input type="search" id="placeSearch"
-      placeholder="Search…"
-      style="display:none; width: calc(100% - 16px); margin: 8px;" />
-    <div id="panelContainer" class="panel-container"></div>
+<div class="search-toggle-container">
+  <input type="search" id="placeSearch"
+    placeholder="Search…"
+    style="display:none; flex:2; margin:8px;" />
+  <button id="toggleSubcats"
+    style="display:none; flex:1; margin:8px;
+           background:#E7D8C4; border:none;
+           border-bottom:1px solid #ddd;
+           font-family:'Dorgan', cursive;
+           cursor:pointer;">
+    Deselect All
+  </button>
+</div>
+<div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
   <div id="map"></div>
@@ -271,6 +300,21 @@ setTimeout(() => {
         setupFilters(Object.keys(catMap),regSet,catMap);
         document.getElementById('placeCarousel').style.display = 'none';
         drawMarkers();
+	 let allOn = true;
+		const toggleSubcats = document.getElementById('toggleSubcats');
+		toggleSubcats.onclick = () => {
+		  allOn = !allOn;
+		  document.querySelectorAll('#panelContainer .panel').forEach(panel => {
+		    const hdr = panel.querySelector('.panel-header');
+		    const title = hdr.textContent.trim().slice(0, -1);
+		    if (title !== 'Region' && title !== 'Visited?') {
+		      const master = hdr.querySelector('input[type="checkbox"]');
+		      master.checked = allOn;
+		      master.dispatchEvent(new Event('change'));
+		    }
+		  });
+		  toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
+		};
         const placeSearch = document.getElementById('placeSearch');
         placeSearch.addEventListener('input', () => {
 		  const raw = placeSearch.value.trim();
@@ -283,15 +327,17 @@ setTimeout(() => {
         function setupFilters(categories,regions,catMap){
           const fd=document.getElementById('filters');
           const wrapper=document.getElementById('panelContainer');
-          document.getElementById('toggleFilters').onclick = () => {
-            const ex = fd.classList.toggle('expanded');
-            document.getElementById('toggleFilters').textContent =
-              ex ? 'Hide Filters' : 'Show Filters';
-            document.getElementById('placeCarousel').style.display =
-              ex ? 'flex' : 'none';
-            document.getElementById('placeSearch').style.display =
-              ex ? 'block' : 'none';
-            };
+	 document.getElementById('toggleFilters').onclick = () => {
+	  const ex = fd.classList.toggle('expanded');
+	  document.getElementById('toggleFilters').textContent =
+	    ex ? 'Hide Filters' : 'Show Filters';
+	  document.getElementById('placeCarousel').style.display =
+	    ex ? 'flex' : 'none';
+	  document.getElementById('placeSearch').style.display =
+	    ex ? 'block' : 'none';
+	  document.getElementById('toggleSubcats').style.display =
+	    ex ? 'block' : 'none';
+	};
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
           function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent='▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
 		if (title === 'Visited?') {
