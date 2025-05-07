@@ -155,18 +155,19 @@
 	  display: flex;
 	}
 	.search-toggle-container input#placeSearch {
-	  /* 2 parts of 3 = ~66% */
 	  flex: 2;
-	  width: auto;  /* override any calc width */
+	  width: auto;
+	  border-radius: 8px;
 	}
 	.search-toggle-container button#toggleSubcats {
-	  /* 1 part of 3 = ~33% */
 	  flex: 1;
-	  margin: 0;    /* we handle margin inline above */
-	  background: #E7D8C4;  /* match category tabs’ BG */
+	  margin: 0;
+	  background: #E7D8C4;								 /* Filter select/unselect all button color */
+	  padding-top: 6px;
+	  border-radius: 8px;
 	  border: none;
 	  border-bottom: 1px solid #ddd;
-	  font-family: 'Dorgan', cursive;
+	  font-family: 'Dorgan', cursive;						/* Filter select/unselect all button font */
 	  cursor: pointer;
 	}
   </style>
@@ -305,7 +306,7 @@ setTimeout(() => {
 		  allOn = !allOn;
 		  document.querySelectorAll('#panelContainer .panel').forEach(panel => {
 		    const hdr = panel.querySelector('.panel-header');
-		    const title = hdr.childNodes[1].textContent.trim();
+		    const title = hdr.textContent.trim().slice(0, -1);
 		    if (title !== 'Region' && title !== 'Visited?') {
 		      const master = hdr.querySelector('input[type="checkbox"]');
 		      master.checked = allOn;
