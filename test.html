@@ -151,15 +151,43 @@
     #placeSearch::placeholder {
       color: #999;									/* Search Placeholder Text Color */
     }
+	.search-toggle-container {
+	  display: flex;
+	}
+	.search-toggle-container input#placeSearch {
+	  /* 2 parts of 3 = ~66% */
+	  flex: 2;
+	  width: auto;  /* override any calc width */
+	}
+	.search-toggle-container button#toggleSubcats {
+	  /* 1 part of 3 = ~33% */
+	  flex: 1;
+	  margin: 0;    /* we handle margin inline above */
+	  background: #E7D8C4;  /* match category tabs’ BG */
+	  border: none;
+	  border-bottom: 1px solid #ddd;
+	  font-family: 'Dorgan', cursive;
+	  cursor: pointer;
+	}
   </style>
 </head>
 <body>
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
-    <input type="search" id="placeSearch"
-      placeholder="Search…"
-      style="display:none; width: calc(100% - 16px); margin: 8px;" />
-    <div id="panelContainer" class="panel-container"></div>
+<div class="search-toggle-container">
+  <input type="search" id="placeSearch"
+    placeholder="Search…"
+    style="display:none; flex:2; margin:8px;" />
+  <button id="toggleSubcats"
+    style="display:none; flex:1; margin:8px;
+           background:#E7D8C4; border:none;
+           border-bottom:1px solid #ddd;
+           font-family:'Dorgan', cursive;
+           cursor:pointer;">
+    Deselect All
+  </button>
+</div>
+<div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
   <div id="map"></div>
@@ -271,6 +299,21 @@ setTimeout(() => {
         setupFilters(Object.keys(catMap),regSet,catMap);
         document.getElementById('placeCarousel').style.display = 'none';
         drawMarkers();
+	 let allOn = true;
+		const toggleSubcats = document.getElementById('toggleSubcats');
+		toggleSubcats.onclick = () => {
+		  allOn = !allOn;
+		  document.querySelectorAll('#panelContainer .panel').forEach(panel => {
+		    const hdr = panel.querySelector('.panel-header');
+		    const title = hdr.textContent.trim();
+		    if (title !== 'Region' && title !== 'Visited?') {
+		      const master = hdr.querySelector('input[type="checkbox"]');
+		      master.checked = allOn;
+		      master.dispatchEvent(new Event('change'));
+		    }
+		  });
+		  toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
+		};
         const placeSearch = document.getElementById('placeSearch');
         placeSearch.addEventListener('input', () => {
 		  const raw = placeSearch.value.trim();
