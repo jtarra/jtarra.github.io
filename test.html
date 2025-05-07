@@ -26,7 +26,7 @@
     .leaflet-div-icon { background: transparent !important; border: none !important; }
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
-      background: #FFF9E6; 						/* Filters tab BG color*/
+      background: #FFF9E6; border-radius: 8px;						/* Filters tab BG color*/
       overflow: hidden; max-height: 40px; width: 120px;
       transition: max-height 0.3s, width 0.3s;
       display: flex;
@@ -59,7 +59,6 @@
     /* Toggle Button */
     #toggleFilters {
       display: block; width: 100%; padding: 8px;
-	    border-radius: 6px;
       background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;			/* Show/Hide Filters button color */
       font-family: 'Dorgan', cursive; cursor: pointer;					/* Show/Hide Filters button font */
     }
@@ -156,17 +155,15 @@
 	  display: flex;
 	}
 	.search-toggle-container input#placeSearch {
+	  /* 2 parts of 3 = ~66% */
 	  flex: 2;
-	  width: auto;
-	  padding-top: 6px;
-	  border-radius: 8px;
+	  width: auto;  /* override any calc width */
 	}
 	.search-toggle-container button#toggleSubcats {
+	  /* 1 part of 3 = ~33% */
 	  flex: 1;
-	  margin: 0;
-	  background: #E7D8C4;								/* Color of Filter select/unselect all buton */
-	  padding-top: 6px;
-	  border-radius: 8px;
+	  margin: 0;    /* we handle margin inline above */
+	  background: #E7D8C4;  /* match category tabs’ BG */
 	  border: none;
 	  border-bottom: 1px solid #ddd;
 	  font-family: 'Dorgan', cursive;
@@ -308,7 +305,7 @@ setTimeout(() => {
 		  allOn = !allOn;
 		  document.querySelectorAll('#panelContainer .panel').forEach(panel => {
 		    const hdr = panel.querySelector('.panel-header');
-		    const title = hdr.textContent.trim().slice(0, -1);
+		    const title = hdr.childNodes[1].textContent.trim();
 		    if (title !== 'Region' && title !== 'Visited?') {
 		      const master = hdr.querySelector('input[type="checkbox"]');
 		      master.checked = allOn;
