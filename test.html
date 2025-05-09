@@ -369,10 +369,16 @@ function renderCarousel(v){
     );
   const cardEl = c.lastElementChild;
   cardEl.onclick = () => {
-    map.flyTo(p.latlng, 14, { animate: true });
-    markerLayer.getLayers()
-      .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
-      ?.openPopup();
+	const currentZoom = map.getZoom();
+	const targetZoom  = 14;
+	map.flyTo(
+	p.latlng,
+	currentZoom < targetZoom ? targetZoom : currentZoom,
+	{ animate: true }
+	);
+	markerLayer.getLayers()
+	.find(m => m.getLatLng().equals(L.latLng(p.latlng)))
+	?.openPopup();
   };
   });
 }        
@@ -387,11 +393,14 @@ L.marker(p.latlng, {
  	})
  	})
 	.on('click', () => {
-	map.flyTo(p.latlng, 12, { animate: true });
+	const currentZoom = map.getZoom();
+	const targetZoom  = 12;
+	map.flyTo(
+	p.latlng,
+	currentZoom < targetZoom ? targetZoom : currentZoom,
+	{ animate: true }
+	);
 	})
-	.bindPopup(popup, { autoPan: true })
-	.addTo(markerLayer);
-	 });
 renderCarousel(visible); }
       }
     })();
