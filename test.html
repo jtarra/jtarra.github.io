@@ -89,22 +89,7 @@
       margin-left: auto; width: 14px; height: 14px;
       border-radius: 50%; border: 1px solid #999;					
     }
-    .panel-header .arrow {
-	  display: inline-block;
-	  width: 0;
-	  height: 0;
-	  margin-left: 8px;
-	  vertical-align: middle;
-	  border-top: 6px solid transparent;
-	  border-bottom: 6px solid transparent;
-	  border-left: 6px solid currentColor;  /* uses the header’s text color */
-	  transition: transform 0.2s ease;
-	}
-	
-	.panel-header .arrow.expanded {
-	  transform: rotate(90deg);  /* points down when expanded */
-	}
-
+.panel-header .arrow { margin-left: 8px; font-weight: bold; }
     /* Panel Bodies */
     .panel-body { display: none; padding: 8px 12px;
       background: #F8E9D5; border-radius: 6px;						/* Expanded Categories BG color */
@@ -361,15 +346,12 @@ setTimeout(() => {
 	    ex ? 'block' : 'none';
 	};
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
-          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
+          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; arr.textContent = '▶'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
 		if (title === 'Visited?') {
 			items.forEach(it => b.append(makeCB(it,selVis,it)));
 				} else {
 					items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));}
-		h.onclick = () => {
-			const o = b.classList.toggle('active');
-			 arr.classList.toggle('expanded', o);
-			 };
+		h.onclick=()=>{ const o=b.classList.toggle('active'); arr.textContent=o?'▼':'▶'; }; p.append(h,b); wrapper.append(p); }
           if(regions.size) addPanel('Region',[...regions].sort(),true);
           addPanel('Visited?',['Been there','Not yet'],false,true);
           if(categories.includes('Food')) addPanel('Food',[...catMap['Food']].sort(),false);
@@ -400,19 +382,8 @@ function renderCarousel(v){
   };
   });
 }        
-function drawMarkers() {
-	markerLayer.clearLayers();
-	const visible = [];
-	 places.forEach(p => {
-	if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
-	 if (!selSub.has(`${p.category} - ${p.subcategory}`)) return;
-	 if (p.regions && !p.regions.some(r => selReg.has(r))) return;
-	  visible.push(p);
-	  // … the rest of your popup / svgIcon / marker code …
-	});
-	renderCarousel(visible);
-	 }
-		const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
+function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategory}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; 
+const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
 L.marker(p.latlng, {
 	icon: L.divIcon({
 	html: svgIcon,
