@@ -337,7 +337,8 @@ setTimeout(() => {
           const wrapper=document.getElementById('panelContainer');
 	 document.getElementById('toggleFilters').onclick = () => {
 	  const ex = fd.classList.toggle('expanded');
-	  document.getElementById('toggleFiltersregions:
+	  document.getElementById('toggleFilters').textContent =
+	    ex ? 'Hide Filters' : 'Show Filters';
 	  document.getElementById('placeCarousel').style.display =
 	    ex ? 'flex' : 'none';
 	  document.getElementById('placeSearch').style.display =
