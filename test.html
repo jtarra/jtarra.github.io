@@ -386,9 +386,11 @@ L.marker(p.latlng, {
 	popupAnchor: [0, -35]
  	})
  	})
-	const currentZoom = map.getZoom();
-	const targetZoom  = 12;
-	map.flyTo(p.latlng, currentZoom < targetZoom ? targetZoom : currentZoom, { animate: true });
+	 .on('click', () => {
+    const currentZoom = map.getZoom();
+    const targetZoom  = 12;
+    map.flyTo(p.latlng, currentZoom < targetZoom ? targetZoom : currentZoom, { animate: true });
+  })
 	.bindPopup(popup, { autoPan: true })
 	.addTo(markerLayer);
 	 });
