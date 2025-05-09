@@ -224,8 +224,11 @@
         .then(r=>r.ok?r.json():Promise.reject(r.statusText))
         .then(data=>{
           const [hdrP,...rowsP] = data.valueRanges[0].values;
-          const places = rowsP.map(r=>{ const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
-	  const [lat,lng]=o.Coordinates.split(',').map(Number); return { id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,region:o.Region,notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
+          const places = rowsP.map(r=>{ 
+		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
+	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
+		  return { 
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           initMap(places,reviewsBy);
@@ -331,8 +334,7 @@ setTimeout(() => {
           const wrapper=document.getElementById('panelContainer');
 	 document.getElementById('toggleFilters').onclick = () => {
 	  const ex = fd.classList.toggle('expanded');
-	  document.getElementById('toggleFilters').textContent =
-	    ex ? 'Hide Filters' : 'Show Filters';
+	  document.getElementById('toggleFiltersregions:
 	  document.getElementById('placeCarousel').style.display =
 	    ex ? 'flex' : 'none';
 	  document.getElementById('placeSearch').style.display =
