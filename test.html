@@ -326,7 +326,7 @@ setTimeout(() => {
 		  allOn = !allOn;
 		  document.querySelectorAll('#panelContainer .panel').forEach(panel => {
 		    const hdr = panel.querySelector('.panel-header');
-		    const title = hdr.childNodes[1].textContent.trim();
+		    const title = hdr.textContent.trim();
 		    if (title !== 'Region' && title !== 'Visited?') {
 		      const master = hdr.querySelector('input[type="checkbox"]');
 		      master.checked = allOn;
