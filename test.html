@@ -240,7 +240,7 @@
 		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
 	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
 		  return { 
-			  id:o.PlaceID,name:o.Name,category:o.Category,subcategory:o.Subcategory,regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           initMap(places,reviewsBy);
@@ -311,10 +311,16 @@ setTimeout(() => {
   }
         const markerLayer=L.layerGroup().addTo(map);
         const catMap={},regSet=new Set(); 
-	      places.forEach(p=>{ (catMap[p.category]||(catMap[p.category]=new Set())).add(p.subcategory); 
-		 if (p.regions) p.regions.forEach(r => regSet.add(r));
+		places.forEach(p => {
+		const set = catMap[p.category] || (catMap[p.category] = new Set());
+		p.subcategories.forEach(sc => set.add(sc));
+		if (p.regions) p.regions.forEach(r => regSet.add(r));
 		});
-        const selSub=new Set(places.map(p=>`${p.category} - ${p.subcategory}`)); const selReg=new Set(regSet); const selVis=new Set(['Been there','Not yet']);
+        const selSub = new Set();
+		places.forEach(p => {
+		p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`));
+		});
+	const selReg=new Set(regSet); const selVis=new Set(['Been there','Not yet']);
         const basePool=CONFIG.baseColors.slice(); shuffle(basePool);
         const categoryColors={}; Object.keys(catMap).forEach(cat=>{ categoryColors[cat]=basePool.length?basePool.pop():randomColor(); });
         setupFilters(Object.keys(catMap),regSet,catMap);
@@ -386,7 +392,7 @@ function renderCarousel(v){
       `<div class="place-card">
           <h4>${p.name}</h4>
 		${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
-          <p><em>${p.category} – ${p.subcategory}</em></p>
+          <p><em>${p.category} – ${p.subcategories.join(', ')}</em></p>
 	  ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
           </div>`
     );
@@ -399,7 +405,7 @@ function renderCarousel(v){
   };
   });
 }        
-function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!selSub.has(`${p.category} - ${p.subcategory}`)) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategory}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; 
+function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; 
 const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
 L.marker(p.latlng, {
 	icon: L.divIcon({
