@@ -224,6 +224,16 @@
     };
 /* MAIN USER CONFIG */
 
+var map = L.map('map',{ zoomControl:false })
+	.setView(CONFIG.mapCenter, CONFIG.mapZoom);
+map.attributionControl.setPrefix('');
+	  L.control.zoom({ position:'topright' }).addTo(map);
+	  L.tileLayer(CONFIG.tileUrl, {
+		  attribution: CONFIG.attribution,
+	  	  subdomains: 'abcd',
+		  ext:        'jpg',
+		  maxZoom:    18
+}).addTo(map);
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
@@ -267,10 +277,6 @@
 		  minMatchCharLength: 3, 
 		  includeScore: true
 		});
-        const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
-        map.attributionControl.setPrefix(''); 
-        L.control.zoom({position:'topright'}).addTo(map);
-        L.tileLayer(CONFIG.tileUrl,{attribution:CONFIG.attribution,subdomains: 'abcd',ext: 'jpg',maxZoom: 18}).addTo(map);
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude, longitude } = pos.coords;
