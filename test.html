@@ -224,10 +224,10 @@
     };
 /* MAIN USER CONFIG */
 
-var map = L.map('map',{ zoomControl:false })
+const map = L.map('map', { zoomControl: false })
 	.setView(CONFIG.mapCenter, CONFIG.mapZoom);
 map.attributionControl.setPrefix('');
-	  L.control.zoom({ position:'topright' }).addTo(map);
+	  L.control.zoom({ position: 'topright' }).addTo(map);
 	  L.tileLayer(CONFIG.tileUrl, {
 		  attribution: CONFIG.attribution,
 	  	  subdomains: 'abcd',
