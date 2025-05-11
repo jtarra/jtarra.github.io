@@ -2,13 +2,11 @@
 <html lang="en">
 <head>
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@6/dist/fuse.min.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
   <title>Hawaii</title>
-   <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin="" />
+  
   <style>
 
 	/* V Add Fonts here V */
@@ -206,9 +204,9 @@
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
   <div id="map"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  
   <script>
-
+	
 /* MAIN USER CONFIG */
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
@@ -417,12 +415,16 @@ function renderCarousel(v){
           </div>`
     );
   const cardEl = c.lastElementChild;
-  cardEl.onclick = () => {
-	    map.flyTo(p.latlng, 14, { animate: true });
-    markerLayer.getLayers()
-      .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
-      ?.openPopup();
-  };
+	  cardEl.onclick = () => {
+	  const m = markers.find(mk => {
+		const [lng, lat] = mk.getLngLat().toArray();
+		return lat === p.latlng[0] && lng === p.latlng[1];
+	  });
+	  if (m) {
+		m.togglePopup();
+		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, essential: true });
+	  }
+	};
   });
 }        
 function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; 
@@ -448,13 +450,6 @@ el.className = 'place-marker';
 	});
 	
 	markers.push(marker);
-	 .on('click', () => {
-    const currentZoom = map.getZoom();
-    const targetZoom  = 12;
-    map.flyTo(p.latlng, currentZoom < targetZoom ? targetZoom : currentZoom, { animate: true });
-  })
-	.bindPopup(popup, { autoPan: true })
-	.addTo(markerLayer);
 	 });
 renderCarousel(visible); }
       }
