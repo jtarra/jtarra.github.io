@@ -417,25 +417,35 @@ setTimeout(() => {
   		addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
 		}
         }
-function renderCarousel(v){
-  const c = document.getElementById('placeCarousel');
-  c.innerHTML = '';
-  v.forEach(p => {
-    c.insertAdjacentHTML('beforeend',
-      '<div class="place-card">' +
+ function renderCarousel(v) {
+    const c = document.getElementById('placeCarousel');
+    c.innerHTML = '';
+    v.forEach(p => {
+      // build the card HTML with single-quoted strings to avoid nested backticks
+      const cardHtml =
+        '<div class="place-card">' +
           '<h4>' + p.name + '</h4>' +
-          '<p><em>' + p.category + ' – ' + p.subcategory + '</em></p>' +
-	  (p.regions && p.regions.length
-	    ? '<p><em>📍 ' + p.regions.join(', ') + '</em></p>'
-	    : ''
-	   ) +
-	   '</div>'
-    );
-	  });
-	}
-  const cardEl = c.lastElementChild;
-  cardEl.onclick = () => {
-	    map.flyTo({center: p.latlng,zoom:   14, animate: true });
+          (p.notes ? '<p>' + p.notes + '</p>' : '') +
+          '<p><em>' + p.category + ' – ' + p.subcategories.join(', ') + '</em></p>' +
+          (p.regions && p.regions.length
+            ? '<p><em>📍 ' + p.regions.join(', ') + '</em></p>'
+            : ''
+          ) +
+        '</div>';
+      c.insertAdjacentHTML('beforeend', cardHtml);
+
+      // attach the click handler to this newly appended card
+      const cardEl = c.lastElementChild;
+      cardEl.onclick = () => {
+        // MapLibre GL flyTo signature takes a single options object
+        map.flyTo({
+          center: p.latlng,
+          zoom:   14,
+          animate: true
+        });
+      };
+    });  // ← properly close the forEach
+  }      // ← properly close renderCarousel
     markerLayer.getLayers()
       .find(m => m.getLatLng().equals(L.latLng(p.latlng)))
       ?.openPopup();
