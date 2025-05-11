@@ -6,6 +6,10 @@
   <meta charset="utf-8" />
   <title>Hawaii</title>
    <link
+    href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"
+    rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+    <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin="" />
@@ -224,14 +228,15 @@
     };
 /* MAIN USER CONFIG */
 
-const map = L.map('map', { zoomControl: false })
-	.setView(CONFIG.mapCenter, CONFIG.mapZoom);
+const map = new maplibregl.Map({
+	container: 'map',
+	style: 'https://tiles.stadiamaps.com/styles/stamen_watercolor/style.json',
+	center: CONFIG.mapCenter,
+	zoom: CONFIG.mapZoom,
+	hash: false
+	});
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.attributionControl.setPrefix('');
-	  L.control.zoom({ position: 'topright' }).addTo(map);
-	  L.tileLayer(CONFIG.tileUrl, {
-		  attribution: CONFIG.attribution,
-		  maxZoom:    16,
-}).addTo(map);
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
@@ -419,14 +424,14 @@ L.marker(p.latlng, {
 	popupAnchor: [0, -35]
  	})
  	})
-	 .on('click', () => {
-    const currentZoom = map.getZoom();
-    const targetZoom  = 12;
-    map.flyTo(p.latlng, currentZoom < targetZoom ? targetZoom : currentZoom, { animate: true });
-  })
-	.bindPopup(popup, { autoPan: true })
-	.addTo(markerLayer);
-	 });
+	 const el = getPin(p); // your existing divIcon HTML
+new maplibregl.Marker(el)
+  .setLngLat([p.latlng[1], p.latlng[0]]) // note lon,lat order
+  .setPopup(
+    new maplibregl.Popup({ offset: 25 })
+      .setHTML(popup)
+  )
+  .addTo(map);
 renderCarousel(visible); }
       }
     })();
