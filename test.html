@@ -352,76 +352,105 @@ setTimeout(() => {
 		    : places;
 		  renderCarousel(results);
 		});
-        function setupFilters(categories,regions,catMap){
-          const fd=document.getElementById('filters');
-          const wrapper=document.getElementById('panelContainer');
-	 document.getElementById('toggleFilters').onclick = () => {
-	  const ex = fd.classList.toggle('expanded');
-	  document.getElementById('toggleFilters').textContent =
-	    ex ? 'Hide Filters' : 'Show Filters';
-	  document.getElementById('placeCarousel').style.display =
-	    ex ? 'flex' : 'none';
-	  document.getElementById('placeSearch').style.display =
-	    ex ? 'block' : 'none';
-	  document.getElementById('toggleSubcats').style.display =
-	    ex ? 'block' : 'none';
-	};
-	function makeCB(val, setRef, label) {
-	const lbl = document.createElement('label');
-	const cb  = document.createElement('input');
-		cb.type    = 'checkbox';
-		cb.value   = val;
-		cb.checked = true;
-		cb.dataset.emoji = CONFIG.emojiList[
-			Math.floor(Math.random() * CONFIG.emojiList.length)
-		];
-		cb.onchange = () => {
-		cb.checked ? setRef.add(val) : setRef.delete(val);
-		drawMarkers();
-		};		
-		lbl.append(cb, ' ', label);
-		return lbl;
-		}
-		function addPanel(title, items, isRegion = false, masterOnly = false) {
-		const p = document.createElement('div');
-		p.className = 'panel';
-		const h = document.createElement('div');
-		h.className = 'panel-header';
-		if (!masterOnly) {
-		const m = document.createElement('input');
-		m.type = 'checkbox';
-		m.checked = true;
-		m.dataset.emoji = CONFIG.emojiList[
-		Math.floor(Math.random() * CONFIG.emojiList.length)
-		];
-		m.onclick = e => e.stopPropagation();
-		m.onchange = () => {
-		p.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-		if (cb !== m) {
+        
+/ ─── Filters / Panels / Carousel ───────────────────────────────────────────────
+  function setupFilters(categories, regions, catMap) {
+    const fd = document.getElementById('filters');
+    const wrapper = document.getElementById('panelContainer');
+    // Show/hide filters panel
+    document.getElementById('toggleFilters').onclick = () => {
+      const ex = fd.classList.toggle('expanded');
+      document.getElementById('toggleFilters').textContent = ex ? 'Hide Filters' : 'Show Filters';
+      document.getElementById('placeSearch').style.display = ex ? 'block' : 'none';
+      document.getElementById('toggleSubcats').style.display = ex ? 'block' : 'none';
+      document.getElementById('placeCarousel').style.display = ex ? 'flex' : 'none';
+    };
 
-		if (title === 'Visited?') {
-			items.forEach(it => b.append(makeCB(it,selVis,it)));
-				} else {
-				items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));}
-		h.onclick = () => {
-		  const o = b.classList.toggle('active');
-		  arr.classList.toggle('expanded', o);
-		};
-	p.append(h,b); wrapper.append(p); }
-          if(regions.size) addPanel('Region',[...regions].sort(),true);
-          addPanel('Visited?',['Been there','Not yet'],false,true);
-          if(categories.includes('Food')) addPanel('Food',[...catMap['Food']].sort(),false);
-          if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
-          categories.filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
-	  if (categories.includes('Miscellaneous')) {
-  		addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
-		}
-        }
- function renderCarousel(v) {
+    // Build each checkbox
+    function makeCB(val, setRef, label) {
+      const lbl = document.createElement('label');
+      const cb  = document.createElement('input');
+      cb.type    = 'checkbox';
+      cb.value   = val;
+      cb.checked = true;
+      cb.dataset.emoji = CONFIG.emojiList[
+        Math.floor(Math.random() * CONFIG.emojiList.length)
+      ];
+      cb.onchange = () => {
+        cb.checked ? setRef.add(val) : setRef.delete(val);
+        drawMarkers();
+      };
+      lbl.append(cb, ' ', label);
+      return lbl;
+    }
+
+    // Create one panel of checkboxes
+    function addPanel(title, items, isRegion = false, masterOnly = false) {
+      const p = document.createElement('div');
+      p.className = 'panel';
+      const h = document.createElement('div');
+      h.className = 'panel-header';
+      // Arrow
+      const arr = document.createElement('span');
+      arr.className = 'arrow';
+      h.append(arr, title);
+
+      const b = document.createElement('div');
+      b.className = 'panel-body';
+
+      // “Master” checkbox?
+      if (!masterOnly) {
+        const m = document.createElement('input');
+        m.type = 'checkbox';
+        m.checked = true;
+        m.dataset.emoji = CONFIG.emojiList[
+          Math.floor(Math.random() * CONFIG.emojiList.length)
+        ];
+        m.onclick = e => e.stopPropagation();
+        m.onchange = () => {
+          b.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            if (cb !== m) {
+              cb.checked = m.checked;
+              cb.dispatchEvent(new Event('change'));
+            }
+          });
+        };
+        b.prepend(m, document.createTextNode('All'));
+      }
+
+      // Individual items
+      items.forEach(it => {
+        const key = isRegion ? it : `${title} - ${it}`;
+        const setRef = isRegion ? selReg : selSub;
+        b.append(makeCB(key, setRef, it));
+      });
+
+      // Toggle panel body
+      h.onclick = () => {
+        const open = b.classList.toggle('active');
+        arr.classList.toggle('expanded', open);
+      };
+
+      p.append(h, b);
+      wrapper.append(p);
+    }
+
+    // Panels in order
+    if (regions.size)            addPanel('Region', [...regions].sort(), true);
+    addPanel('Visited?', ['Been there','Not yet'], false, true);
+    if (categories.includes('Food'))           addPanel('Food', [...catMap['Food']].sort());
+    if (categories.includes('Sweet Treats'))   addPanel('Sweet Treats', [...catMap['Sweet Treats']].sort());
+    categories
+      .filter(c => !['Food','Sweet Treats','Miscellaneous'].includes(c))
+      .sort()
+      .forEach(c => addPanel(c, [...catMap[c]].sort()));
+    if (categories.includes('Miscellaneous'))  addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort());
+  }
+
+  function renderCarousel(v) {
     const c = document.getElementById('placeCarousel');
     c.innerHTML = '';
     v.forEach(p => {
-      // build the card HTML with single-quoted strings to avoid nested backticks
       const cardHtml =
         '<div class="place-card">' +
           '<h4>' + p.name + '</h4>' +
@@ -434,19 +463,15 @@ setTimeout(() => {
         '</div>';
       c.insertAdjacentHTML('beforeend', cardHtml);
 
-      // attach the click handler to this newly appended card
+      // Fly‐to on click
       const cardEl = c.lastElementChild;
       cardEl.onclick = () => {
-        // MapLibre GL flyTo signature takes a single options object
-        map.flyTo({
-          center: p.latlng,
-          zoom:   14,
-          animate: true
-        });
+        map.flyTo({ center: p.latlng, zoom: 14, animate: true });
       };
-    });  // ← properly close the forEach
-  }      // ← properly close renderCarousel
-})();
+    });
+  }
+
+})();  // ← Close the IIFE
 </script>
 </body>
 </html>
