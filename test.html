@@ -267,49 +267,69 @@
 		  minMatchCharLength: 3, 
 		  includeScore: true
 		});
-        const map=L.map('map',{zoomControl:false}).setView(CONFIG.mapCenter,CONFIG.mapZoom);
-        map.attributionControl.setPrefix(''); 
-        L.control.zoom({position:'topright'}).addTo(map);
-        L.tileLayer(CONFIG.tileUrl,{attribution:CONFIG.attribution}).addTo(map);
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      const { latitude, longitude } = pos.coords;
-      const urls = CONFIG.userIconUrls;
-      const chosenUrl = urls[Math.floor(Math.random() * urls.length)];
-      const img = new Image();
-      img.src = chosenUrl;  
+	const map = new maplibregl.Map({
+	  container: 'map',
+	  style: {
+	    version: 8,
+	    sources: {
+	      'raster-tiles': {
+	        type: 'raster',
+	        tiles: [ CONFIG.tileUrl.replace('{s}', '{a-c}') ],
+	        tileSize: 256,
+	        attribution: CONFIG.attribution
+	      }
+	    },
+	    layers: [{
+	      id: 'osm-tiles',
+	      type: 'raster',
+	      source: 'raster-tiles'
+	    }]
+	  },
+	  center: CONFIG.mapCenter,    // [lat, lng]
+	  zoom: CONFIG.mapZoom
+	});
+	map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+	map.on('load', () => map.resize());
+	if (navigator.geolocation) {
+	  navigator.geolocation.getCurrentPosition(pos => {
+	    const { latitude, longitude } = pos.coords;
+	    const urls = CONFIG.userIconUrls;
+	    const chosenUrl = urls[Math.floor(Math.random() * urls.length)];
+	    const img = new Image();
+	    img.src = chosenUrl;
+	
+	    img.onload = () => {
+	      const maxWidth = 32;
+	      const ratio    = img.height / img.width;
+	      const w        = maxWidth;
+	      const h        = Math.round(maxWidth * ratio);
+	
+	      // create an <img> element for MapLibre marker
+	      const el = document.createElement('img');
+	      el.src = chosenUrl;
+	      el.style.width  = `${w}px`;
+	      el.style.height = `${h}px`;
+	
+	      // add MapLibre marker with popup
+	      const userMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+	        .setLngLat([longitude, latitude])
+	        .setPopup(new maplibregl.Popup({ offset: 25 }).setText('You are here.'))
+	        .addTo(map)
+	        .togglePopup();
+	
+	      // fly to the user’s location
+	      map.flyTo({
+	        center: [longitude, latitude],
+	        zoom: map.getZoom() + 1,
+	        essential: true
+	      });
+	    };
+	  }, err => {
+	    console.warn('Geolocation failed:', err.message);
+	  });
+	}
 
-      img.onload = () => {
-        const maxWidth = 32;
-        const ratio    = img.height / img.width;
-        const w        = maxWidth;
-        const h        = Math.round(maxWidth * ratio);
-
-        const userIcon = L.icon({
-          iconUrl:     chosenUrl,
-          iconSize:    [w, h],
-          iconAnchor:  [w / 2, h],
-          popupAnchor: [0, -h]
-        });
-
-        const userMarker = L.marker([latitude, longitude], { icon: userIcon })
-  .addTo(map)
-  .bindPopup('You are here.')
-  .openPopup();
-setTimeout(() => {
-  map.invalidateSize();
-  map.flyTo(
-    [latitude, longitude],
-    map.getZoom() + 1,
-    { animate: true, duration: 1 }
-  );
-}, 200);
-      };
-    }, err => {
-      console.warn('Geolocation failed:', err.message);
-    });
-  }
-        const markerLayer=L.layerGroup().addTo(map);
+        let markers = [];
         const catMap={},regSet=new Set(); 
 		places.forEach(p => {
 		const set = catMap[p.category] || (catMap[p.category] = new Set());
@@ -405,16 +425,29 @@ function renderCarousel(v){
   };
   });
 }        
-function drawMarkers(){ markerLayer.clearLayers(); const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; 
+function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; const strokeColor=p.visited?'#DAA520':'#555'; 
 const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
-L.marker(p.latlng, {
-	icon: L.divIcon({
-	html: svgIcon,
-	iconSize: [18, 28],
-	iconAnchor: [9, 28],
-	popupAnchor: [0, -35]
- 	})
- 	})
+const el = document.createElement('div');
+el.innerHTML = svgIcon;
+el.className = 'place-marker';
+
+	const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+	  .setLngLat([ p.latlng[1], p.latlng[0] ])   // Note: MapLibre expects [lng, lat]
+	  .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML(popup))
+	  .addTo(map);
+	
+	el.addEventListener('click', () => {
+	  const currentZoom = map.getZoom();
+	  const targetZoom  = 12;
+	  map.flyTo({
+	    center: [ p.latlng[1], p.latlng[0] ],
+	    zoom: currentZoom < targetZoom ? targetZoom : currentZoom,
+	    essential: true
+	  });
+	  marker.togglePopup();
+	});
+	
+	markers.push(marker);
 	 .on('click', () => {
     const currentZoom = map.getZoom();
     const targetZoom  = 12;
