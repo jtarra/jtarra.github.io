@@ -416,13 +416,17 @@ renderCarousel(visible);
 new maplibregl.Marker(el)
   .setLngLat([p.latlng[1], p.latlng[0]]) // note lon,lat order
   .setPopup(
-    new maplibregl.Popup({ offset: 25 })
-      .setHTML(popup)
-  )
-  .addTo(map);
-renderCarousel(visible); }
-    }
-    )})();
-  </script>
+    new maplibregl.Marker(el)
+      .setLngLat([p.latlng[1], p.latlng[0]])
+      .setPopup(
+        new maplibregl.Popup({ offset: 25 })
+          .setHTML(popup)
+      )
+      .addTo(map);
+    });               // ← this is line 418
+    renderCarousel(visible);
+  }                   // ← this is line 420
+})();                 // ← this is line 421
+</script>
 </body>
 </html>
