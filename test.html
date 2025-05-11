@@ -272,7 +272,11 @@
 	    sources: {
 	      'raster-tiles': {
 	        type: 'raster',
-	        tiles: [ CONFIG.tileUrl.replace('{s}', '{a-c}') ],
+	        tiles: [
+			'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+			],
 	        tileSize: 256,
 	        attribution: CONFIG.attribution
 	      }
