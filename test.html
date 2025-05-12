@@ -318,7 +318,7 @@
 	      const userMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
 	        .setLngLat([longitude, latitude])
 	        .setPopup(new maplibregl.Popup({ offset: 25 }).setText('You are here.'))
-	        .addTo(map);
+	        .addTo(map)
 			marker.togglePopup();
 	      // fly to the user’s location
 	      map.flyTo({
