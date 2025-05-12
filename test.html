@@ -334,6 +334,7 @@
 	}
 
         let markers = [];
+		let currentPopup = null;
         const catMap={},regSet=new Set(); 
 		places.forEach(p => {
 		const set = catMap[p.category] || (catMap[p.category] = new Set());
@@ -427,7 +428,10 @@ function renderCarousel(v){
 		return lat === p.latlng[0] && lng === p.latlng[1];
 	  });
 	  if (m) {
-		m.togglePopup();
+		if (currentPopup) currentPopup.remove();
+		const popup = m.getPopup();
+		popup.addTo(map);
+		currentPopup = popup;
 		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, essential: true });
 	  }
 	};
@@ -441,10 +445,9 @@ el.className = 'place-marker';
 
 	const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
 	  .setLngLat([ p.latlng[1], p.latlng[0] ])   // Note: MapLibre expects [lng, lat]
-	  .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML(popup))
+	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: false }).setHTML(popup))
 	  .addTo(map);
-	
-	el.style.cursor = 'pointer';
+marker.togglePopup();
 	el.addEventListener('click', e => {
 	  e.stopPropagation();
 	  const currentZoom = map.getZoom();
@@ -454,7 +457,12 @@ el.className = 'place-marker';
 	    zoom: currentZoom < targetZoom ? targetZoom : currentZoom,
 	    essential: true
 	  });
-	  marker.togglePopup();
+	  if (currentPopup && currentPopup !== marker.getPopup()) {
+		currentPopup.remove();
+		}
+		const popup = marker.getPopup();
+		popup.addTo(map);
+		currentPopup = popup;
 	});
 	markers.push(marker);
 	 });
