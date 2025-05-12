@@ -314,12 +314,14 @@
 	      el.style.width  = `${w}px`;
 	      el.style.height = `${h}px`;
 	
-	      // add MapLibre marker with popup
-	      const userMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-	        .setLngLat([longitude, latitude])
-	        .setPopup(new maplibregl.Popup({ offset: 25 }).setText('You are here.'))
-	        .addTo(map)
-	        .togglePopup();
+		const popup = new maplibregl.Popup({
+			offset: { bottom: [0, -h] }
+			}).setText('You are here.');
+		const userMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+			.setLngLat([longitude, latitude])
+			.setPopup(popup)
+			.addTo(map)
+			.togglePopup();
 	
 	      // fly to the user’s location
 	      map.flyTo({
