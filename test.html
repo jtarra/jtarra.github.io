@@ -122,9 +122,6 @@
     .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
     .review-item strong { display: block; margin-bottom: 4px; }
     .review-item p { margin: 0 0 4px; }
-    .leaflet-control-attribution {
-      bottom: env(safe-area-inset-bottom) !important;
-    }
     .place-card {
     flex: 0 0 200px;
     background: #FAF1D2;									/* Carousel Cards' BG Color */
@@ -141,12 +138,6 @@
 		font-family: 'Dorgan', sans-serif;					/* Popup Cards' Font */
 		font-size: 14px !important;							/* Popup Cards' Text size */
 		}
-    .filters:not(.expanded) .panel-container {
-    display: none;
-    }
-    .filters:not(.expanded) .place-carousel {
-    display: none;
-    }
     #placeSearch {
       width: calc(100% - 16px);
       margin: 8px;
@@ -325,7 +316,7 @@
 	     center: [longitude, latitude],
 	     zoom:   map.getZoom() + 1,
 	     essential: true,
-	     duration: 1000
+	     duration: 10000
 	   });
 	 };
 	  }, err => {
@@ -454,6 +445,7 @@ el.className = 'place-marker';
 	  map.flyTo({
 	    center: [ p.latlng[1], p.latlng[0] ],
 	    zoom: currentZoom < targetZoom ? targetZoom : currentZoom,
+		duration: 1000,
 	    essential: true
 	  });
 	  if (currentPopup && currentPopup !== marker.getPopup()) {
