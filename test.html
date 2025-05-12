@@ -319,7 +319,7 @@
 	        .setLngLat([longitude, latitude])
 	        .setPopup(new maplibregl.Popup({ offset: 25 }).setText('You are here.'))
 	        .addTo(map)
-	
+			marker.togglePopup();
 	      // fly to the user’s location
 	      map.flyTo({
 	        center: [longitude, latitude],
@@ -446,7 +446,6 @@ el.className = 'place-marker';
 	  .setLngLat([ p.latlng[1], p.latlng[0] ])   // Note: MapLibre expects [lng, lat]
 	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: false }).setHTML(popup))
 	  .addTo(map);
-marker.togglePopup();
 	el.addEventListener('click', e => {
 	  e.stopPropagation();
 	  const currentZoom = map.getZoom();
