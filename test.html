@@ -319,7 +319,8 @@
 	        .setLngLat([longitude, latitude])
 	        .setPopup(new maplibregl.Popup({ offset: 25 }).setText('You are here.'))
 	        .addTo(map)
-			marker.togglePopup();
+	        .togglePopup();
+	
 	      // fly to the user’s location
 	      map.flyTo({
 	        center: [longitude, latitude],
@@ -427,10 +428,10 @@ function renderCarousel(v){
 		return lat === p.latlng[0] && lng === p.latlng[1];
 	  });
 	  if (m) {
-		if (currentPopup) currentPopup.remove();
-		const popup = m.getPopup();
-		popup.addTo(map);
-		currentPopup = popup;
+	if (currentPopup) currentPopup.remove();
+	const popup = m.getPopup();
+	popup.addTo(map);
+	currentPopup = popup;
 		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, essential: true });
 	  }
 	};
@@ -446,7 +447,6 @@ el.className = 'place-marker';
 	  .setLngLat([ p.latlng[1], p.latlng[0] ])   // Note: MapLibre expects [lng, lat]
 	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: false }).setHTML(popup))
 	  .addTo(map);
-marker.togglePopup();
 	el.addEventListener('click', e => {
 	  e.stopPropagation();
 	  const currentZoom = map.getZoom();
