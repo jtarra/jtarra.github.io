@@ -61,7 +61,10 @@
 	  scrollbar-width: none !important;
 	  -ms-overflow-style: none !important;
 	}
-	
+	#filters:not(.expanded) #placeCarousel {
+		display: none !important;
+		overflow-x: hidden !important;
+	}
     /* Toggle Button */
     #toggleFilters {
       display: block; width: 100%; padding: 8px;
