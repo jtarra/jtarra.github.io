@@ -321,13 +321,12 @@
 			.addTo(map)
 			.togglePopup();
 	
-	      // fly to the user’s location
-	      
-	        center: [longitude, latitude],
-	        zoom: map.getZoom() + 1,
-	        essential: true
-	      });
-	    };
+	   map.flyTo({
+	     center: [longitude, latitude],
+	     zoom:   map.getZoom() + 1,
+	     essential: true
+	   });
+	 };
 	  }, err => {
 	    console.warn('Geolocation failed:', err.message);
 	  });
