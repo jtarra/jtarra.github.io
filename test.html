@@ -316,6 +316,7 @@
 	     center: [longitude, latitude],
 	     zoom:   map.getZoom() + 1,
 	     essential: true,
+	     duration: 1000
 	   });
 	 };
 	  }, err => {
@@ -422,7 +423,7 @@ function renderCarousel(v){
 	const popup = m.getPopup();
 	popup.addTo(map);
 	currentPopup = popup;
-		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, duration: 10000, essential: true });
+		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, essential: true });
 	  }
 	};
   });
