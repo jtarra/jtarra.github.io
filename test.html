@@ -23,7 +23,7 @@
     #map { width: 100%; height: 100%; }
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
-      background: #FFF9E6; border-radius: 8px;						/* Filters tab BG color*/
+      background: #FFF9E6; border-radius: 8px;									/* Filters tab BG color*/
       overflow: hidden; max-height: 40px; width: 120px;
       transition: max-height 0.3s, width 0.3s;
       display: flex;
@@ -42,7 +42,7 @@
     overflow-x: auto;
     gap: 8px;
     padding: 8px;
-    border-top: 1px solid #D0B59A;							/* Color of Small Border line between Categories and Carousel */
+    border-top: 1px solid #D0B59A;												/* Color of Small Border line between Categories and Carousel */
 
     flex: none;
     position: sticky;
@@ -57,7 +57,7 @@
     #toggleFilters {
       display: block; width: 100%; padding: 8px;
       background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;			/* Show/Hide Filters button color */
-      font-family: 'Dorgan', cursive; cursor: pointer;					/* Show/Hide Filters button font */
+      font-family: 'Dorgan', cursive; cursor: pointer;							/* Show/Hide Filters button font */
       color: #000;
     }
 
@@ -66,13 +66,13 @@
     .panel-header {
       display: flex; align-items: center; padding: 6px 8px;
       background: #E7D8C4; border-radius: 6px; cursor: pointer;				/* Category Tabs BG color */
-      font-family: 'Bardy', cursive; font-size: 1.6em;					/* Category Tabs font */
-      color: #E3B505; text-shadow: 2px 2px 0 #DB504A;					/* Category Tabs Text color & shadow color */
+      font-family: 'Bardy', cursive; font-size: 1.6em;						/* Category Tabs font */
+      color: #E3B505; text-shadow: 2px 2px 0 #DB504A;						/* Category Tabs Text color & shadow color */
     }
     .panel-header input[type="checkbox"],
     .panel-body input[type="checkbox"] {
       appearance: none; width: 18px; height: 18px;
-      margin-right: 12px; border: 2px solid #D0B59A;					/* Empty checkbox blank square color */
+      margin-right: 12px; border: 2px solid #D0B59A;						/* Empty checkbox blank square color */
       border-radius: 3px; position: relative; cursor: pointer;
     }
     input[type="checkbox"]:checked { border: none; }
@@ -93,16 +93,16 @@
 	     margin-left: 8px;
 	     border-left: 8px solid transparent;
 	     border-right: 8px solid transparent;
-	     border-top: 12px solid #E3B505; 						   /* Arrow Color (probably Category tezt color */
+	     border-top: 12px solid #E3B505; 							   	/* Arrow Color (probably Category tezt color */
 	     transition: transform 0.2s ease;
-	     filter: drop-shadow(2px 2px 0 #DB504A);					/* Arrow Shadow Color (probably Category text shadow color)*/
+	     filter: drop-shadow(2px 2px 0 #DB504A);						/* Arrow Shadow Color (probably Category text shadow color)*/
 	   }
 	   .panel-header .arrow.expanded {
 	     transform: rotate(-90deg);
 	   }
     /* Panel Bodies */
     .panel-body { display: none; padding: 8px 12px;
-      background: #F8E9D5; border-radius: 6px;						/* Expanded Categories BG color */
+      background: #F8E9D5; border-radius: 6px;							/* Expanded Categories BG color */
     }
     .panel-body.active { display: block; }
     .panel-body label {
@@ -133,9 +133,9 @@
     padding: 6px;
     box-sizing: border-box;
     cursor: pointer;
-	font-family: 'Dorgan', sans-serif; 					/* Carousel Cards' Font */
+	font-family: 'Dorgan', sans-serif; 						/* Carousel Cards' Font */
     }
-	.maplibregl-popup-content {				/* Carousel Cards' Font */
+	.maplibregl-popup-content {								/* Popup Cards' Font */
 		  font-family: 'Dorgan', sans-serif;
 		}
     .filters:not(.expanded) .panel-container {
@@ -152,12 +152,12 @@
       border-radius: 4px;
       backdrop-filter: blur(4px);
       background-color: #FAF1D2;							/* Search Box Color */
-      font-family: 'Dorgan', sans-serif;						/* Search Box Font */
+      font-family: 'Dorgan', sans-serif;					/* Search Box Font */
       font-size: 1em;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     #placeSearch::placeholder {
-      color: #999;									/* Search Placeholder Text Color */
+      color: #999;											/* Search Placeholder Text Color */
     }
 	.search-toggle-container {
 	  display: flex;
@@ -169,8 +169,8 @@
 	}
 	.search-toggle-container button#toggleSubcats {
 	  flex: 1;
-	  margin: 0;
-	  background: #E7D8C4;								 /* Filter select/unselect all button color */
+	  margin: 0;	
+	  background: #E7D8C4;								 	/* Filter select/unselect all button color */
 	  padding-top: 6px;
 	  border-radius: 8px;
 	  color: #000;
@@ -303,7 +303,6 @@
 	      const w        = maxWidth;
 	      const h        = Math.round(maxWidth * ratio);
 	
-	      // create an <img> element for MapLibre marker
 	      const el = document.createElement('img');
 	      el.src = chosenUrl;
 	      el.style.width  = `${w}px`;
@@ -441,7 +440,7 @@ el.innerHTML = svgIcon;
 el.className = 'place-marker';
 
 	const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-	  .setLngLat([ p.latlng[1], p.latlng[0] ])   // Note: MapLibre expects [lng, lat]
+	  .setLngLat([ p.latlng[1], p.latlng[0] ])
 	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: false }).setHTML(popup))
 	  .addTo(map);
 	el.addEventListener('click', e => {
