@@ -442,7 +442,9 @@ el.className = 'place-marker';
 	  .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML(popup))
 	  .addTo(map);
 	
-	el.addEventListener('click', () => {
+	el.style.cursor = 'pointer';
+	el.addEventListener('click', e => {
+	  e.stopPropagation();
 	  const currentZoom = map.getZoom();
 	  const targetZoom  = 12;
 	  map.flyTo({
