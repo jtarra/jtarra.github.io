@@ -372,8 +372,6 @@
 	  const ex = fd.classList.toggle('expanded');
 	  document.getElementById('toggleFilters').textContent =
 	    ex ? 'Hide Filters' : 'Show Filters';
-	  document.getElementById('placeCarousel').style.display =
-	    ex ? 'flex' : 'none';
 	  document.getElementById('placeSearch').style.display =
 	    ex ? 'block' : 'none';
 	  document.getElementById('toggleSubcats').style.display =
@@ -422,7 +420,7 @@ function renderCarousel(v){
 	const popup = m.getPopup();
 	popup.addTo(map);
 	currentPopup = popup;
-		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, duration: 10000, essential: true });
+		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, duration: 1000, essential: true });
 	  }
 	};
   });
