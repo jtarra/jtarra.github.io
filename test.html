@@ -339,7 +339,6 @@
         const basePool=CONFIG.baseColors.slice(); shuffle(basePool);
         const categoryColors={}; Object.keys(catMap).forEach(cat=>{ categoryColors[cat]=basePool.length?basePool.pop():randomColor(); });
         setupFilters(Object.keys(catMap),regSet,catMap);
-        document.getElementById('placeCarousel').style.display = 'none';
         drawMarkers();
 	 let allOn = true;
 		const toggleSubcats = document.getElementById('toggleSubcats');
