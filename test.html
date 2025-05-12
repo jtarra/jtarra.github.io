@@ -444,7 +444,7 @@ function renderCarousel(v){
 	const popup = m.getPopup();
 	popup.addTo(map);
 	currentPopup = popup;
-		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, duration: 1000, essential: true });
+		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, speed: 1.4, curve: 1.4, essential: true });
 	  }
 	};
   });
@@ -466,7 +466,8 @@ el.className = 'place-marker';
 	  map.flyTo({
 	    center: [ p.latlng[1], p.latlng[0] ],
 	    zoom: currentZoom < targetZoom ? targetZoom : currentZoom,
-		duration: 1000,
+		speed: 1.4, 
+		curve: 1.4, 
 	    essential: true
 	  });
 	  if (currentPopup && currentPopup !== marker.getPopup()) {
