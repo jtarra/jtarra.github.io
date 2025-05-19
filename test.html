@@ -313,7 +313,8 @@
 	    }]
 	  },
 	  center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
-	  zoom: CONFIG.mapZoom
+	  zoom: CONFIG.mapZoom,
+	  pitchWithRotate: false
 	});
 	map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 	map.on('load', () => map.resize());
