@@ -466,7 +466,7 @@ el.className = 'place-marker';
 
 	const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
 	  .setLngLat([ p.latlng[1], p.latlng[0] ])
-	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: true }).setHTML(popup))
+	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: true, focusAfterOpen: false}).setHTML(popup))
 	  .addTo(map);
 	el.addEventListener('click', e => {
 	  e.stopPropagation();
