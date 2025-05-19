@@ -337,7 +337,8 @@
 	      el.style.height = `${h}px`;
 	
 		const popup = new maplibregl.Popup({
-			offset: { bottom: [0, -h] }
+			offset: { bottom: [0, -h] },
+			focusAfterOpen: false
 			}).setText('You are here.');
 		const userMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
 			.setLngLat([longitude, latitude])
