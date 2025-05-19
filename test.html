@@ -318,6 +318,8 @@
 	});
 	map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 	map.on('load', () => map.resize());
+	      map.touchPitch.disable();
+	      map.setMaxPitch(0);
 	if (navigator.geolocation) {
 	  navigator.geolocation.getCurrentPosition(pos => {
 	    const { latitude, longitude } = pos.coords;
