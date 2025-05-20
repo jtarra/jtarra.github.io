@@ -341,15 +341,15 @@
 	      el.style.height = `${h}px`;
 	
 		const popup = new maplibregl.Popup({
-			offset: { bottom: [0, -h] },
-			focusAfterOpen: false
-			}).setText('You are here.');
+		offset: { bottom: [0, -h] },
+		focusAfterOpen: false
+		}).setText('You are here.');
 		const userMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-			.setLngLat([longitude, latitude])
-			.setPopup(popup)
-			.addTo(map)
-			.togglePopup();
-		    	currentPopup = popup;
+		.setLngLat([longitude, latitude])
+		.setPopup(popup)
+		.addTo(map);
+		popup.addTo(map);
+		currentPopup = popup;
 	
 	   map.flyTo({
 	     center: [longitude, latitude],
