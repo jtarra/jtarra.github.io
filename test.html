@@ -348,6 +348,12 @@
 		.setLngLat([longitude, latitude])
 		.setPopup(popup)
 		.addTo(map);
+		popup.on('open', () => {
+		if (currentPopup && currentPopup !== popup) {
+		currentPopup.remove();
+		}
+		currentPopup = popup;
+			});
 		popup.addTo(map);
 		currentPopup = popup;
 	
