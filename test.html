@@ -320,6 +320,7 @@
 	map.on('load', () => map.resize());
 	      map.touchPitch.disable();
 	      map.setMaxPitch(0);
+	let currentPopup = null;
 	if (navigator.geolocation) {
 	  navigator.geolocation.getCurrentPosition(pos => {
 	    const { latitude, longitude } = pos.coords;
@@ -362,7 +363,6 @@
 	}
 
         let markers = [];
-		let currentPopup = null;
         const catMap={},regSet=new Set(); 
 		places.forEach(p => {
 		const set = catMap[p.category] || (catMap[p.category] = new Set());
