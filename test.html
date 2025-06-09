@@ -29,9 +29,7 @@
       display: flex;
       flex-direction: column;
     }
-     #itineraries {
-      top: 60px;
-    }
+
     .filters.expanded {
       max-height: calc(100vh - 20px);
       width: 280px;
@@ -437,6 +435,9 @@
 	    ex ? 'block' : 'none';
 	  document.getElementById('toggleSubcats').style.display =
 	    ex ? 'block' : 'none';
+	  const itinEl    = document.getElementById('itineraries');
+	  const filtersEl = document.getElementById('filters');
+	  itinEl.style.top = (filtersEl.getBoundingClientRect().height + 10) + 'px';
 	};
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
           function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
@@ -668,7 +669,9 @@ renderCarousel(visible); }
     );
   });
   // ────────────────────────────────────────────────────────────────────────
-
+const filtersEl = document.getElementById('filters');
+const itinEl    = document.getElementById('itineraries');
+itinEl.style.top = (filtersEl.getBoundingClientRect().height + 10) + 'px';
     })();
   </script>
 </body>
