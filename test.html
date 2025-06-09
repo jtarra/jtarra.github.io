@@ -29,6 +29,9 @@
       display: flex;
       flex-direction: column;
     }
+     #itineraries {
+      top: 60px;
+    }
     .filters.expanded {
       max-height: calc(100vh - 20px);
       width: 280px;
@@ -228,6 +231,10 @@
 <div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
+<div class="filters" id="itineraries">
+	<button id="toggleItineraries">Show Itineraries</button>
+	<div id="itineraryPanel" class="panel-container" style="display:none;"></div>
+</div>
   <div id="map"></div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
@@ -236,6 +243,8 @@
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
+      itinTab:    'Itineraries',
+      itinRange:  'A2:E',
       ranges: ['HawaiiPlaces!A:L','HawaiiReviews!A:E'],
       mapCenter: [21.4559, -157.9519],
       mapZoom: 10,
@@ -452,6 +461,7 @@ function renderCarousel(v){
 		${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
           <p><em>${p.category} – ${p.subcategories.join(', ')}</em></p>
 	  ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
+   	  <button class="add-to-itinerary" data-id="${p.id}">+ Add to Itinerary</button>
           </div>`
     );
   const cardEl = c.lastElementChild;
@@ -506,6 +516,152 @@ el.className = 'place-marker';
 	 });
 renderCarousel(visible); }
       }
+
+// ────────────────────────────────────────────────────────────────────────
+  // Itinerary State + UI (inside the same IIFE)
+  let itineraries      = {};     // { name: [ {placeId,date,time,notes}, … ] }
+  let currentItinerary = null;
+
+  const itinBtn  = document.getElementById('toggleItineraries');
+  const itinPane = document.getElementById('itineraryPanel');
+
+  // Toggle panel open/closed and load from Sheet
+  itinBtn.addEventListener('click', async () => {
+    const open = itinPane.style.display === 'none';
+    itinPane.style.display = open ? 'block' : 'none';
+    itinBtn.textContent    = open ? 'Hide Itineraries' : 'Show Itineraries';
+    if (open) await loadItineraries();
+    renderItineraryMenu();
+  });
+
+  // 1) Fetch all existing itineraries from your “Itineraries” tab
+  async function loadItineraries() {
+    const url = 
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}` +
+      `/values/${CONFIG.itinTab}!${CONFIG.itinRange}` +
+      `?key=${CONFIG.apiKey}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    itineraries = {};
+    (data.values||[]).forEach(r => {
+      const [name, placeId, date, time, notes] = r;
+      if (!itineraries[name]) itineraries[name] = [];
+      itineraries[name].push({ placeId, date, time, notes });
+    });
+  }
+
+  // 2) Render the top‐level menu: create / select / delete
+  function renderItineraryMenu() {
+    const c = itinPane;
+    c.innerHTML = '';
+
+    // — New Itinerary —
+    c.insertAdjacentHTML('beforeend', `
+      <div class="panel">
+        <input  id="newItineraryName" placeholder="New name…"/>
+        <button id="createItinerary">Create</button>
+      </div>
+    `);
+    document.getElementById('createItinerary').onclick = () => {
+      const name = document.getElementById('newItineraryName').value.trim();
+      if (!name) return alert('Enter a name for your itinerary.');
+      currentItinerary = name;
+      itineraries[name] = [];
+      renderItineraryMenu();
+    };
+
+    // — Existing Itineraries —
+    const names = Object.keys(itineraries);
+    if (names.length) {
+      const opts = names.map(n => `<option value="${n}">${n}</option>`).join('');
+      c.insertAdjacentHTML('beforeend', `
+        <div class="panel">
+          <select id="selectItinerary">
+            <option value="">Select itinerary…</option>
+            ${opts}
+          </select>
+          <button id="deleteItinerary">Delete</button>
+        </div>
+        <div id="itineraryItems"></div>
+      `);
+
+      document.getElementById('selectItinerary').onchange = e => {
+        currentItinerary = e.target.value;
+        renderItineraryItems();
+      };
+      document.getElementById('deleteItinerary').onclick = () => {
+        if (!currentItinerary) return;
+        delete itineraries[currentItinerary];
+        currentItinerary = null;
+        renderItineraryMenu();
+      };
+    }
+  }
+
+  // 3) Render the list of places in the current itinerary (with inline edits)
+  function renderItineraryItems() {
+    const container = document.getElementById('itineraryItems');
+    container.innerHTML = '';
+    const items = itineraries[currentItinerary] || [];
+    if (!items.length) {
+      container.innerHTML = '<div class="panel">No stops yet.</div>';
+      return;
+    }
+    items.forEach((item, idx) => {
+      container.insertAdjacentHTML('beforeend', `
+        <div class="panel">
+          <strong>${item.placeId}</strong>
+          <input type="date"  value="${item.date}"  data-idx="${idx}" class="itinDate"/>
+          <input type="time"  value="${item.time}"  data-idx="${idx}" class="itinTime"/>
+          <input type="text"  placeholder="Notes…" value="${item.notes}" data-idx="${idx}" class="itinNotes"/>
+          <button data-idx="${idx}" class="removeItinItem">✖ Remove</button>
+        </div>
+      `);
+    });
+    container.querySelectorAll('.itinDate').forEach(i => i.onchange = e => {
+      itineraries[currentItinerary][+e.target.dataset.idx].date = e.target.value;
+    });
+    container.querySelectorAll('.itinTime').forEach(i => i.onchange = e => {
+      itineraries[currentItinerary][+e.target.dataset.idx].time = e.target.value;
+    });
+    container.querySelectorAll('.itinNotes').forEach(i => i.onchange = e => {
+      itineraries[currentItinerary][+e.target.dataset.idx].notes = e.target.value;
+    });
+    container.querySelectorAll('.removeItinItem').forEach(btn => btn.onclick = e => {
+      itineraries[currentItinerary].splice(+e.target.dataset.idx,1);
+      renderItineraryItems();
+    });
+  }
+
+  // 4) Handle clicks on our “Add to Itinerary” button
+  document.body.addEventListener('click', async e => {
+    if (!e.target.matches('.add-to-itinerary')) return;
+    if (!currentItinerary) {
+      return alert('Please create or select an itinerary first.');
+    }
+    const placeId = e.target.dataset.id;
+    const date    = prompt('Date (YYYY-MM-DD):');
+    const time    = prompt('Time (HH:MM):');
+    const notes   = prompt('Notes (optional):');
+    // Local update
+    itineraries[currentItinerary].push({ placeId, date, time, notes });
+    renderItineraryItems();
+    // Push to Google Sheet
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/` +
+      `${CONFIG.sheetId}/values/${CONFIG.itinTab}!${CONFIG.itinRange}:append` +
+      `?valueInputOption=USER_ENTERED&key=${CONFIG.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          values:[[ currentItinerary, placeId, date, time, notes ]]
+        })
+      }
+    );
+  });
+  // ────────────────────────────────────────────────────────────────────────
+
     })();
   </script>
 </body>
