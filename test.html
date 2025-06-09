@@ -441,7 +441,7 @@
 	  const itinEl    = document.getElementById('itineraries');
 	  const filtersEl = document.getElementById('filters');
 		  const gap = 10;  // same gap you had before
-		  const rect = fd.getBoundingClientRect();
+		  const rect = filtersEl.getBoundingClientRect();
 		  itinEl.style.top = (rect.bottom + gap) + 'px';
 	};
 	}
