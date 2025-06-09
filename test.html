@@ -403,13 +403,78 @@
         const categoryColors={}; Object.keys(catMap).forEach(cat=>{ categoryColors[cat]=basePool.length?basePool.pop():randomColor(); });
         setupFilters(Object.keys(catMap),regSet,catMap);
 	function drawMarkers(){
-	markers.forEach(m => m.remove());
-	markers = [];
-	const visible = [];
-	places.forEach(p => {
-	});
-	renderCarousel(visible);
-	}
+    // 1) clear old markers
+    markers.forEach(m => m.remove());
+    markers = [];
+
+    // 2) filter & collect visible places
+    const visible = [];
+    places.forEach(p => {
+      // “Been there” vs “Not yet”
+      if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
+      // category‐subcategory filters
+      if (!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return;
+      // region filters
+      if (p.regions && !p.regions.some(r => selReg.has(r))) return;
+
+      visible.push(p);
+
+      // 3) build popup HTML
+      let popup = 
+        `<strong>${p.name}</strong>` +
+        `${p.notes ? `<br>${p.notes}` : ''}` +
+        `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` +
+        (p.regions && p.regions.length
+           ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '') +
+        `<br>`;
+      const revs = (reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
+      if (revs.length) {
+        popup += '★'.repeat(revs[0].rating) +
+          `<br><details><summary>${revs.length} review${revs.length>1?'s':''}</summary>`;
+        revs.forEach(r => popup += `<blockquote>${r.text}</blockquote>`);
+        popup += `</details><br>`;
+      }
+      if (p.mapsLink)  popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a><br>`;
+      if (p.appleLink) popup += `<a href="${p.appleLink}" target="_blank">Apple Maps</a><br>`;
+      if (p.extraLink) popup += `<a href="${p.extraLink}" target="_blank">More Info</a>`;
+
+      // 4) create & style marker
+      const strokeColor = p.visited ? '#DAA520' : '#555';
+      const svgIcon = 
+        `<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg">
+           <path fill="${categoryColors[p.category]}" stroke="${strokeColor}" 
+                 stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 
+                 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 
+                 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 
+                 1 0-9 4.5 4.5 0 0 1 0 9z"/>
+         </svg>`;
+      const el = document.createElement('div');
+      el.innerHTML = svgIcon;
+      el.className = 'place-marker';
+
+      // 5) add marker to map & hook popup/flyTo
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([p.latlng[1], p.latlng[0]])
+        .setPopup(new maplibregl.Popup({
+          offset: 25, closeOnClick: true, focusAfterOpen: false
+        }).setHTML(popup))
+        .addTo(map);
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const targetZoom = 12;
+        map.flyTo({
+          center: [p.latlng[1], p.latlng[0]],
+          zoom: map.getZoom() < targetZoom ? targetZoom : map.getZoom(),
+          speed: 1.0, curve: 1.6, essential: true
+        });
+      });
+
+      markers.push(marker);
+    });
+
+    // 6) finally, update the carousel
+    renderCarousel(visible);
+  }
         drawMarkers();
 	 let allOn = true;
 		const toggleSubcats = document.getElementById('toggleSubcats');
