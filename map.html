@@ -314,6 +314,8 @@
 	  },
 	  center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
 	  zoom: CONFIG.mapZoom,
+	  dragRotate:      false,
+	  touchZoomRotate: false,
 	  pitchWithRotate: false
 	});
 	map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
