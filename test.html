@@ -86,19 +86,6 @@
       color: #000;
     }
 
-#toggleItineraries {
-  display: block;
-  width: 100%;
-  padding: 8px;
-  background: #E7D8C4; /* Match Show Filters button */
-  border: none;
-  border-bottom: 1px solid #ddd;
-  font-family: 'Dorgan', cursive;
-  cursor: pointer;
-  color: #000;
-  margin-top: 0; /* No extra gap */
-}
-
     /* Panel Headers */
     .panel { margin: 8px; }
     .panel-header {
@@ -225,7 +212,6 @@
 <body>
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
-    <button id="toggleItineraries">Itineraries</button>
 <div class="search-toggle-container">
   <input type="search" id="placeSearch"
     placeholder="Search…"
@@ -242,7 +228,21 @@
 <div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
-  <div id="map"></div>
+  <button id="toggleItineraries" style="
+  position: absolute;
+  top: 60px; /* Initial placement just below 'Show Filters' */
+  left: 10px;
+  width: 120px;
+  padding: 8px;
+  background: #E7D8C4; /* Matches 'Show Filters' button color */
+  border: none;
+  border-bottom: 1px solid #ddd;
+  font-family: 'Dorgan', cursive;
+  cursor: pointer;
+  z-index: 999;">
+  Itineraries
+</button>
+	<div id="map"></div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
 	
@@ -429,12 +429,16 @@
           const wrapper=document.getElementById('panelContainer');
 	 document.getElementById('toggleFilters').onclick = () => {
 	  const ex = fd.classList.toggle('expanded');
-	  document.getElementById('toggleFilters').textContent =
-	    ex ? 'Hide Filters' : 'Show Filters';
-	  document.getElementById('placeSearch').style.display =
-	    ex ? 'block' : 'none';
-	  document.getElementById('toggleSubcats').style.display =
-	    ex ? 'block' : 'none';
+	  document.getElementById('toggleFilters').textContent = ex ? 'Hide Filters' : 'Show Filters';
+	  document.getElementById('placeSearch').style.display = ex ? 'block' : 'none';
+	  document.getElementById('toggleSubcats').style.display = ex ? 'block' : 'none';
+	
+	  const itinerariesButton = document.getElementById('toggleItineraries');
+	  if (ex) {
+	    itinerariesButton.style.top = (fd.offsetHeight + 20) + 'px';
+	  } else {
+	    itinerariesButton.style.top = '60px';
+	  }
 	};
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
           function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
