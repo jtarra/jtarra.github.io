@@ -86,13 +86,19 @@
       color: #000;
     }
 
-    #toggleItineraries {
-      display: block; width: 100%; padding: 8px;
-      background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;
-      font-family: 'Dorgan', cursive; cursor: pointer;
-      color: #000;
-    }
-	  
+#toggleItineraries {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  background: #E7D8C4; /* Match Show Filters button */
+  border: none;
+  border-bottom: 1px solid #ddd;
+  font-family: 'Dorgan', cursive;
+  cursor: pointer;
+  color: #000;
+  margin-top: 0; /* No extra gap */
+}
+
     /* Panel Headers */
     .panel { margin: 8px; }
     .panel-header {
@@ -219,6 +225,7 @@
 <body>
   <div class="filters" id="filters">
     <button id="toggleFilters">Show Filters</button>
+    <button id="toggleItineraries">Itineraries</button>
 <div class="search-toggle-container">
   <input type="search" id="placeSearch"
     placeholder="Search…"
@@ -235,7 +242,6 @@
 <div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
-  <button id="toggleItineraries">Itineraries</button>
   <div id="map"></div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
