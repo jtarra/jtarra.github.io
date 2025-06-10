@@ -29,10 +29,6 @@
       display: flex;
       flex-direction: column;
     }
-	#itineraries {
-	  top: 60px;
-	  transition: top 0.3s ease;
-	}
     .filters.expanded {
       max-height: calc(100vh - 20px);
       width: 280px;
@@ -84,19 +80,12 @@
 	}
     /* Toggle Button */
     #toggleFilters {
-	display: block; width: 100%; padding: 8px;
-	background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;					/* Show/Hide Filters button color */
-	font-family: 'Dorgan', cursive; cursor: pointer;							/* Show/Hide Filters button font */
-	color: #000;
+      display: block; width: 100%; padding: 8px;
+      background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;			/* Show/Hide Filters button color */
+      font-family: 'Dorgan', cursive; cursor: pointer;							/* Show/Hide Filters button font */
+      color: #000;
     }
-	  
-    #toggleItineraries {
-	display: block; width: 100%; padding: 8px;
-	background: #E7D8C4; border: none; border-bottom: 1px solid #ddd;
-	font-family: 'Dorgan', cursive; cursor: pointer;
-	color: #000;
-	}
-	  
+
     /* Panel Headers */
     .panel { margin: 8px; }
     .panel-header {
@@ -239,10 +228,6 @@
 <div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
-<div class="filters" id="itineraries">
-	<button id="toggleItineraries">Show Itineraries</button>
-	<div id="itineraryPanel" class="panel-container" style="display:none;"></div>
-</div>
   <div id="map"></div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
@@ -251,8 +236,6 @@
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
-      itinTab:    'Itineraries',
-      itinRange:  'A2:E',
       ranges: ['HawaiiPlaces!A:L','HawaiiReviews!A:E'],
       mapCenter: [21.4559, -157.9519],
       mapZoom: 10,
@@ -402,79 +385,6 @@
         const basePool=CONFIG.baseColors.slice(); shuffle(basePool);
         const categoryColors={}; Object.keys(catMap).forEach(cat=>{ categoryColors[cat]=basePool.length?basePool.pop():randomColor(); });
         setupFilters(Object.keys(catMap),regSet,catMap);
-	function drawMarkers(){
-    // 1) clear old markers
-    markers.forEach(m => m.remove());
-    markers = [];
-
-    // 2) filter & collect visible places
-    const visible = [];
-    places.forEach(p => {
-      // “Been there” vs “Not yet”
-      if (!selVis.has(p.visited ? 'Been there' : 'Not yet')) return;
-      // category‐subcategory filters
-      if (!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return;
-      // region filters
-      if (p.regions && !p.regions.some(r => selReg.has(r))) return;
-
-      visible.push(p);
-
-      // 3) build popup HTML
-      let popup = 
-        `<strong>${p.name}</strong>` +
-        `${p.notes ? `<br>${p.notes}` : ''}` +
-        `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` +
-        (p.regions && p.regions.length
-           ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '') +
-        `<br>`;
-      const revs = (reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
-      if (revs.length) {
-        popup += '★'.repeat(revs[0].rating) +
-          `<br><details><summary>${revs.length} review${revs.length>1?'s':''}</summary>`;
-        revs.forEach(r => popup += `<blockquote>${r.text}</blockquote>`);
-        popup += `</details><br>`;
-      }
-      if (p.mapsLink)  popup += `<a href="${p.mapsLink}" target="_blank">Google Maps</a><br>`;
-      if (p.appleLink) popup += `<a href="${p.appleLink}" target="_blank">Apple Maps</a><br>`;
-      if (p.extraLink) popup += `<a href="${p.extraLink}" target="_blank">More Info</a>`;
-
-      // 4) create & style marker
-      const strokeColor = p.visited ? '#DAA520' : '#555';
-      const svgIcon = 
-        `<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg">
-           <path fill="${categoryColors[p.category]}" stroke="${strokeColor}" 
-                 stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 
-                 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 
-                 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 
-                 1 0-9 4.5 4.5 0 0 1 0 9z"/>
-         </svg>`;
-      const el = document.createElement('div');
-      el.innerHTML = svgIcon;
-      el.className = 'place-marker';
-
-      // 5) add marker to map & hook popup/flyTo
-      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([p.latlng[1], p.latlng[0]])
-        .setPopup(new maplibregl.Popup({
-          offset: 25, closeOnClick: true, focusAfterOpen: false
-        }).setHTML(popup))
-        .addTo(map);
-      el.addEventListener('click', e => {
-        e.stopPropagation();
-        const targetZoom = 12;
-        map.flyTo({
-          center: [p.latlng[1], p.latlng[0]],
-          zoom: map.getZoom() < targetZoom ? targetZoom : map.getZoom(),
-          speed: 1.0, curve: 1.6, essential: true
-        });
-      });
-
-      markers.push(marker);
-    });
-
-    // 6) finally, update the carousel
-    renderCarousel(visible);
-  }
         drawMarkers();
 	 let allOn = true;
 		const toggleSubcats = document.getElementById('toggleSubcats');
@@ -511,27 +421,9 @@
 	    ex ? 'block' : 'none';
 	  document.getElementById('toggleSubcats').style.display =
 	    ex ? 'block' : 'none';
-	  const itinEl    = document.getElementById('itineraries');
-	  const filtersEl = document.getElementById('filters');
-		  const gap = 10;  // same gap you had before
-		  const rect = filtersEl.getBoundingClientRect();
-		  itinEl.style.top = (rect.bottom + gap) + 'px';
 	};
-	}
-	   function makeCB(val, setRef, label) {
-    const lbl = document.createElement('label');
-    const cb  = document.createElement('input');
-    cb.type   = 'checkbox';
-    cb.value  = val;
-    cb.onchange = () => {
-      if (cb.checked)   setRef.add(val);
-      else               setRef.delete(val);
-      drawMarkers();
-    };
-    lbl.append(cb, ' ', label);
-    return lbl;
-  }
-	      function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
+          function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
+          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
 		if (title === 'Visited?') {
 			items.forEach(it => b.append(makeCB(it,selVis,it)));
 				} else {
@@ -560,7 +452,6 @@ function renderCarousel(v){
 		${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
           <p><em>${p.category} – ${p.subcategories.join(', ')}</em></p>
 	  ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
-   	  <button class="add-to-itinerary" data-id="${p.id}">+ Add to Itinerary</button>
           </div>`
     );
   const cardEl = c.lastElementChild;
@@ -578,152 +469,44 @@ function renderCarousel(v){
 	  }
 	};
   });
+}        
+function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } 
+	if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; 
+	if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; 
+	if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
+const strokeColor=p.visited?'#DAA520':'#555'; 
+const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
+const el = document.createElement('div');
+el.innerHTML = svgIcon;
+el.className = 'place-marker';
 
-  // Itinerary State + UI (inside the same IIFE)
-  let itineraries      = {};     // { name: [ {placeId,date,time,notes}, … ] }
-  let currentItinerary = null;
-
-  const itinBtn  = document.getElementById('toggleItineraries');
-  const itinPane = document.getElementById('itineraryPanel');
-
-  // Toggle panel open/closed and load from Sheet
-  itinBtn.addEventListener('click', async () => {
-    const open = itinPane.style.display === 'none';
-    itinPane.style.display = open ? 'block' : 'none';
-    itinBtn.textContent    = open ? 'Hide Itineraries' : 'Show Itineraries';
-    if (open) await loadItineraries();
-    renderItineraryMenu();
-  });
-
-  // 1) Fetch all existing itineraries from your “Itineraries” tab
-  async function loadItineraries() {
-    const url = 
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}` +
-      `/values/${CONFIG.itinTab}!${CONFIG.itinRange}` +
-      `?key=${CONFIG.apiKey}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    itineraries = {};
-    (data.values||[]).forEach(r => {
-      const [name, placeId, date, time, notes] = r;
-      if (!itineraries[name]) itineraries[name] = [];
-      itineraries[name].push({ placeId, date, time, notes });
-    });
-  }
-
-  // 2) Render the top‐level menu: create / select / delete
-  function renderItineraryMenu() {
-    const c = itinPane;
-    c.innerHTML = '';
-
-    // — New Itinerary —
-    c.insertAdjacentHTML('beforeend', `
-      <div class="panel">
-        <input  id="newItineraryName" placeholder="New name…"/>
-        <button id="createItinerary">Create</button>
-      </div>
-    `);
-    document.getElementById('createItinerary').onclick = () => {
-      const name = document.getElementById('newItineraryName').value.trim();
-      if (!name) return alert('Enter a name for your itinerary.');
-      currentItinerary = name;
-      itineraries[name] = [];
-      renderItineraryMenu();
-    };
-
-    // — Existing Itineraries —
-    const names = Object.keys(itineraries);
-    if (names.length) {
-      const opts = names.map(n => `<option value="${n}">${n}</option>`).join('');
-      c.insertAdjacentHTML('beforeend', `
-        <div class="panel">
-          <select id="selectItinerary">
-            <option value="">Select itinerary…</option>
-            ${opts}
-          </select>
-          <button id="deleteItinerary">Delete</button>
-        </div>
-        <div id="itineraryItems"></div>
-      `);
-
-      document.getElementById('selectItinerary').onchange = e => {
-        currentItinerary = e.target.value;
-        renderItineraryItems();
-      };
-      document.getElementById('deleteItinerary').onclick = () => {
-        if (!currentItinerary) return;
-        delete itineraries[currentItinerary];
-        currentItinerary = null;
-        renderItineraryMenu();
-      };
-    }
-  }
-
-  // 3) Render the list of places in the current itinerary (with inline edits)
-  function renderItineraryItems() {
-    const container = document.getElementById('itineraryItems');
-    container.innerHTML = '';
-    const items = itineraries[currentItinerary] || [];
-    if (!items.length) {
-      container.innerHTML = '<div class="panel">No stops yet.</div>';
-      return;
-    }
-    items.forEach((item, idx) => {
-      container.insertAdjacentHTML('beforeend', `
-        <div class="panel">
-          <strong>${item.placeId}</strong>
-          <input type="date"  value="${item.date}"  data-idx="${idx}" class="itinDate"/>
-          <input type="time"  value="${item.time}"  data-idx="${idx}" class="itinTime"/>
-          <input type="text"  placeholder="Notes…" value="${item.notes}" data-idx="${idx}" class="itinNotes"/>
-          <button data-idx="${idx}" class="removeItinItem">✖ Remove</button>
-        </div>
-      `);
-    });
-    container.querySelectorAll('.itinDate').forEach(i => i.onchange = e => {
-      itineraries[currentItinerary][+e.target.dataset.idx].date = e.target.value;
-    });
-    container.querySelectorAll('.itinTime').forEach(i => i.onchange = e => {
-      itineraries[currentItinerary][+e.target.dataset.idx].time = e.target.value;
-    });
-    container.querySelectorAll('.itinNotes').forEach(i => i.onchange = e => {
-      itineraries[currentItinerary][+e.target.dataset.idx].notes = e.target.value;
-    });
-    container.querySelectorAll('.removeItinItem').forEach(btn => btn.onclick = e => {
-      itineraries[currentItinerary].splice(+e.target.dataset.idx,1);
-      renderItineraryItems();
-    });
-  }
-
-  // 4) Handle clicks on our “Add to Itinerary” button
-  document.body.addEventListener('click', async e => {
-    if (!e.target.matches('.add-to-itinerary')) return;
-    if (!currentItinerary) {
-      return alert('Please create or select an itinerary first.');
-    }
-    const placeId = e.target.dataset.id;
-    const date    = prompt('Date (YYYY-MM-DD):');
-    const time    = prompt('Time (HH:MM):');
-    const notes   = prompt('Notes (optional):');
-    // Local update
-    itineraries[currentItinerary].push({ placeId, date, time, notes });
-    renderItineraryItems();
-    // Push to Google Sheet
-    await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/` +
-      `${CONFIG.sheetId}/values/${CONFIG.itinTab}!${CONFIG.itinRange}:append` +
-      `?valueInputOption=USER_ENTERED&key=${CONFIG.apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          values:[[ currentItinerary, placeId, date, time, notes ]]
-        })
+	const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+	  .setLngLat([ p.latlng[1], p.latlng[0] ])
+	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: true, focusAfterOpen: false}).setHTML(popup))
+	  .addTo(map);
+	el.addEventListener('click', e => {
+	  e.stopPropagation();
+	  const currentZoom = map.getZoom();
+	  const targetZoom  = 12;
+	  map.flyTo({
+	    center: [ p.latlng[1], p.latlng[0] ],
+	    zoom: currentZoom < targetZoom ? targetZoom : currentZoom,
+		speed: 1.0, 
+		curve: 1.6, 
+	    essential: true
+	  });
+	  if (currentPopup && currentPopup !== marker.getPopup()) {
+		currentPopup.remove();
+		}
+		const popup = marker.getPopup();
+		popup.addTo(map);
+		currentPopup = popup;
+	});
+	markers.push(marker);
+	 });
+renderCarousel(visible); }
       }
-    );
-  });
-  // ────────────────────────────────────────────────────────────────────────
-
-})();
+    })();
   </script>
 </body>
 </html>
