@@ -242,7 +242,7 @@
     text-align: left;
     cursor: pointer;
   ">
-  Enter Itinerary Mode
+  
 </button>
 <div id="panelContainer" class="panel-container"></div>
     <div id="placeCarousel" class="place-carousel"></div>
@@ -460,7 +460,7 @@
 		inItin ? 'none' : 'block';
 	
 	// update our button label
-	btn.innerText = inItin
+	document.getElementById('itineraryMode').textContent = inItin
 		? 'Exit Itinerary Mode'
 		: 'Enter Itinerary Mode';
 	};
