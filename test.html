@@ -210,6 +210,7 @@
   </style>
 </head>
 <body>
+  <iframe name="postFrame" style="display:none;"></iframe>
   <div class="filters" id="filters">
     <button id="toggleFilters">Menu</button>
 <div class="search-toggle-container">
@@ -317,6 +318,23 @@
 	const ITINERARY_API = 'https://script.google.com/macros/s/AKfycby8CH5l4Wwt2h0xSkXirwnY1LJJYRNWT5bt2cNkrd18CyyGpx8B0iul4VpXASz8o1Jk/exec';
 	const API_SECRET    = 'Fart';
 	let selectedItinId = null;
+	  function postToAPI(params) {
+	  const form = document.createElement('form');
+	  form.style.display = 'none';
+	  form.method = 'post';
+	  form.action = ITINERARY_API;
+	  form.target = 'postFrame';
+	  for (const key in params) {
+	    const inp = document.createElement('input');
+	    inp.type  = 'hidden';
+	    inp.name  = key;
+	    inp.value = params[key];
+	    form.appendChild(inp);
+	  }
+	  document.body.appendChild(form);
+	  form.submit();
+	  document.body.removeChild(form);
+	}
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
@@ -338,25 +356,24 @@
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           initMap(places,reviewsBy);
         }).catch(console.error);
-	  fetch(`${ITINERARY_API}?secret=${API_SECRET}`)
-		  .then(r => r.json())
-		  .then(data => {
-			// data.itineraries: array of [id, name, createdDate]
-			// data.items:       array of [itinId, placeId, date, time, notes, sortOrder]
-			window.itineraries   = data.itineraries.map(r => ({
-			  itineraryId: r[0], name: r[1], createdDate: r[2]
-			}));
-			window.itineraryItems = data.items.map(r => ({
-			  itineraryId: r[0],
-			  placeId:     r[1],
-			  date:        r[2],
-			  time:        r[3],
-			  notes:       r[4],
-			  sortOrder:   r[5]
-			}));
-			// TODO: render list under #itineraryContainer
-			renderItineraries();
-		  })
+	  window.receiveItineraries = data => {
+	  window.itineraries   = data.itineraries.map(r=>({
+	    itineraryId:r[0], name:r[1], createdDate:r[2]
+	  }));
+	  window.itineraryItems = data.items.map(r=>({
+	    itineraryId:r[0],
+	    placeId:     r[1],
+	    date:        r[2],
+	    time:        r[3],
+	    notes:       r[4],
+	    sortOrder:   r[5]
+	  }));
+	  renderItineraries();
+	};
+	
+	const jsonp = document.createElement('script');
+	jsonp.src = `${ITINERARY_API}?secret=${API_SECRET}&callback=receiveItineraries`;
+	document.head.appendChild(jsonp);
 		  .catch(console.error);
 
 		// ── “Create New Itinerary” button handler ──
@@ -366,17 +383,16 @@
 		const id = 'it-' + Date.now();
 		const date = new Date().toISOString();
 		
-		fetch(ITINERARY_API, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-			secret:      API_SECRET,
-			action:      'addItinerary',
-			itineraryId: id,
-			name:        name,
-			createdDate: date
-			})
-		})
+		postToAPI({
+		secret:      API_SECRET,
+		action:      'addItem',
+		itineraryId: selectedItinId,
+		placeId:     p.id,
+		date:        new Date().toISOString().split('T')[0],
+		time:        new Date().toISOString().split('T')[1].slice(0,5),
+		notes:       '',
+		sortOrder:   ''
+		});
 		.then(r => r.json())
 		.then(resp => {
 			if (resp.status === 'ok') {
@@ -629,20 +645,13 @@ function renderCarousel(v){
 	if (addBtn) {
 	addBtn.onclick = () => {
 		// You’ll need a variable `selectedItinId` pointing at the open itinerary
-		fetch(ITINERARY_API, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-			secret:      API_SECRET,
-			action:      'addItem',
-			itineraryId: selectedItinId,
-			placeId:     p.id,    // or p.placeId, whichever your place object uses
-			date:        new Date().toISOString().split('T')[0],
-			time:        new Date().toISOString().split('T')[1].slice(0,5),
-			notes:       '',
-			sortOrder:   ''
-		})
-		})
+		 postToAPI({
+		 secret:      API_SECRET,
+		 action:      'addItinerary',
+		 itineraryId: id,
+		 name:        name,
+		 createdDate: date
+		 });
 		.then(r => r.json())
 		.then(() => {
 		/* update your in-memory model & UI if desired */
