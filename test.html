@@ -5,7 +5,7 @@
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
-  <title>Hawaii 2</title>
+  <title>Hawaii</title>
   
   <style>
 
@@ -659,7 +659,6 @@ function renderCarousel(v){
 	currentPopup = popup;
 		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, speed: 1.0, curve: 1.6, essential: true });
 	  }
-	};
   });
 }        
 function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } 
