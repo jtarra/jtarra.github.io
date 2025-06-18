@@ -334,6 +334,12 @@
 		}
 	}, e => console.error('gapi init error', e));
 	}
+		(function loadGapi() {
+		const s = document.createElement('script');
+		s.src = 'https://apis.google.com/js/api.js';
+		s.onload = handleClientLoad;
+		document.head.appendChild(s);
+		})();
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
@@ -616,6 +622,5 @@ renderCarousel(visible); }
       }
     })();
   </script>
-  <script src="https://apis.google.com/js/api.js" onload="handleClientLoad()"></script>
 </body>
 </html>
