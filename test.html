@@ -322,6 +322,7 @@
 /* MAIN USER CONFIG */
 
     (function(){
+	let markers = [];
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
 
@@ -445,7 +446,6 @@
 	  });
 	}
 
-        let markers = [];
         const catMap={},regSet=new Set(); 
 		places.forEach(p => {
 		const set = catMap[p.category] || (catMap[p.category] = new Set());
@@ -580,6 +580,7 @@ el.className = 'place-marker';
 	  .setLngLat([ p.latlng[1], p.latlng[0] ])
 	  .setPopup(new maplibregl.Popup({ offset: 25, closeOnClick: true, focusAfterOpen: false}).setHTML(popup))
 	  .addTo(map);
+	  marker.placeId = p.id;
 	el.addEventListener('click', e => {
 	  e.stopPropagation();
 	  const currentZoom = map.getZoom();
@@ -606,10 +607,11 @@ renderCarousel(visible); }
 	  const viewBtn = document.getElementById('viewItineraries');
 	  const selectEl = document.getElementById('itinerarySelect');
 	  viewBtn.onclick = () => {
-		if (selectEl.style.display === 'block') {
-		// currently shown → hide dropdown + carousel
+	if (selectEl.style.display === 'block') {
+		// hide dropdown, carousel, and restore all pins
 		selectEl.style.display = 'none';
 		document.getElementById('itineraryCarousel').style.display = 'none';
+		showAllMarkers();
 		viewBtn.textContent = 'View Itineraries';
 		} else {
 		  // currently hidden → show & load
@@ -652,10 +654,11 @@ renderCarousel(visible); }
 				selectEl.appendChild(opt);
 			  });
 			  // Store selection
-			  selectEl.onchange = e => {
-				selectedItinId = e.target.value;
-				renderItineraryItems();
-				  };
+		selectEl.onchange = e => {
+		selectedItinId = e.target.value;
+		renderItineraryItems();
+		filterMarkersForItinerary(selectedItinId);
+		};
 			})
 			.catch(err => {
 			  console.error('Error loading itineraries:', err);
@@ -708,7 +711,21 @@ renderCarousel(visible); }
   // show the carousel
   carousel.style.display = 'flex';
 }
+	function filterMarkersForItinerary(itinId) {
+	  markers.forEach(mk => {
+		const keep = window.itineraryItems.some(
+		  it => it.itineraryId === itinId && it.placeId === mk.placeId
+		);
+		mk.getElement().style.display = keep ? '' : 'none';
+	  });
+	}
 
+	/** Show all markers again */
+	function showAllMarkers() {
+	  markers.forEach(mk => {
+		mk.getElement().style.display = '';
+	  });
+	}
 	})();
   </script>
 </body>
