@@ -374,8 +374,6 @@
 	const jsonp = document.createElement('script');
 	jsonp.src = `${ITINERARY_API}?secret=${API_SECRET}&callback=receiveItineraries`;
 	document.head.appendChild(jsonp);
-		  .catch(console.error);
-
 		// ── “Create New Itinerary” button handler ──
 		document.getElementById('createItinerary').onclick = () => {
 		const name = prompt('Name your new itinerary:');
@@ -656,7 +654,6 @@ function renderCarousel(v){
 		.then(() => {
 		/* update your in-memory model & UI if desired */
 		})
-		.catch(console.error);
 	};
 	}
 	  cardEl.onclick = () => {
