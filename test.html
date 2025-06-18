@@ -290,6 +290,7 @@
 	">
    Create New Itinerary
    </button>
+   <div id="itineraryList" style="margin-top: 8px;"></div>
 </div>
 	  
     <div id="placeCarousel" class="place-carousel"></div>
@@ -315,6 +316,7 @@
 	
 	const ITINERARY_API = 'https://script.google.com/macros/s/AKfycby8CH5l4Wwt2h0xSkXirwnY1LJJYRNWT5bt2cNkrd18CyyGpx8B0iul4VpXASz8o1Jk/exec';
 	const API_SECRET    = 'Fart';
+	let selectedItinId = null;
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
@@ -386,7 +388,34 @@
 		})
 		.catch(console.error);
 		};
+		document.getElementById('viewItineraries').onclick = () => {
+			  renderItineraries();
+			};
+		function renderItineraries() {
+		  const listDiv = document.getElementById('itineraryList');
+		  listDiv.innerHTML = '';  // clear out old entries
 
+		  window.itineraries.forEach(it => {
+			const btn = document.createElement('button');
+			btn.textContent = it.name;
+			btn.style.cssText = `
+			  width: 100%;
+			  margin-bottom: 6px;
+			  padding: 6px;
+			  text-align: left;
+			  border: 1px solid #D0B59A;
+			  border-radius: 4px;
+			  background: ${it.itineraryId === selectedItinId ? '#D0B59A' : '#FAF1D2'};
+			  font-family: 'Dorgan', cursive;
+			  cursor: pointer;
+			`;
+			btn.onclick = () => {
+			  selectedItinId = it.itineraryId;
+			  renderItineraries();  // re-draw to update highlight
+			};
+			listDiv.appendChild(btn);
+		  });
+		}
       function initMap(places,reviewsBy){
 	const fuse = new Fuse(places, {
 		   getFn: (obj, path) => {
