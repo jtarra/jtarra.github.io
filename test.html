@@ -3,7 +3,6 @@
 <head>
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@6/dist/fuse.min.js"></script>
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
-	<script src="https://accounts.google.com/gsi/client" async defer></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
   <title>Hawaii</title>
@@ -314,54 +313,6 @@
     };
 /* MAIN USER CONFIG */
 
-	const OAUTH2_CLIENT_ID = '147569119323-aqmlfaelmtkaoo2u61jvta55g27kln37.apps.googleusercontent.com';
-	const SHEETS_DISCOVERY = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
-	const SHEETS_SCOPES    = 'https://www.googleapis.com/auth/spreadsheets';
-	let tokenClient;
-	(function loadGapiClient() {
-  const s = document.createElement('script');
-  s.src = 'https://apis.google.com/js/api.js';
-  s.onload = () => {
-    console.log('gapi.client library loaded');
-    initAuthFlow();
-  };
-  document.head.appendChild(s);
-})();
-	  function initAuthFlow() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: OAUTH2_CLIENT_ID,
-    scope:     SHEETS_SCOPES,
-    callback:  tokenResp => {
-      // 3) Once we have a token, initialize gapi.client
-      gapi.client
-        .init({
-          apiKey:       CONFIG.apiKey,
-          discoveryDocs:SHEETS_DISCOVERY
-        })
-        .then(() => {
-          // inject the OAuth token into gapi
-          gapi.client.setToken({ access_token: tokenResp.access_token });
-          console.log('gapi.client initialized with auth token');
-          // Now you can call gapi.client.sheets.spreadsheets.values.append(…)
-        })
-        .catch(err => console.error('gapi.client.init failed', err));
-    }
-  });
-
-  // This will pop the consent dialog (or reuse existing session)
-  tokenClient.requestAccessToken({ prompt: '' });
-}
-gapi.client.sheets.spreadsheets.values
-  .append({
-    spreadsheetId: CONFIG.sheetId,
-    range: 'Itineraries!A:C',
-    valueInputOption: 'RAW',
-    insertDataOption: 'INSERT_ROWS',
-    resource: { values: [[ id, name, date ]] }
-  })
-  .then(() => alert('Saved!'))
-  .catch(e => console.error(e));
-	  
     (function(){
       function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
       function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
