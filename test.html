@@ -5,7 +5,7 @@
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta charset="utf-8" />
-  <title>Hawaii</title>
+  <title>Hawaii 2</title>
   
   <style>
 
@@ -375,33 +375,24 @@
 	jsonp.src = `${ITINERARY_API}?secret=${API_SECRET}&callback=receiveItineraries`;
 	document.head.appendChild(jsonp);
 		// ── “Create New Itinerary” button handler ──
-		document.getElementById('createItinerary').onclick = () => {
-		const name = prompt('Name your new itinerary:');
-		if (!name) return;
-		const id = 'it-' + Date.now();
-		const date = new Date().toISOString();
-		
-		postToAPI({
-		secret:      API_SECRET,
-		action:      'addItem',
-		itineraryId: selectedItinId,
-		placeId:     p.id,
-		date:        new Date().toISOString().split('T')[0],
-		time:        new Date().toISOString().split('T')[1].slice(0,5),
-		notes:       '',
-		sortOrder:   ''
-		});
-		.then(r => r.json())
-		.then(resp => {
-			if (resp.status === 'ok') {
-			window.itineraries.push({ itineraryId:id, name, createdDate:date });
-			renderItineraries();
-			} else {
-			alert('Failed to save itinerary');
-			}
-		})
-		.catch(console.error);
-		};
+	document.getElementById('createItinerary').onclick = () => {
+	  const name = prompt('Name your new itinerary:');
+	  if (!name) return;
+	  const id = 'it-' + Date.now();
+	  const date = new Date().toISOString();
+
+	  // submit via hidden form
+	  postToAPI({
+		secret:       API_SECRET,
+		action:       'addItinerary',
+		itineraryId:  id,
+		name:         name,
+		createdDate:  date
+	  });
+
+	  // immediately update local state & UI
+	  window.itineraries.push({ itineraryId: id, name, createdDate: date });
+	  renderItineraries();
 		document.getElementById('viewItineraries').onclick = () => {
 			  renderItineraries();
 			};
@@ -642,20 +633,20 @@ function renderCarousel(v){
 	const addBtn = cardEl.querySelector('.add-to-itin');
 	if (addBtn) {
 	addBtn.onclick = () => {
-		// You’ll need a variable `selectedItinId` pointing at the open itinerary
-		 postToAPI({
-		 secret:      API_SECRET,
-		 action:      'addItinerary',
-		 itineraryId: id,
-		 name:        name,
-		 createdDate: date
-		 });
-		.then(r => r.json())
-		.then(() => {
-		/* update your in-memory model & UI if desired */
-		})
+	  // send the form+iframe POST
+	  postToAPI({
+		secret:      API_SECRET,
+		action:      'addItem',
+		itineraryId: selectedItinId,
+		placeId:     p.id,
+		date:        new Date().toISOString().split('T')[0],
+		time:        new Date().toISOString().split('T')[1].slice(0,5),
+		notes:       '',
+		sortOrder:   ''
+	  });
+
+	  // optionally update your in-memory items & re-render here
 	};
-	}
 	  cardEl.onclick = () => {
 	  const m = markers.find(mk => {
 		const [lng, lat] = mk.getLngLat().toArray();
