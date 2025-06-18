@@ -593,7 +593,62 @@ el.className = 'place-marker';
 	 });
 renderCarousel(visible); }
       }
-    })();
+	// ── Itineraries: fetch from Sheets and render ──
+	document.getElementById('viewItineraries').onclick = () => {
+	  const ctr = document.getElementById('itineraryContainer');
+	  ctr.innerHTML = '<p>Loading itineraries…</p>';
+
+	  // 1️⃣ Fetch the list of itineraries (skip header row)
+	  fetch(
+		`https://sheets.googleapis.com/v4/spreadsheets/` +
+		`${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`
+	  )
+		.then(res => {
+		  if (!res.ok) throw new Error(res.statusText);
+		  return res.json();
+		})
+		.then(json => {
+		  // map rows to objects
+		  window.itineraries = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			name:        r[1],
+			createdDate: r[2]
+		  }));
+		  // now fetch the items
+		  return fetch(
+			`https://sheets.googleapis.com/v4/spreadsheets/` +
+			`${CONFIG.sheetId}/values/ItineraryItems!A:F?key=${CONFIG.apiKey}`
+		  );
+		})
+		.then(res => {
+		  if (!res.ok) throw new Error(res.statusText);
+		  return res.json();
+		})
+		.then(json => {
+		  window.itineraryItems = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			placeId:     r[1],
+			date:        r[2],
+			time:        r[3],
+			notes:       r[4],
+			sortOrder:   r[5]
+		  }));
+		  // render them
+		  ctr.innerHTML = '';   // clear loading text
+		  window.itineraries.forEach(it => {
+			const btn = document.createElement('button');
+			btn.textContent = it.name;
+			btn.style.cssText = 'display:block;width:100%;margin:4px 0;padding:6px;text-align:left;';
+			ctr.appendChild(btn);
+		  });
+		})
+		.catch(err => {
+		  console.error('Error loading itineraries:', err);
+		  ctr.innerHTML = '<p style="color:red;">Failed to load itineraries.</p>';
+		});
+	};
+
+	})();
   </script>
 </body>
 </html>
