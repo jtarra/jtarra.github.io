@@ -291,6 +291,7 @@
 	   Create New Itinerary
 	   </button>
 	<select id="itinerarySelect"
+		<div id="itineraryCarousel" class="place-carousel" style="display:none; margin-top:8px;"></div>
 		style="display:none;width:100%;margin-top:8px;padding:6px;">
 		<option value="" disabled selected>Select an itinerary</option>
 	</select>
@@ -336,7 +337,8 @@
 			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });
           const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
-          initMap(places,reviewsBy);
+          window.places = places;
+		  initMap(places,reviewsBy);
         }).catch(console.error);
 
       function initMap(places,reviewsBy){
@@ -646,7 +648,10 @@ renderCarousel(visible); }
 				selectEl.appendChild(opt);
 			  });
 			  // Store selection
-			  selectEl.onchange = e => { selectedItinId = e.target.value; };
+			  selectEl.onchange = e => {
+				selectedItinId = e.target.value;
+				renderItineraryItems();
+				  };
 			})
 			.catch(err => {
 			  console.error('Error loading itineraries:', err);
@@ -654,6 +659,51 @@ renderCarousel(visible); }
 			});
 		}
 	  };
+	
+	function renderItineraryItems() {
+  const carousel = document.getElementById('itineraryCarousel');
+  // clear out any old cards
+  carousel.innerHTML = '';
+
+  // grab just the items for this trip
+  const items = (window.itineraryItems || [])
+    .filter(it => it.itineraryId === selectedItinId);
+
+  if (!items.length) {
+    // no items → hide the carousel
+    carousel.style.display = 'none';
+    return;
+  }
+
+  // otherwise build one card per stop
+  items.forEach(it => {
+    // look up the place info
+    const place = (window.places || []).find(p => p.id === it.placeId);
+    const name  = place ? place.name : it.placeId;
+
+    const card = document.createElement('div');
+    card.className = 'place-card';
+    card.innerHTML = `
+      <h4>${name}</h4>
+      <p>${it.date} ${it.time}</p>
+    `;
+    // clicking a card flies the map to that spot
+    card.onclick = () => {
+      if (!place) return;
+      map.flyTo({
+        center: [place.latlng[1], place.latlng[0]],
+        zoom:   14,
+        speed:  1.0,
+        curve:  1.6,
+        essential: true
+      });
+    };
+    carousel.appendChild(card);
+  });
+
+  // show the carousel
+  carousel.style.display = 'flex';
+}
 
 	})();
   </script>
