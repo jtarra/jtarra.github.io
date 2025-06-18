@@ -598,62 +598,62 @@ el.className = 'place-marker';
 renderCarousel(visible); }
       }
 	// ── Itineraries: fetch from Sheets and render ──
-	document.getElementById('viewItineraries').onclick = () => {
-	const select = document.getElementById('itinerarySelect');
-	select.style.display = 'block';
-	select.innerHTML = '<option value="" disabled selected>Loading…</option>';
+	  const viewBtn = document.getElementById('viewItineraries');
+	  const selectEl = document.getElementById('itinerarySelect');
+	  viewBtn.onclick = () => {
+		if (selectEl.style.display === 'block') {
+		  // currently shown → hide it
+		  selectEl.style.display = 'none';
+		  viewBtn.textContent = 'View Itineraries';
+		} else {
+		  // currently hidden → show & load
+		  viewBtn.textContent = 'Hide Itineraries';
+		  selectEl.style.display = 'block';
+		  selectEl.innerHTML = '<option value="" disabled selected>Loading…</option>';
 
-	  // 1️⃣ Fetch the list of itineraries (skip header row)
-	  fetch(
-		`https://sheets.googleapis.com/v4/spreadsheets/` +
-		`${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`
-	  )
-		.then(res => {
-		  if (!res.ok) throw new Error(res.statusText);
-		  return res.json();
-		})
-		.then(json => {
-		  // map rows to objects
-		  window.itineraries = (json.values || []).slice(1).map(r => ({
-			itineraryId: r[0],
-			name:        r[1],
-			createdDate: r[2]
-		  }));
-		  // now fetch the items
-		  return fetch(
+		  // 1️⃣ Fetch itinerary list
+		  fetch(
 			`https://sheets.googleapis.com/v4/spreadsheets/` +
-			`${CONFIG.sheetId}/values/ItineraryItems!A:F?key=${CONFIG.apiKey}`
-		  );
-		})
-		.then(res => {
-		  if (!res.ok) throw new Error(res.statusText);
-		  return res.json();
-		})
-		.then(json => {
-		window.itineraryItems = (json.values||[]).slice(1).map(r => ({
-		itineraryId: r[0],
-		placeId:     r[1],
-		date:        r[2],
-		time:        r[3],
-		notes:       r[4],
-		sortOrder:   r[5]
-		}));
-		// populate dropdown
-		select.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
-		window.itineraries.forEach(it => {
-		const opt = document.createElement('option');
-		opt.value = it.itineraryId;
-		opt.textContent = it.name;
-		select.appendChild(opt);
-		});
-		// save selection for later “Add to Itinerary” use
-		select.onchange = e => { selectedItinId = e.target.value; };
-		})
-		.catch(err => {
-		console.error('Error loading itineraries:', err);
-		select.innerHTML = '<option style="color:red;">Failed to load</option>';
-		});
-	};
+			`${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`
+		  )
+			.then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+			.then(json => {
+			  window.itineraries = (json.values||[]).slice(1).map(r => ({
+				itineraryId: r[0], name: r[1], createdDate: r[2]
+			  }));
+			  // 2️⃣ Fetch items
+			  return fetch(
+				`https://sheets.googleapis.com/v4/spreadsheets/` +
+				`${CONFIG.sheetId}/values/ItineraryItems!A:F?key=${CONFIG.apiKey}`
+			  );
+			})
+			.then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+			.then(json => {
+			  window.itineraryItems = (json.values||[]).slice(1).map(r => ({
+				itineraryId: r[0],
+				placeId:     r[1],
+				date:        r[2],
+				time:        r[3],
+				notes:       r[4],
+				sortOrder:   r[5]
+			  }));
+			  // Populate the dropdown
+			  selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
+			  window.itineraries.forEach(it => {
+				const opt = document.createElement('option');
+				opt.value = it.itineraryId;
+				opt.textContent = it.name;
+				selectEl.appendChild(opt);
+			  });
+			  // Store selection
+			  selectEl.onchange = e => { selectedItinId = e.target.value; };
+			})
+			.catch(err => {
+			  console.error('Error loading itineraries:', err);
+			  selectEl.innerHTML = '<option style="color:red;">Failed to load</option>';
+			});
+		}
+	  };
 
 	})();
   </script>
