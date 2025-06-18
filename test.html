@@ -607,9 +607,10 @@ renderCarousel(visible); }
 	  const selectEl = document.getElementById('itinerarySelect');
 	  viewBtn.onclick = () => {
 		if (selectEl.style.display === 'block') {
-		  // currently shown → hide it
-		  selectEl.style.display = 'none';
-		  viewBtn.textContent = 'View Itineraries';
+		// currently shown → hide dropdown + carousel
+		selectEl.style.display = 'none';
+		document.getElementById('itineraryCarousel').style.display = 'none';
+		viewBtn.textContent = 'View Itineraries';
 		} else {
 		  // currently hidden → show & load
 		  viewBtn.textContent = 'Hide Itineraries';
