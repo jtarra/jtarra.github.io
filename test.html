@@ -807,10 +807,12 @@ renderCarousel(visible); }
 	const nxtLbl = document.getElementById('itinDayNext');
 	if (next) {
 	const relNext = next.offset - scrollX;
-	// only show once < one card-width away
-	if (relNext < step) {
+	// only show when any part of the next‐day card is in view
+	if (scrollX > 0 && relNext < viewW) {
 		nxtLbl.textContent = `Day ${next.day}`;
-		nxtLbl.style.left    = `${relNext}px`;
+		// slide with the card, but never go left of 0
+		const pos = relNext > 0 ? relNext : 0;
+		nxtLbl.style.left    = `${pos}px`;
 		nxtLbl.style.display = 'block';
 	} else {
 		nxtLbl.style.display = 'none';
