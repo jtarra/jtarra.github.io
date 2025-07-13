@@ -294,22 +294,18 @@
 			style="display:none;width:100%;margin-top:8px;padding:6px;">
 	  <option value="" disabled selected>Select an itinerary</option>
 	</select>
-	<div id="itinDayHeader"
-	     style="
-	       display: none;
-	       text-align: center;
-	       font-weight: bold;
-	       padding: 4px;
-	       background: #FAF1D2;
-	       border-radius: 4px;
-	       margin-top: 8px;
-	     ">
-	  <!-- will show “Day 1”, “Day 2”, etc. -->
-	</div>
-	<div id="itineraryCarousel"
-		 class="place-carousel"
-		 style="display:none; margin-top:8px;">
-	</div>
+		<div id="itineraryCarouselWrapper" style="border-top:1px solid #D0B59A; margin-top:8px;">
+		
+		<!-- plain text header; no background, no box -->
+		<div id="itinDayHeader" style="display:none; text-align:center; font-weight:bold; margin:4px 0;">
+			<!-- will show “Day X” -->
+		</div>
+		
+		<!-- cards container; remove its own border so only wrapper’s line shows -->
+		<div id="itineraryCarousel" class="place-carousel"
+			style="display:none; overflow-x:auto; gap:8px; padding:8px; border-top:none;">
+		</div>
+		</div>
 </div>
 	  
     <div id="placeCarousel" class="place-carousel"></div>
