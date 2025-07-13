@@ -294,6 +294,18 @@
 			style="display:none;width:100%;margin-top:8px;padding:6px;">
 	  <option value="" disabled selected>Select an itinerary</option>
 	</select>
+	<div id="itinDayHeader"
+	     style="
+	       display: none;
+	       text-align: center;
+	       font-weight: bold;
+	       padding: 4px;
+	       background: #FAF1D2;
+	       border-radius: 4px;
+	       margin-top: 8px;
+	     ">
+	  <!-- will show “Day 1”, “Day 2”, etc. -->
+	</div>
 	<div id="itineraryCarousel"
 		 class="place-carousel"
 		 style="display:none; margin-top:8px;">
@@ -612,14 +624,18 @@ renderCarousel(visible); }
 	if (selectEl.style.display === 'block') {
 		// hide dropdown, carousel, and restore all pins
 		selectEl.style.display = 'none';
+		document.getElementById('itinDayHeader').style.display = 'none';
 		document.getElementById('itineraryCarousel').style.display = 'none';
 		showAllMarkers();
 		viewBtn.textContent = 'View Itineraries';
 		} else {
 		  // currently hidden → show & load
 		  viewBtn.textContent = 'Hide Itineraries';
-		  selectEl.style.display = 'block';
-		  selectEl.innerHTML = '<option value="" disabled selected>Loading…</option>';
+		selectEl.style.display = 'block';
+		selectEl.innerHTML = '<option disabled selected>Loading…</option>';
+		const dayHdr = document.getElementById('itinDayHeader');
+		dayHdr.style.display = 'block';
+		dayHdr.textContent = 'Day 1';
 
 		  // 1️⃣ Fetch itinerary list
 		  fetch(
@@ -634,7 +650,7 @@ renderCarousel(visible); }
 			  // 2️⃣ Fetch items
 			  return fetch(
 				`https://sheets.googleapis.com/v4/spreadsheets/` +
-				`${CONFIG.sheetId}/values/ItineraryItems!A:F?key=${CONFIG.apiKey}`
+				`${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`
 			  );
 			})
 			.then(res => res.ok ? res.json() : Promise.reject(res.statusText))
@@ -645,7 +661,8 @@ renderCarousel(visible); }
 				date:        r[2],
 				time:        r[3],
 				notes:       r[4],
-				sortOrder:   r[5]
+				sortOrder:   r[5],
+				day:         +r[6]
 			  }));
 			  // Populate the dropdown
 			  selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
@@ -724,6 +741,13 @@ renderCarousel(visible); }
   });
 
   // show the carousel
+	const dayHdrEl = document.getElementById('itinDayHeader');
+	carousel.onscroll = () => {
+	const step = 168; // card width (160px) + gap (8px)
+	const idx  = Math.round(carousel.scrollLeft / step);
+	const day  = items[idx]?.day || 1;
+	dayHdrEl.textContent = `Day ${day}`;
+	};
   carousel.style.display = 'flex';
 }
 	function filterMarkersForItinerary(itinId) {
