@@ -803,15 +803,21 @@ renderCarousel(visible); }
     const curX = curr.offset - scrollX;
     curLbl.style.left = `${curX > 0 ? curX : 0}px`;
 
-    // 3) slide in the next‐day label
-    const nxtLbl = document.getElementById('itinDayNext');
-    if (next) {
-      nxtLbl.textContent = `Day ${next.day}`;
-      const nxtX = next.offset - scrollX;
-      nxtLbl.style.left = `${nxtX}px`;
-    } else {
-      nxtLbl.style.left = '-9999px';
-    }
+	// 3) peek the next‐day label only when its first card enters view
+	const nxtLbl = document.getElementById('itinDayNext');
+	if (next) {
+	const relNext = next.offset - scrollX;
+	// only show once < one card-width away
+	if (relNext < step) {
+		nxtLbl.textContent = `Day ${next.day}`;
+		nxtLbl.style.left    = `${relNext}px`;
+		nxtLbl.style.display = 'block';
+	} else {
+		nxtLbl.style.display = 'none';
+	}
+	} else {
+	nxtLbl.style.display = 'none';
+	}
   };
   carousel.style.display = 'flex';
   carousel.onscroll();
