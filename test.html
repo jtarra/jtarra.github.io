@@ -294,23 +294,37 @@
 			style="display:none;width:100%;margin-top:8px;padding:6px;">
 	  <option value="" disabled selected>Select an itinerary</option>
 	</select>
+
 	<div id="itineraryCarouselWrapper"
 		 style="position:relative;
 				border-top:1px solid #D0B59A;
 				margin-top:8px;
 				overflow:visible;
-				padding-top:16px;">
+				padding-top:24px;">        <!-- added more top-padding -->
 
-	  <!-- the single Day-header we’ll update in JS -->
-	  <div id="itinDayHeader"
-		style="display:none;
-			position:absolute;
-			top:2px;                 
-			left:0;
-			font-weight:bold;
-			white-space:nowrap;
-			pointer-events:none;
-			z-index:1000;">   <!-- ↑ raise above the carousel’s z-index -->
+	  <!-- current-day label, pinned until next arrives -->
+	  <div id="itinDayCurrent"
+		   style="display:none;
+				  position:absolute;
+				  top:2px;              <!-- lift above cards -->
+				  left:0;
+				  font-weight:bold;
+				  white-space:nowrap;
+				  pointer-events:none;
+				  z-index:1000;">
+	  </div>
+
+	  <!-- next-day label, will slide in from the right -->
+	  <div id="itinDayNext"
+		   style="display:none;
+				  position:absolute;
+				  top:2px;
+				  left:0;
+				  font-weight:bold;
+				  white-space:nowrap;
+				  opacity:0.5;            <!-- slightly faded -->
+				  pointer-events:none;
+				  z-index:1000;">
 	  </div>
 
 	  <div id="itineraryCarousel" class="place-carousel"
@@ -635,7 +649,10 @@ renderCarousel(visible); }
 	if (selectEl.style.display === 'block') {
 		// hide dropdown, carousel, and restore all pins
 		selectEl.style.display = 'none';
-		document.getElementById('itinDayHeader').style.display = 'none';
+		const curLbl = document.getElementById('itinDayCurrent');
+		const nxtLbl = document.getElementById('itinDayNext');
+		curLbl.style.display = 'none';
+		nxtLbl.style.display = 'none';
 		document.getElementById('itineraryCarousel').style.display = 'none';
 		showAllMarkers();
 		viewBtn.textContent = 'View Itineraries';
@@ -644,7 +661,6 @@ renderCarousel(visible); }
 		  viewBtn.textContent = 'Hide Itineraries';
 		selectEl.style.display = 'block';
 		selectEl.innerHTML = '<option disabled selected>Loading…</option>';
-		const dayHdr = document.getElementById('itinDayHeader');
 
 		  // 1️⃣ Fetch itinerary list
 		  fetch(
@@ -682,14 +698,20 @@ renderCarousel(visible); }
 				selectEl.appendChild(opt);
 			  });
 			  // Store selection
-		selectEl.onchange = e => {
-		  const dayHdr = document.getElementById('itinDayHeader');
-		  dayHdr.style.display = 'block';
-		  dayHdr.textContent   = 'Day 1';
-		selectedItinId = e.target.value;
-		renderItineraryItems();
-		filterMarkersForItinerary(selectedItinId);
-		};
+			selectEl.onchange = e => {
+			  selectedItinId = e.target.value;
+
+			  // show and init both labels
+			  const curLbl = document.getElementById('itinDayCurrent');
+			  const nxtLbl = document.getElementById('itinDayNext');
+			  curLbl.style.display = 'block';
+			  nxtLbl.style.display = 'block';
+			  curLbl.textContent = 'Day 1';
+			  nxtLbl.textContent = '';
+			  
+			  renderItineraryItems();
+			  filterMarkersForItinerary(selectedItinId);
+			};
 			})
 			.catch(err => {
 			  console.error('Error loading itineraries:', err);
@@ -753,22 +775,44 @@ renderCarousel(visible); }
     carousel.appendChild(card);
   });
 
+	  const firstCard = carousel.querySelector('.place-card');
+	  const cardW     = firstCard
+		? firstCard.getBoundingClientRect().width + 8
+		: 168;
+	  const step = cardW;
+
+	  const dayPositions = [];
+	  items.forEach((it, idx) => {
+		if (idx === 0 || it.day !== items[idx - 1].day) {
+		  dayPositions.push({ day: it.day, offset: idx * cardW });
+		}
+	  });
+
   // show the carousel
-	const dayHdrEl = document.getElementById('itinDayHeader');
-	carousel.onscroll = () => {
-	// 1) figure out which day group we're in
-	const step = 168; // card width (160px) + gap (8px)
-	const idx  = Math.floor(carousel.scrollLeft / step);
-	const day  = items[idx]?.day || 1;
-	dayHdrEl.textContent = `Day ${day}`;
-	
-	// 2) align header to that day’s first card
-	const firstCard = carousel.querySelector(`.place-card[data-day="${day}"]`);
-	if (!firstCard) return;
-	const relLeft = firstCard.offsetLeft - carousel.scrollLeft;
-	// clamp so it never goes negative (pinned at 0)
-	dayHdrEl.style.left = `${relLeft > 0 ? relLeft : 0}px`;
-	};
+  carousel.onscroll = () => {
+    const scrollX = carousel.scrollLeft;
+    // 1) which day are we on?
+    let i = dayPositions.findIndex(dp => dp.offset > scrollX) - 1;
+    if (i < 0) i = 0;
+    const curr = dayPositions[i];
+    const next = dayPositions[i + 1] || null;
+
+    // 2) update & pin the current‐day label
+    const curLbl = document.getElementById('itinDayCurrent');
+    curLbl.textContent = `Day ${curr.day}`;
+    const curX = curr.offset - scrollX;
+    curLbl.style.left = `${curX > 0 ? curX : 0}px`;
+
+    // 3) slide in the next‐day label
+    const nxtLbl = document.getElementById('itinDayNext');
+    if (next) {
+      nxtLbl.textContent = `Day ${next.day}`;
+      const nxtX = next.offset - scrollX;
+      nxtLbl.style.left = `${nxtX}px`;
+    } else {
+      nxtLbl.style.left = '-9999px';
+    }
+  };
   carousel.style.display = 'flex';
   carousel.onscroll();
 }
