@@ -302,14 +302,14 @@
 
 	  <!-- the single Day-header we’ll update in JS -->
 	  <div id="itinDayHeader"
-		   style="display:none;
-				  position:absolute;
-				  top:2px;                 /* just under the line */
-				  left:0;
-				  font-weight:bold;
-				  white-space:nowrap;
-				  pointer-events:none;
-				  z-index:2;">
+		style="display:none;
+			position:absolute;
+			top:2px;                 
+			left:0;
+			font-weight:bold;
+			white-space:nowrap;
+			pointer-events:none;
+			z-index:1000;">   <!-- ↑ raise above the carousel’s z-index -->
 	  </div>
 
 	  <div id="itineraryCarousel" class="place-carousel"
