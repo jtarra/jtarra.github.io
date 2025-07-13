@@ -206,7 +206,14 @@
 	  font-family: 'Dorgan', cursive;						/* Filter select/unselect all button font */
 	  cursor: pointer;
 	}
-
+	
+	#itinDayCurrent,
+	#itinDayNext {
+	  font-family: 'Bardy', cursive;
+	  font-size: 1.4em;
+	  font-weight: bold;
+	  text-decoration: underline;
+}
   </style>
 </head>
 <body>
@@ -306,7 +313,7 @@
 	  <div id="itinDayCurrent"
 		   style="display:none;
 				  position:absolute;
-				  top:2px;              <!-- lift above cards -->
+				  top:4px;              <!-- lift above cards -->
 				  left:0;
 				  font-weight:bold;
 				  white-space:nowrap;
@@ -318,7 +325,7 @@
 	  <div id="itinDayNext"
 		   style="display:none;
 				  position:absolute;
-				  top:2px;
+				  top:4px;
 				  left:0;
 				  font-weight:bold;
 				  white-space:nowrap;
