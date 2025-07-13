@@ -788,52 +788,57 @@ renderCarousel(visible); }
 		}
 	  });
 
-  // show the carousel
-	 // ── OBSERVE each day’s first card instead of raw scroll ──
-	  // 1) build a lookup of day → first-card element
-	  const dayFirstCard = {};
-	  items.forEach((it, idx) => {
-		if (!dayFirstCard[it.day]) {
-		  dayFirstCard[it.day] = carousel.querySelector(
-			`.place-card[data-day="${it.day}"]`
-		  );
-		}
-	  });
 
-	  // 2) configure the observer inside the carousel viewport
-	  const curLbl = document.getElementById('itinDayCurrent');
-	  const nxtLbl = document.getElementById('itinDayNext');
-	  const observer = new IntersectionObserver((entries) => {
-		entries.forEach(entry => {
-		  if (!entry.isIntersecting) return;
-		  // once 50% of a first-card is visible, that day becomes “current”
-		  const day = entry.target.dataset.day;
-		  curLbl.textContent = `Day ${day}`;
+	carousel.style.display = 'flex';
+	
+	// ── BOUNDING‐RECT based day labels ──
+  const curLbl     = document.getElementById('itinDayCurrent');
+  const nxtLbl     = document.getElementById('itinDayNext');
+  const wrapperEl  = document.getElementById('itineraryCarouselWrapper');
+  const cards      = Array.from(carousel.querySelectorAll('.place-card'));
 
-		  // peek next day if it exists
-		  const nextDay = String(Number(day) + 1);
-		  const nextCard = dayFirstCard[nextDay];
-		  if (nextCard) {
-			nxtLbl.textContent = `Day ${nextDay}`;
-			// position over its first card
-			const rel = nextCard.offsetLeft - carousel.scrollLeft;
-			nxtLbl.style.left    = `${rel}px`;
-			nxtLbl.style.display = 'block';
-		  } else {
-			nxtLbl.style.display = 'none';
-		  }
-		});
-	  }, {
-		root:      carousel,   // viewport is the carousel itself
-		threshold: 0.5         // fire when 50% visible
-	  });
+  function updateDayLabels() {
+    const wrapRect = wrapperEl.getBoundingClientRect();
 
-	  // 3) start observing each first-card
-	  Object.values(dayFirstCard)
-		.filter(Boolean)
-		.forEach(card => observer.observe(card));
-  carousel.style.display = 'flex';
-  carousel.onscroll();
+    // 1) find the very first card that is at least partially visible
+    const firstVisible = cards.find(c => {
+      const r = c.getBoundingClientRect();
+      // r.right > wrap left means some of it is on screen
+      return r.right > wrapRect.left + 1;
+    });
+    if (!firstVisible) return;
+
+    const day = firstVisible.dataset.day;
+    curLbl.textContent = `Day ${day}`;
+    // position curLbl over that card
+    const cr = firstVisible.getBoundingClientRect();
+    const relX = cr.left - wrapRect.left;
+    curLbl.style.left = `${relX > 0 ? relX : 0}px`;
+    curLbl.style.display = 'block';
+
+    // 2) peek the next day if its first card exists
+    const nextDay = String(Number(day) + 1);
+    const nextCard = cards.find(c => c.dataset.day === nextDay);
+    if (nextCard) {
+      const nr = nextCard.getBoundingClientRect();
+      const relNextX = nr.left - wrapRect.left;
+      // only show if its card is entering the wrapper
+      if (relNextX < wrapRect.width) {
+        nxtLbl.textContent   = `Day ${nextDay}`;
+        nxtLbl.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
+        nxtLbl.style.display = 'block';
+      } else {
+        nxtLbl.style.display = 'none';
+      }
+    } else {
+      nxtLbl.style.display = 'none';
+    }
+  }
+
+  // bind & fire
+  carousel.addEventListener('scroll', updateDayLabels);
+  updateDayLabels();
+
 }
 	function filterMarkersForItinerary(itinId) {
 	  markers.forEach(mk => {
