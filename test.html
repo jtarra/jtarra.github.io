@@ -634,8 +634,6 @@ renderCarousel(visible); }
 		selectEl.style.display = 'block';
 		selectEl.innerHTML = '<option disabled selected>Loading…</option>';
 		const dayHdr = document.getElementById('itinDayHeader');
-		dayHdr.style.display = 'block';
-		dayHdr.textContent = 'Day 1';
 
 		  // 1️⃣ Fetch itinerary list
 		  fetch(
@@ -674,6 +672,9 @@ renderCarousel(visible); }
 			  });
 			  // Store selection
 		selectEl.onchange = e => {
+		  const dayHdr = document.getElementById('itinDayHeader');
+		  dayHdr.style.display = 'block';
+		  dayHdr.textContent   = 'Day 1';
 		selectedItinId = e.target.value;
 		renderItineraryItems();
 		filterMarkersForItinerary(selectedItinId);
