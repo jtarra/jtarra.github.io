@@ -706,14 +706,14 @@ renderCarousel(visible); }
 			})
 			.then(res => res.ok ? res.json() : Promise.reject(res.statusText))
 			.then(json => {
-			  window.itineraryItems = (json.values||[]).slice(1).map(r => ({
-				itineraryId: r[0],
-				placeId:     r[1],
-				date:        r[2],
-				time:        r[3],
-				notes:       r[4],
-				sortOrder:   r[5],
-				day:         +r[6]
+			window.itineraryItems = (json.values||[]).slice(1).map(r => ({
+			itineraryId: r[0],       // Col A
+			day:         Number(r[1]),// Col B
+			sortOrder:   Number(r[2]),// Col C
+			placeId:     r[3],       // Col D
+			date:        r[4],       // Col E
+			time:        r[5],       // Col F
+			notes:       r[6]        // Col G
 			  }));
 			  // Populate the dropdown
 			  selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
