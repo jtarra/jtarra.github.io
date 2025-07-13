@@ -294,18 +294,24 @@
 			style="display:none;width:100%;margin-top:8px;padding:6px;">
 	  <option value="" disabled selected>Select an itinerary</option>
 	</select>
-		<div id="itineraryCarouselWrapper" style="border-top:1px solid #D0B59A; margin-top:8px;">
-		
-		<!-- plain text header; no background, no box -->
-		<div id="itinDayHeader" style="display:none; text-align:center; font-weight:bold; margin:4px 0;">
-			<!-- will show “Day X” -->
-		</div>
-		
-		<!-- cards container; remove its own border so only wrapper’s line shows -->
-		<div id="itineraryCarousel" class="place-carousel"
-			style="display:none; overflow-x:auto; gap:8px; padding:8px; border-top:none;">
-		</div>
-		</div>
+	<div id="itineraryCarouselWrapper"
+		style="position:relative;
+				border-top:1px solid #D0B59A;
+				margin-top:8px;">
+	<!-- sliding Day label: absolute so we can move it -->
+	<div id="itinDayHeader"
+		style="display:none;
+				position:absolute;
+				top:0;
+				left:0;
+				font-weight:bold;
+				white-space:nowrap;
+				pointer-events:none;">
+	</div>
+	<div id="itineraryCarousel" class="place-carousel"
+		style="display:none; overflow-x:auto; gap:8px; padding:8px; border-top:none;">
+	</div>
+	</div>
 </div>
 	  
     <div id="placeCarousel" class="place-carousel"></div>
@@ -706,6 +712,7 @@ renderCarousel(visible); }
 
     const card = document.createElement('div');
     card.className = 'place-card';
+	card.dataset.day = it.day;
     card.innerHTML = `
       <h4>${name}</h4>
       <p>${it.date} ${it.time}</p>
@@ -740,10 +747,18 @@ renderCarousel(visible); }
   // show the carousel
 	const dayHdrEl = document.getElementById('itinDayHeader');
 	carousel.onscroll = () => {
+	// 1) figure out which day group we're in
 	const step = 168; // card width (160px) + gap (8px)
-	const idx  = Math.round(carousel.scrollLeft / step);
+	const idx  = Math.floor(carousel.scrollLeft / step);
 	const day  = items[idx]?.day || 1;
 	dayHdrEl.textContent = `Day ${day}`;
+	
+	// 2) align header to that day’s first card
+	const firstCard = carousel.querySelector(`.place-card[data-day="${day}"]`);
+	if (!firstCard) return;
+	const relLeft = firstCard.offsetLeft - carousel.scrollLeft;
+	// clamp so it never goes negative (pinned at 0)
+	dayHdrEl.style.left = `${relLeft > 0 ? relLeft : 0}px`;
 	};
   carousel.style.display = 'flex';
 }
