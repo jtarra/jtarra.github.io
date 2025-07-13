@@ -295,24 +295,30 @@
 	  <option value="" disabled selected>Select an itinerary</option>
 	</select>
 	<div id="itineraryCarouselWrapper"
-		style="position:relative;
+		 style="position:relative;
 				border-top:1px solid #D0B59A;
 				margin-top:8px;
-				overflow: visible;">      <!-- ← allow header to sit outside -->
-	<!-- sliding Day label: absolute so we can move it -->
-	<div id="itinDayHeader"
-		style="display:none;
-				position:absolute;
-				top:2px;            /* slightly below the line */
-				left:0;
-				font-weight:bold;
-				white-space:nowrap;
-				pointer-events:none;
-				z-index:2;">        /* bring it above the carousel */
-	</div>
-	<div id="itineraryCarousel" class="place-carousel"
-		style="display:none; overflow-x:auto; gap:8px; padding:8px; border-top:none;">
-	</div>
+				overflow:visible;">            <!-- Allow the header to escape -->
+
+	  <!-- the single Day-header we’ll update in JS -->
+	  <div id="itinDayHeader"
+		   style="display:none;
+				  position:absolute;
+				  top:2px;                 /* just under the line */
+				  left:0;
+				  font-weight:bold;
+				  white-space:nowrap;
+				  pointer-events:none;
+				  z-index:2;">
+	  </div>
+
+	  <div id="itineraryCarousel" class="place-carousel"
+		   style="display:none;
+				  overflow-x:auto;
+				  gap:8px;
+				  padding:8px;
+				  border-top:none;">
+	  </div>
 	</div>
 </div>
 	  
@@ -763,6 +769,7 @@ renderCarousel(visible); }
 	dayHdrEl.style.left = `${relLeft > 0 ? relLeft : 0}px`;
 	};
   carousel.style.display = 'flex';
+  carousel.onscroll();
 }
 	function filterMarkersForItinerary(itinId) {
 	  markers.forEach(mk => {
