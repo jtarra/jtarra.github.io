@@ -700,9 +700,11 @@ renderCarousel(visible); }
 
 	// measure our card width + gap
 	const firstCard = carousel.querySelector('.place-card');
-	const cardW     = firstCard
-	  ? firstCard.getBoundingClientRect().width + 8
-	  : 168; // fallback
+	// measure card width + gap, or fall back to 168px if none
+	const cardW = firstCard
+	? firstCard.getBoundingClientRect().width + 8
+	: 168;
+	const step = cardW;
 
 	// build an array of { day, offset } for each group
 	const dayPositions = [];
@@ -715,7 +717,6 @@ renderCarousel(visible); }
 	// show labels
 	curLabel.style.display  = 'block';
 	nextLabel.style.display = 'block';
-    .filter(it => it.itineraryId === selectedItinId);
 
   if (!items.length) {
     // no items → hide the carousel
