@@ -547,22 +547,41 @@
 	};
 	
 	document.getElementById('itineraryMode').onclick = () => {
-	const fd = document.getElementById('filters');
-	// flip a custom flag
-	const inItin = fd.classList.toggle('itineraryActive');
-	
-	// show filters+search when not in itinerary, else show itinerary
-	document.getElementById('panelContainer').style.display =
+	  // flip the itinerary‐mode flag
+	  const fd     = document.getElementById('filters');
+	  const inItin = fd.classList.toggle('itineraryActive');
+
+	  // show/hide the main panel vs itinerary panel
+	  document.getElementById('panelContainer').style.display =
 		inItin ? 'none' : 'block';
-	document.getElementById('placeCarousel').style.display =
+	  document.getElementById('placeCarousel').style.display =
 		inItin ? 'none' : 'flex';
-	document.getElementById('itineraryContainer').style.display =
+	  document.getElementById('itineraryContainer').style.display =
 		inItin ? 'block' : 'none';
-	
-	// update our button label
-	document.getElementById('itineraryMode').textContent = inItin
+
+	  // update the button label
+	  const btn = document.getElementById('itineraryMode');
+	  btn.textContent = inItin
 		? 'Exit Itinerary Mode'
 		: 'Enter Itinerary Mode';
+
+	  // ── When exiting itinerary mode, reset everything ──
+	  if (!inItin) {
+		// 1) restore all map markers
+		showAllMarkers();
+
+		// 2) hide & clear the itinerary dropdown
+		const selectEl = document.getElementById('itinerarySelect');
+		selectEl.style.display = 'none';
+		selectEl.selectedIndex  = 0;  // back to the placeholder option
+
+		// 3) hide the itinerary carousel
+		document.getElementById('itineraryCarousel').style.display = 'none';
+
+		// 4) hide both Day‐labels
+		document.getElementById('itinDayCurrent').style.display = 'none';
+		document.getElementById('itinDayNext').style.display    = 'none';
+	  }
 	};
           function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
           function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
