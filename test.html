@@ -789,38 +789,49 @@ renderCarousel(visible); }
 	  });
 
   // show the carousel
-  carousel.onscroll = () => {
-    const scrollX = carousel.scrollLeft;
-    // 1) which day are we on?
-    let i = dayPositions.findIndex(dp => dp.offset > scrollX) - 1;
-    if (i < 0) i = 0;
-    const curr = dayPositions[i];
-    const next = dayPositions[i + 1] || null;
+	 // ── OBSERVE each day’s first card instead of raw scroll ──
+	  // 1) build a lookup of day → first-card element
+	  const dayFirstCard = {};
+	  items.forEach((it, idx) => {
+		if (!dayFirstCard[it.day]) {
+		  dayFirstCard[it.day] = carousel.querySelector(
+			`.place-card[data-day="${it.day}"]`
+		  );
+		}
+	  });
 
-    // 2) update & pin the current‐day label
-    const curLbl = document.getElementById('itinDayCurrent');
-    curLbl.textContent = `Day ${curr.day}`;
-    const curX = curr.offset - scrollX;
-    curLbl.style.left = `${curX > 0 ? curX : 0}px`;
+	  // 2) configure the observer inside the carousel viewport
+	  const curLbl = document.getElementById('itinDayCurrent');
+	  const nxtLbl = document.getElementById('itinDayNext');
+	  const observer = new IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+		  if (!entry.isIntersecting) return;
+		  // once 50% of a first-card is visible, that day becomes “current”
+		  const day = entry.target.dataset.day;
+		  curLbl.textContent = `Day ${day}`;
 
-	// 3) peek the next‐day label only when its first card enters view
-	const nxtLbl = document.getElementById('itinDayNext');
-	if (next) {
-	const relNext = next.offset - scrollX;
-	// only show when any part of the next‐day card is in view
-	if (scrollX > 0 && relNext < viewW) {
-		nxtLbl.textContent = `Day ${next.day}`;
-		// slide with the card, but never go left of 0
-		const pos = relNext > 0 ? relNext : 0;
-		nxtLbl.style.left    = `${pos}px`;
-		nxtLbl.style.display = 'block';
-	} else {
-		nxtLbl.style.display = 'none';
-	}
-	} else {
-	nxtLbl.style.display = 'none';
-	}
-  };
+		  // peek next day if it exists
+		  const nextDay = String(Number(day) + 1);
+		  const nextCard = dayFirstCard[nextDay];
+		  if (nextCard) {
+			nxtLbl.textContent = `Day ${nextDay}`;
+			// position over its first card
+			const rel = nextCard.offsetLeft - carousel.scrollLeft;
+			nxtLbl.style.left    = `${rel}px`;
+			nxtLbl.style.display = 'block';
+		  } else {
+			nxtLbl.style.display = 'none';
+		  }
+		});
+	  }, {
+		root:      carousel,   // viewport is the carousel itself
+		threshold: 0.5         // fire when 50% visible
+	  });
+
+	  // 3) start observing each first-card
+	  Object.values(dayFirstCard)
+		.filter(Boolean)
+		.forEach(card => observer.observe(card));
   carousel.style.display = 'flex';
   carousel.onscroll();
 }
