@@ -297,16 +297,18 @@
 	<div id="itineraryCarouselWrapper"
 		style="position:relative;
 				border-top:1px solid #D0B59A;
-				margin-top:8px;">
+				margin-top:8px;
+				overflow: visible;">      <!-- ← allow header to sit outside -->
 	<!-- sliding Day label: absolute so we can move it -->
 	<div id="itinDayHeader"
 		style="display:none;
 				position:absolute;
-				top:0;
+				top:2px;            /* slightly below the line */
 				left:0;
 				font-weight:bold;
 				white-space:nowrap;
-				pointer-events:none;">
+				pointer-events:none;
+				z-index:2;">        /* bring it above the carousel */
 	</div>
 	<div id="itineraryCarousel" class="place-carousel"
 		style="display:none; overflow-x:auto; gap:8px; padding:8px; border-top:none;">
