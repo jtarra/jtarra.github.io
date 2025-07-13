@@ -294,21 +294,20 @@
 			style="display:none;width:100%;margin-top:8px;padding:6px;">
 	  <option value="" disabled selected>Select an itinerary</option>
 	</select>
-	<div id="itinDayHeader"
-	     style="
-	       display: none;
-	       text-align: center;
-	       font-weight: bold;
-	       padding: 4px;
-	       background: #FAF1D2;
-	       border-radius: 4px;
-	       margin-top: 8px;
-	     ">
+	<div id="itinDayHeader" style="display:none;">Day 1</div>
 	  <!-- will show “Day 1”, “Day 2”, etc. -->
 	</div>
-	<div id="itineraryCarousel"
-		 class="place-carousel"
-		 style="display:none; margin-top:8px;">
+	<span id="currentDayLabel"
+		  style="position:absolute; top:0; left:0; background:#FAF1D2; padding:2px 6px; border-radius:4px; font-weight:bold; display:none; pointer-events:none;">
+	  Day 1
+	</span>
+	<span id="nextDayLabel"
+		  style="position:absolute; top:0; left:0; background:#FAF1D2; padding:2px 6px; border-radius:4px; font-weight:bold; display:none; pointer-events:none;">
+	  Day 2
+	</span>
+	<div id="itineraryCarouselWrapper" style="position: relative; margin-top:8px;">
+	  <div id="itineraryCarousel" class="place-carousel" style="display:none;">
+	  </div>
 	</div>
 </div>
 	  
@@ -693,6 +692,29 @@ renderCarousel(visible); }
 
   // grab just the items for this trip
   const items = (window.itineraryItems || [])
+  // prepare sliding labels
+	const wrapper   = document.getElementById('itineraryCarouselWrapper');
+	const carousel  = document.getElementById('itineraryCarousel');
+	const curLabel  = document.getElementById('currentDayLabel');
+	const nextLabel = document.getElementById('nextDayLabel');
+
+	// measure our card width + gap
+	const firstCard = carousel.querySelector('.place-card');
+	const cardW     = firstCard
+	  ? firstCard.getBoundingClientRect().width + 8
+	  : 168; // fallback
+
+	// build an array of { day, offset } for each group
+	const dayPositions = [];
+	items.forEach((it, idx) => {
+	  if (idx === 0 || it.day !== items[idx-1].day) {
+		dayPositions.push({ day: it.day, offset: idx * cardW });
+	  }
+	});
+
+	// show labels
+	curLabel.style.display  = 'block';
+	nextLabel.style.display = 'block';
     .filter(it => it.itineraryId === selectedItinId);
 
   if (!items.length) {
@@ -747,6 +769,28 @@ renderCarousel(visible); }
 	const idx  = Math.round(carousel.scrollLeft / step);
 	const day  = items[idx]?.day || 1;
 	dayHdrEl.textContent = `Day ${day}`;
+	};
+  // update sliding labels on horizontal scroll
+	carousel.onscroll = () => {
+	  const scrollX = carousel.scrollLeft;
+	  // find the current group index
+	  let i = dayPositions.findIndex(dp => dp.offset > scrollX) - 1;
+	  if (i < 0) i = 0;
+	  const curr = dayPositions[i];
+	  const next = dayPositions[i+1];
+
+	  // current label sits fixed at left: 0px
+	  curLabel.textContent = `Day ${curr.day}`;
+	  curLabel.style.transform = `translateX(0px)`;
+
+	  if (next) {
+		// next label moves in from the right
+		const x = Math.min(next.offset - scrollX, wrapper.clientWidth);
+		nextLabel.textContent = `Day ${next.day}`;
+		nextLabel.style.transform = `translateX(${x}px)`;
+	  } else {
+		nextLabel.style.transform = `translateX(-9999px)`; // hide off-screen
+	  }
 	};
   carousel.style.display = 'flex';
 }
