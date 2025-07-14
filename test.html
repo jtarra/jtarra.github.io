@@ -401,6 +401,33 @@
       userIconUrls: ['MapResources/UserIcons/Hawaii/Hula1.png','MapResources/UserIcons/Hawaii/Hula2.png','MapResources/UserIcons/Hawaii/Hula3.png','MapResources/UserIcons/Hawaii/Hula4.png','MapResources/UserIcons/Hawaii/Hula5.png'],
     };
 /* MAIN USER CONFIG */
+	
+	function openAddModal(placeId) {
+	// If we haven't loaded itineraries yet, trigger that first:
+	if (!window.itineraries) {
+		console.warn('Itineraries not loaded; loading now…');
+		document.getElementById('viewItineraries').click();
+		// once loaded, the select's onchange (in that flow) will call renderItineraryItems()
+		// and you can re-click "+ Add" after
+		return;
+	}
+	
+	// populate the itinerary dropdown safely
+	const sel = document.getElementById('modalItinSelect');
+	sel.innerHTML = window.itineraries
+		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
+		.join('');
+	
+	// reset form fields
+	document.getElementById('modalDay').value       = 1;
+	document.getElementById('modalDate').value      = new Date().toISOString().slice(0,10);
+	document.getElementById('modalTime').value      = '';
+	document.getElementById('modalNotes').value     = '';
+	// stash placeId on the form
+	document.getElementById('addItinForm').dataset.placeId = placeId;
+	// show the modal
+	document.getElementById('itinAddModal').style.display = 'block';
+	}
 
     (function(){
 	let markers = [];
@@ -672,27 +699,55 @@ function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const vi
 	if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; 
 	if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; 
 	if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
-	popup += `<br>
-	<button
-		class="add-to-itin"
-		data-place-id="${p.id}"
-	>
-		+ Add
-	</button>`;
+popup += `<br>
+  <button
+    onclick="openAddModal('${p.id}'); event.stopPropagation()"
+    style="font-family:'Dorgan',sans-serif;font-size:1em;
+           background:#E7D8C4;border:none;padding:4px 8px;
+           border-radius:4px;cursor:pointer;"
+  >
+    + Add
+  </button>`;
 const strokeColor=p.visited?'#DAA520':'#555'; 
 const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
 const el = document.createElement('div');
 el.innerHTML = svgIcon;
 el.className = 'place-marker';
 
+	const pop = new maplibregl.Popup({
+		offset: 25,
+		closeOnClick: false,
+		focusAfterOpen: false
+	}).setHTML(popup);
+	
 	const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-	  .setLngLat([ p.latlng[1], p.latlng[0] ])
-	.setPopup(new maplibregl.Popup({
-	offset: 25,
-	closeOnClick: false,      // ← don’t auto-close when clicking inside
-	focusAfterOpen: false
-	}).setHTML(popup))
-	  .addTo(map);
+	.setLngLat([ p.latlng[1], p.latlng[0] ])
+	.setPopup(pop)
+	.addTo(map);
+	
+	// ── When the popup opens, wire up the “+ Add” button ──
+	pop.on('open', () => {
+	// find the button inside this popup
+	const btn = pop.getElement().querySelector('.add-to-itin');
+	if (!btn) return;
+	btn.addEventListener('click', ev => {
+		ev.preventDefault();
+		ev.stopPropagation();
+	
+		// — show the modal just like before —
+		const placeId = btn.dataset.placeId;
+		const sel     = document.getElementById('modalItinSelect');
+		sel.innerHTML = window.itineraries
+		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
+		.join('');
+		document.getElementById('modalDate').value   = new Date().toISOString().slice(0,10);
+		document.getElementById('modalDay').value    = 1;
+		document.getElementById('modalTime').value   = '';
+		document.getElementById('modalNotes').value  = '';
+		document.getElementById('addItinForm').dataset.placeId = placeId;
+		document.getElementById('itinAddModal').style.display    = 'block';
+	});
+	});
 	  marker.placeId = p.id;
 	el.addEventListener('click', e => {
 	  e.stopPropagation();
@@ -942,25 +997,7 @@ renderCarousel(visible); }
 	  });
 	}
 	})();
-	document.body.addEventListener('click', e => {
-  if (!e.target.matches('.add-to-itin')) return;
-  const placeId = e.target.dataset.placeId;
-  // populate itineraries dropdown
-  const sel = document.getElementById('modalItinSelect');
-  sel.innerHTML = window.itineraries
-    .map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
-    .join('');
-  // default date to today
-  document.getElementById('modalDate').value = new Date().toISOString().slice(0,10);
-  // reset other fields
-  document.getElementById('modalDay').value     = 1;
-  document.getElementById('modalTime').value    = '';
-  document.getElementById('modalNotes').value   = '';
-  // show!
-  document.getElementById('itinAddModal').style.display = 'block';
-  // stash placeId on the form
-  document.getElementById('addItinForm').dataset.placeId = placeId;
-});
+
 
 // 3.2 Cancel button hides modal
 document.getElementById('modalCancel').onclick = () => {
