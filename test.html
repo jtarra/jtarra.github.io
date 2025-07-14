@@ -635,6 +635,7 @@ function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const vi
 	if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; 
 	if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; 
 	if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
+	popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add</button>`;
 const strokeColor=p.visited?'#DAA520':'#555'; 
 const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
 const el = document.createElement('div');
@@ -776,6 +777,7 @@ renderCarousel(visible); }
     if (!it.placeId || !place) {
       // ── NOTES-ONLY card ──
       card.innerHTML = `
+        <h4>Note:</h4>
         <p>${it.notes || ''}</p>
       `;
     } else {
@@ -893,6 +895,100 @@ renderCarousel(visible); }
 	  });
 	}
 	})();
+	document.body.addEventListener('click', e => {
+  if (!e.target.matches('.add-to-itin')) return;
+  const placeId = e.target.dataset.placeId;
+  // populate itineraries dropdown
+  const sel = document.getElementById('modalItinSelect');
+  sel.innerHTML = window.itineraries
+    .map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
+    .join('');
+  // default date to today
+  document.getElementById('modalDate').value = new Date().toISOString().slice(0,10);
+  // reset other fields
+  document.getElementById('modalDay').value     = 1;
+  document.getElementById('modalTime').value    = '';
+  document.getElementById('modalNotes').value   = '';
+  // show!
+  document.getElementById('itinAddModal').style.display = 'block';
+  // stash placeId on the form
+  document.getElementById('addItinForm').dataset.placeId = placeId;
+});
+
+// 3.2 Cancel button hides modal
+document.getElementById('modalCancel').onclick = () => {
+  document.getElementById('itinAddModal').style.display = 'none';
+};
+
+// 3.3 Handle form submission
+document.getElementById('addItinForm').onsubmit = ev => {
+  ev.preventDefault();
+  const form  = ev.currentTarget;
+  const pid   = form.dataset.placeId;
+  const itId  = document.getElementById('modalItinSelect').value;
+  const day   = document.getElementById('modalDay').value;
+  const date  = document.getElementById('modalDate').value;
+  const time  = document.getElementById('modalTime').value;
+  const notes = document.getElementById('modalNotes').value;
+  // determine new sortOrder = existing items for that day + 1
+  const existing = window.itineraryItems
+    .filter(it => it.itineraryId===itId && it.day==day);
+  const sortOrder = existing.length + 1;
+  // send to your API
+  postToAPI({
+    secret:      API_SECRET,
+    action:      'addItem',
+    itineraryId: itId,
+    placeId:     pid,
+    day:         day,
+    date:        date,
+    time:        time,
+    notes:       notes,
+    sortOrder:   sortOrder
+  });
+  // close & refresh
+  document.getElementById('itinAddModal').style.display = 'none';
+  // re‐fetch or just append locally:
+  window.itineraryItems.push({ itineraryId: itId, placeId: pid, day, date, time, notes, sortOrder });
+  if (selectedItinId === itId) renderItineraryItems();
+};
   </script>
+	<div id="itinAddModal" style="
+		display:none;
+		position:fixed;
+		top:50%; left:50%;
+		transform:translate(-50%, -50%);
+		background:white;
+		padding:16px;
+		box-shadow:0 4px 12px rgba(0,0,0,0.3);
+		z-index:10000;
+	">
+	  <form id="addItinForm" style="display:flex;flex-direction:column;gap:8px;min-width:260px;">
+		<label>
+		  Itinerary  
+		  <select id="modalItinSelect"></select>
+		</label>
+		<label>
+		  Day #  
+		  <input type="number" id="modalDay" min="1" required>
+		</label>
+		<label>
+		  Date  
+		  <input type="date" id="modalDate" required>
+		</label>
+		<label>
+		  Time  
+		  <input type="time" id="modalTime">
+		</label>
+		<label>
+		  Notes  
+		  <textarea id="modalNotes" rows="2"></textarea>
+		</label>
+		<div style="display:flex;justify-content:flex-end;gap:8px;">
+		  <button type="button" id="modalCancel">Cancel</button>
+		  <button type="submit">Add</button>
+		</div>
+	  </form>
+	</div>
 </body>
 </html>
