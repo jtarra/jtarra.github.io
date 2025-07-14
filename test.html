@@ -347,6 +347,43 @@
     <div id="placeCarousel" class="place-carousel"></div>
   </div>
   <div id="map"></div>
+  	<div id="itinAddModal" style="
+		display:none;
+		position:fixed;
+		top:50%; left:50%;
+		transform:translate(-50%, -50%);
+		background:white;
+		padding:16px;
+		box-shadow:0 4px 12px rgba(0,0,0,0.3);
+		z-index:10000;
+	">
+	  <form id="addItinForm" style="display:flex;flex-direction:column;gap:8px;min-width:260px;">
+		<label>
+		  Itinerary  
+		  <select id="modalItinSelect"></select>
+		</label>
+		<label>
+		  Day #  
+		  <input type="number" id="modalDay" min="1" required>
+		</label>
+		<label>
+		  Date  
+		  <input type="date" id="modalDate" required>
+		</label>
+		<label>
+		  Time  
+		  <input type="time" id="modalTime">
+		</label>
+		<label>
+		  Notes  
+		  <textarea id="modalNotes" rows="2"></textarea>
+		</label>
+		<div style="display:flex;justify-content:flex-end;gap:8px;">
+		  <button type="button" id="modalCancel">Cancel</button>
+		  <button type="submit">Add</button>
+		</div>
+	  </form>
+	</div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
 	
@@ -953,42 +990,5 @@ document.getElementById('addItinForm').onsubmit = ev => {
   if (selectedItinId === itId) renderItineraryItems();
 };
   </script>
-	<div id="itinAddModal" style="
-		display:none;
-		position:fixed;
-		top:50%; left:50%;
-		transform:translate(-50%, -50%);
-		background:white;
-		padding:16px;
-		box-shadow:0 4px 12px rgba(0,0,0,0.3);
-		z-index:10000;
-	">
-	  <form id="addItinForm" style="display:flex;flex-direction:column;gap:8px;min-width:260px;">
-		<label>
-		  Itinerary  
-		  <select id="modalItinSelect"></select>
-		</label>
-		<label>
-		  Day #  
-		  <input type="number" id="modalDay" min="1" required>
-		</label>
-		<label>
-		  Date  
-		  <input type="date" id="modalDate" required>
-		</label>
-		<label>
-		  Time  
-		  <input type="time" id="modalTime">
-		</label>
-		<label>
-		  Notes  
-		  <textarea id="modalNotes" rows="2"></textarea>
-		</label>
-		<div style="display:flex;justify-content:flex-end;gap:8px;">
-		  <button type="button" id="modalCancel">Cancel</button>
-		  <button type="submit">Add</button>
-		</div>
-	  </form>
-	</div>
 </body>
 </html>
