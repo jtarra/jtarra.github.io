@@ -765,45 +765,51 @@ renderCarousel(visible); }
   // otherwise build one card per stop
   items.forEach(it => {
     // look up the place info
-    const place = (window.places || []).find(p => p.id === it.placeId)
-		|| { regions: [] };
-    const name  = place ? place.name : it.placeId;
+    // look up the place (may be undefined)
+    const place = (window.places || []).find(p => p.id === it.placeId);
 
+    // create the card container
     const card = document.createElement('div');
-    card.className = 'place-card';
-	card.dataset.day = it.day;
-	card.innerHTML = `
-	<h4>${name}</h4>
-	${it.notes ? `<p>${it.notes}</p>` : ''}
-	<p>${it.date} ${it.time}</p>
-	${place.regions.length
-		? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
-		: ''}
-	`;
-    // clicking a card flies the map to that spot
-	card.onclick = () => {
-	  // find the marker for this place
-	  const m = markers.find(mk => mk.placeId === it.placeId);
-	  if (!m) return;
-	
-	  // open its popup
-	  if (currentPopup && currentPopup !== m.getPopup()) {
-	    currentPopup.remove();
-	  }
-	  const popup = m.getPopup();
-	  popup.addTo(window.map);
-	  currentPopup = popup;
-	
-	  // fly the map to its coordinates
-	  const [lng, lat] = m.getLngLat().toArray();
-	  window.map.flyTo({
-	    center: [lng, lat],
-	    zoom:   14,
-	    speed:  1.0,
-	    curve:  1.6,
-	    essential: true
-	  });
-	};
+    card.className       = 'place-card';
+    card.dataset.day     = it.day;
+
+    if (!it.placeId || !place) {
+      // ── NOTES-ONLY card ──
+      card.innerHTML = `
+        <h4>Note</h4>
+        <p>${it.notes || ''}</p>
+      `;
+    } else {
+      // ── NORMAL place card ──
+      card.innerHTML = `
+        <h4>${place.name}</h4>
+        ${it.notes ? `<p>${it.notes}</p>` : ''}
+        <p>${it.date} ${it.time}</p>
+        ${place.regions.length
+          ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
+          : ''}
+      `;
+
+      // flying to the map on click
+      card.onclick = () => {
+        const m = markers.find(mk => mk.placeId === it.placeId);
+        if (!m) return;
+        if (currentPopup && currentPopup !== m.getPopup()) currentPopup.remove();
+        const popup = m.getPopup();
+        popup.addTo(window.map);
+        currentPopup = popup;
+        const [lng, lat] = m.getLngLat().toArray();
+        window.map.flyTo({
+          center: [lng, lat],
+          zoom:   14,
+          speed:  1.0,
+          curve:  1.6,
+          essential: true
+        });
+      };
+    }
+
+    // finally, add the card to the carousel
     carousel.appendChild(card);
   });
 
