@@ -752,8 +752,9 @@ renderCarousel(visible); }
   carousel.innerHTML = '';
 
   // grab just the items for this trip
-  const items = (window.itineraryItems || [])
-    .filter(it => it.itineraryId === selectedItinId);
+	const items = (window.itineraryItems || [])
+	.filter(it => it.itineraryId === selectedItinId)
+	.sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
 
   if (!items.length) {
     // no items → hide the carousel
