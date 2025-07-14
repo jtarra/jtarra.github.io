@@ -771,10 +771,14 @@ renderCarousel(visible); }
     const card = document.createElement('div');
     card.className = 'place-card';
 	card.dataset.day = it.day;
-    card.innerHTML = `
-      <h4>${name}</h4>
-      <p>${it.date} ${it.time}</p>
-    `;
+	card.innerHTML = `
+	<h4>${name}</h4>
+	${it.notes ? `<p>${it.notes}</p>` : ''}
+	<p>${it.date} ${it.time}</p>
+	${place.regions && place.regions.length
+		? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
+		: ''}
+	`;
     // clicking a card flies the map to that spot
 	card.onclick = () => {
 	  // find the marker for this place
