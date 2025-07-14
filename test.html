@@ -765,7 +765,8 @@ renderCarousel(visible); }
   // otherwise build one card per stop
   items.forEach(it => {
     // look up the place info
-    const place = (window.places || []).find(p => p.id === it.placeId);
+    const place = (window.places || []).find(p => p.id === it.placeId)
+		|| { regions: [] };
     const name  = place ? place.name : it.placeId;
 
     const card = document.createElement('div');
@@ -775,7 +776,7 @@ renderCarousel(visible); }
 	<h4>${name}</h4>
 	${it.notes ? `<p>${it.notes}</p>` : ''}
 	<p>${it.date} ${it.time}</p>
-	${place.regions && place.regions.length
+	${place.regions.length
 		? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
 		: ''}
 	`;
