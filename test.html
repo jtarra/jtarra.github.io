@@ -1010,6 +1010,7 @@ document.getElementById('addItinForm').onsubmit = ev => {
   const form  = ev.currentTarget;
   const pid   = form.dataset.placeId;
   const itId  = document.getElementById('modalItinSelect').value;
+  selectedItinId = itId;
   const day   = document.getElementById('modalDay').value;
   const date  = document.getElementById('modalDate').value;
   const time  = document.getElementById('modalTime').value;
@@ -1033,8 +1034,8 @@ document.getElementById('addItinForm').onsubmit = ev => {
   // close & refresh
   document.getElementById('itinAddModal').style.display = 'none';
   // re‐fetch or just append locally:
-  window.itineraryItems.push({ itineraryId: itId, placeId: pid, day, date, time, notes, sortOrder });
-  if (selectedItinId === itId) renderItineraryItems();
+	window.itineraryItems.push({ itineraryId: itId, placeId: pid, day, date, time, notes, sortOrder });
+	renderItineraryItems();
 };
   </script>
 </body>
