@@ -672,7 +672,14 @@ function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const vi
 	if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; 
 	if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; 
 	if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
-	popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add</button>`;
+	popup += `<br>
+	<button
+		class="add-to-itin"
+		data-place-id="${p.id}"
+		onclick="event.stopPropagation()"
+	>
+		+ Add
+	</button>`;
 const strokeColor=p.visited?'#DAA520':'#555'; 
 const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
 const el = document.createElement('div');
