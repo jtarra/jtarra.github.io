@@ -46,6 +46,31 @@
 		outline: 2px solid #D0B59A;
 		outline-offset: 2px;
 	  }
+	#itinerarySelect {
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;
+	  background-color: #F5F1EC;     /* match your card bg */
+	  border: 1px solid #D0B59A;     /* same border color */
+	  border-radius: 8px;            /* same corner radius */
+	  padding: 8px 32px 8px 12px;    /* room for custom arrow */
+	  font-family: 'Dorgan', sans-serif;
+	  font-size: 1em;
+	  color: #333;
+	  background-image: url('data:image/svg+xml;utf8,\
+		<svg xmlns="http://www.w3.org/2000/svg"\
+			 width="12" height="12" viewBox="0 0 12 12">\
+		  <path d="M2 4l4 4 4-4"\
+				stroke="%23666" fill="none" stroke-width="2"/>\
+		</svg>');
+	  background-repeat: no-repeat;
+	  background-position: right 8px center;
+	  background-size: 12px;
+	}
+	#itinerarySelect:focus {
+	  outline: 2px solid #D0B59A;
+	  outline-offset: 2px;
+	}
     #map { width: 100%; height: 100%; }
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
@@ -323,7 +348,7 @@
 		">
 	   Create New Itinerary
 	   </button>
-	<select id="modalItinSelect" style="display:none;">
+	<select id="itinerarySelect" style="display:none;">
 	  <option value="" disabled selected>Select an itinerary</option>
 	</select>
 
