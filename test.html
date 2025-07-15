@@ -20,6 +20,32 @@
       height: 100%;
       font-family: sans-serif;
     }
+	 #modalItinSelect {
+		appearance: none;              /* remove default arrow */
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		background-color: #F5F1EC;     /* same gently off-white as your cards */
+		border: 1px solid #D0B59A;     /* match your menu’s border color */
+		border-radius: 8px;            /* same rounded corners */
+		padding: 8px 32px 8px 12px;    /* room for text + arrow at right */
+		font-family: 'Dorgan', sans-serif; /* match your typeface */
+		font-size: 1em;
+		color: #333;
+		background-image: url('data:image/svg+xml;utf8,\
+		  <svg xmlns="http://www.w3.org/2000/svg"\
+			   width="12" height="12" viewBox="0 0 12 12">\
+			<path d="M2 4l4 4 4-4"\
+				  stroke="%23666" fill="none" stroke-width="2"/>\
+		  </svg>');
+		background-repeat: no-repeat;
+		background-position: right 8px center;
+		background-size: 12px;
+	  }
+	  /* On focus, highlight outline like your inputs */
+	  #modalItinSelect:focus {
+		outline: 2px solid #D0B59A;
+		outline-offset: 2px;
+	  }
     #map { width: 100%; height: 100%; }
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
