@@ -408,11 +408,18 @@
 		  Notes  
 		  <textarea id="modalNotes" rows="2"></textarea>
 		</label>
-		<div style="display:flex;justify-content:flex-end;gap:8px;">
-		  <button type="button" id="modalCancel">Cancel</button>
-		  <button type="submit">Add</button>
-		</div>
+	  <div style="display:flex;justify-content:flex-end;gap:8px;">
+		<button type="button" id="modalCancel">Cancel</button>
+		<button type="submit" id="modalNext">Next</button>
+	  </div>
 	  </form>
+		<div id="insertStepContainer" style="display:none; margin-top:16px;">
+		<div id="insertCarousel" class="place-carousel"></div>
+		<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+		 <button type="button" id="insertBack">Back</button>
+		 <button type="button" id="insertConfirm">Add</button>
+		</div>
+		</div>
 	</div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
@@ -432,7 +439,7 @@
     };
 /* MAIN USER CONFIG */
 
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz_fVMatCY7kldWmXu4qEjp70mtAF4aYo4O3HMpuw8YML3zXNA7onLZ6zka9_ZNLR_q/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwEQVzsz_W2bz34OFSr4AwhVz5LwE1glQdBtD7-5OuPa7HOr3Z0hBl3TJxDXMFvwz2-/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 	function postToAPI(payload) {
 	const form = document.createElement('form');
@@ -1040,6 +1047,55 @@ renderCarousel(visible); }
 	}
 	})();
 
+	function renderInsertCarousel(day) {
+	  const c = document.getElementById('insertCarousel');
+	  c.innerHTML = '';
+	  // 1) gather & sort cards for that day
+	  const cards = window.itineraryItems
+		.filter(it => it.itineraryId===window.pendingNewItem.itineraryId && it.day===day)
+		.sort((a,b)=>a.sortOrder - b.sortOrder);
+
+	  // helper to create a place‐card (reuse your render logic or simplify)
+	  const makeCard = it => {
+		const place = window.places.find(p=>p.id===it.placeId) || {};
+		return `<div class="place-card" style="opacity:0.7;">
+		  <h4>${place.name||'Note'}</h4>
+		  <p>${it.time||''}</p>
+		</div>`;
+	  };
+
+	  // Insert hotspot at position 1…n+1
+	  cards.forEach((it, i) => {
+		// hotspot before this card (index = i+1)
+		c.insertAdjacentHTML('beforeend',
+		  `<div class="insert-hotspot" data-index="${i+1}"
+			 style="flex:0 0 200px; display:flex;align-items:center;
+					justify-content:center;cursor:pointer;opacity:0.5;">
+			 +  
+		   </div>`
+		);
+		c.insertAdjacentHTML('beforeend', makeCard(it));
+	  });
+	  // final hotspot at end: index = cards.length+1
+	  c.insertAdjacentHTML('beforeend',
+		`<div class="insert-hotspot" data-index="${cards.length+1}"
+		   style="flex:0 0 200px; display:flex;align-items:center;
+				  justify-content:center;cursor:pointer;opacity:0.5;">
+		   +  
+		 </div>`
+	  );
+
+	  // wire up selection
+	  c.querySelectorAll('.insert-hotspot').forEach(el => {
+		el.onclick = () => {
+		  // clear previous highlight
+		  c.querySelectorAll('.insert-hotspot').forEach(h=>h.style.background='');
+		  el.style.background = '#E7D8C4';
+		  window.insertPositionIndex = Number(el.dataset.index);
+		};
+	  });
+	}
+
 
 // 3.2 Cancel button hides modal
 document.getElementById('modalCancel').onclick = () => {
@@ -1047,37 +1103,83 @@ document.getElementById('modalCancel').onclick = () => {
 };
 
 // 3.3 Handle form submission
+// Step 1: Next → show insertion carousel
 document.getElementById('addItinForm').onsubmit = ev => {
   ev.preventDefault();
-  const form  = ev.currentTarget;
-  const pid   = form.dataset.placeId;
-  const itId  = document.getElementById('modalItinSelect').value;
-  selectedItinId = itId;
-  const day   = document.getElementById('modalDay').value;
-  const date  = document.getElementById('modalDate').value;
-  const time  = document.getElementById('modalTime').value;
-  const notes = document.getElementById('modalNotes').value;
-  // determine new sortOrder = existing items for that day + 1
-  const existing = window.itineraryItems
-    .filter(it => it.itineraryId===itId && it.day==day);
-  const sortOrder = existing.length + 1;
-  // send to your API
-  postToAPI({
-    secret:      API_SECRET,
-    action:      'addItem',
-    itineraryId: itId,
-    placeId:     pid,
-    day:         day,
-    date:        date,
-    time:        time,
-    notes:       notes,
-    sortOrder:   sortOrder
-  });
-  // close & refresh
-  document.getElementById('itinAddModal').style.display = 'none';
-  // re‐fetch or just append locally:
-	window.itineraryItems.push({ itineraryId: itId, placeId: pid, day, date, time, notes, sortOrder });
-	renderItineraryItems();
+  // stash the metadata
+	window.pendingNewItem = {
+	itineraryId: document.getElementById('modalItinSelect').value,
+	placeId:     document.getElementById('addItinForm').dataset.placeId,  // ← capture it here
+	day:         Number(document.getElementById('modalDay').value),
+	date:        document.getElementById('modalDate').value,
+	time:        document.getElementById('modalTime').value,
+	notes:       document.getElementById('modalNotes').value
+	};
+  // hide step 1 form fields
+  document.getElementById('addItinForm').style.display       = 'none';
+  document.getElementById('modalNext').style.display         = 'none';
+  // show step 2 container
+  document.getElementById('insertStepContainer').style.display = 'block';
+  // render the insertion carousel for that day
+  renderInsertCarousel(window.pendingNewItem.day);
+};
+
+// Step 2: Back → return to metadata
+document.getElementById('insertBack').onclick = () => {
+  document.getElementById('insertStepContainer').style.display = 'none';
+  document.getElementById('addItinForm').style.display         = 'flex';
+  document.getElementById('modalNext').style.display           = 'inline-block';
+};
+
+// Step 2: Confirm → insert & persist
+document.getElementById('insertConfirm').onclick = () => {
+  const { itineraryId, placeId, day, date, time, notes } = window.pendingNewItem;
+  const idx = window.insertPositionIndex;       // set in renderInsertCarousel
+  // shift existing
+  const dayItems = window.itineraryItems
+    .filter(it => it.itineraryId===itineraryId && it.day===day);
+  // bump sortOrder >= idx
+  dayItems
+    .sort((a,b)=>b.sortOrder - a.sortOrder)
+    .forEach(it => {
+      it.sortOrder++;
+      postToAPI({ 
+        secret:      API_SECRET,
+        action:      'updateItem',
+        itineraryId: it.itineraryId,
+        placeId:     it.placeId,
+        day:         it.day,
+        date:        it.date,
+        time:        it.time,
+        notes:       it.notes,
+        sortOrder:   it.sortOrder
+      });
+    });
+  // create new item at idx
+	const newItem = {
+	itineraryId,
+	placeId,             // ← now included
+	day,
+	date,
+	time,
+	notes,
+	sortOrder: idx
+	};
+  window.itineraryItems.push(newItem);
+	postToAPI({ 
+	secret:      API_SECRET,
+	action:      'addItem',
+	itineraryId: newItem.itineraryId,
+	placeId:     newItem.placeId,
+	day:         newItem.day,
+	date:        newItem.date,
+	time:        newItem.time,
+	notes:       newItem.notes,
+	sortOrder:   newItem.sortOrder
+	});
+  // cleanup & re-render
+  document.getElementById('itinAddModal').style.display        = 'none';
+  renderItineraryItems();
 };
   </script>
 </body>
