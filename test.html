@@ -27,9 +27,6 @@
         searchBG:  	   '#F5F1EC',	// Search bar background color
         caroCardBg:    '#FAF1D2',	// Carousel Cards BG color
         borders: 	   '#D0B59A',	// thin border lines
-        fart:'#DB504A',
-        fart:   '#D0B59A',
-        searchBg:     '#FAF1D2',
       }
 	};
 	
@@ -39,6 +36,8 @@
   
   
 <script>
+  window.itineraries = [];
+  window.itineraryItems = [];
   window.addEventListener('DOMContentLoaded', () => {
     Object.entries(CONFIG.colors).forEach(([key, val]) => {
       document.documentElement.style.setProperty(`--${key}`, val);
@@ -270,11 +269,120 @@
 	
 	#itinDayCurrent,
 	#itinDayNext {
-	  font-family: 'Dorgan', cursive;
-	  font-size: 1.4em;
-	  font-weight: bold;
-	  text-decoration: underline;
-}
+		font-family: 'Dorgan', cursive;
+		font-size: 1.4em;
+		font-weight: bold;
+		text-decoration: underline;
+	}
+	
+	#itinAddModal {
+		/* hide by default, center on screen */
+		display: none;
+		position: fixed;
+		top: 50%; left: 50%;
+		transform: translate(-50%, -50%);
+		/* match menu panel style */
+		background: var(--menuBg);
+		border: 1px solid var(--borders);
+		border-radius: 8px;
+		padding: 16px;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+		z-index: 10000;
+		/* fixed width with padding */
+		width: 320px;
+		max-width: calc(100% - 32px);
+		font-family: 'Dorgan', sans-serif;
+	}
+	/* Form layout inside modal */
+	#addItinForm {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	#addItinForm label {
+		font-size: 1em;
+	}
+	#addItinForm select,
+	#addItinForm input,
+	#addItinForm textarea {
+		width: 100%;
+		padding: 6px 8px;
+		border: 1px solid var(--borders);
+		border-radius: 4px;
+		font-family: 'Dorgan', sans-serif;
+	}
+	#addItinForm button {
+		align-self: flex-end;
+		background: var(--menuButton);
+		color: #333;
+		border: none;
+		border-radius: 4px;
+		padding: 6px 12px;
+		font-family: 'Dorgan', cursive;
+		cursor: pointer;
+	}
+	
+	/* Step‑2 insertion carousel container */
+	#insertStepContainer {
+		margin-top: 16px;
+		display: none;
+	}
+	/* Step‑2 buttons */
+	#insertStepContainer button {
+		background: var(--menuButton);
+		color: #333;
+		border: none;
+		border-radius: 4px;
+		padding: 6px 12px;
+		font-family: 'Dorgan', cursive;
+		cursor: pointer;
+	}
+	/* Back button aligned left */
+	#insertBack {
+		margin-right: auto;
+	}
+	
+	/* Insert hotspots styling */
+	.insert-hotspot {
+		flex: 0 0 1%;
+		max-width: 1%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		opacity: 0.5;
+		border: 1px dashed var(--borders);
+		border-radius: 4px;
+		background: rgba(0,0,0,0.05);
+		margin: 4px;
+	}
+	.insert-hotspot.selected {
+		background: var(--menuButton);
+		opacity: 1;
+	}
+	/* ── Constrain the insertion carousel inside the modal ── */
+	#insertStepContainer {
+	margin-top: 16px;
+	display: none;
+	/* stack carousel above buttons instead of side‑by‑side */
+	flex-direction: column;
+	}
+  /* ── Insertion carousel: disable sticky so Back/Add remain visible ── */
+  #insertCarousel.place-carousel {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 8px;
+    /* override the default sticky positioning of .place-carousel */
+    position: static !important;
+    bottom: auto    !important;
+    z-index: auto   !important;
+  }
+
+
   </style>
 </head>
 <body>
@@ -408,17 +516,8 @@
   </div>
   <div id="map"></div>
   <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-  	<div id="itinAddModal" style="
-		display:none;
-		position:fixed;
-		top:50%; left:50%;
-		transform:translate(-50%, -50%);
-		background:white;
-		padding:16px;
-		box-shadow:0 4px 12px rgba(0,0,0,0.3);
-		z-index:10000;
-	">
-	  <form id="addItinForm" style="display:flex;flex-direction:column;gap:8px;min-width:260px;">
+	<div id="itinAddModal">
+	  <form id="addItinForm">
 		<label>
 		  Itinerary  
 		  <select id="modalItinSelect"></select>
@@ -449,9 +548,17 @@
 		<button type="submit" id="modalNext">Next</button>
 	  </div>
 	  </form>
-		<div id="insertStepContainer" style="display:none; margin-top:16px;">
+		<div id="insertStepContainer">
 		<div id="insertCarousel" class="place-carousel"></div>
-		<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+		<div style="
+		  display: flex;
+		  justify-content: flex-end;
+		  gap: 8px;
+		  margin-top: 8px;
+		  /* ensures these sit on top of the carousel */
+		  position: relative;
+		  z-index: 1001;
+		">
 		 <button type="button" id="insertBack">Back</button>
 		 <button type="button" id="insertConfirm">Add</button>
 		</div>
@@ -479,13 +586,25 @@
 	}
 	function openAddModal(placeId) {
 	// If we haven't loaded itineraries yet, trigger that first:
-	if (!window.itineraries) {
-		console.warn('Itineraries not loaded; loading now…');
-		document.getElementById('viewItineraries').click();
-		// once loaded, the select's onchange (in that flow) will call renderItineraryItems()
-		// and you can re-click "+ Add" after
-		return;
-	}
+   if (!window.itineraries || window.itineraries.length === 0) {
+     console.warn('Itineraries not loaded; fetching now…');
+     fetch(
+       `https://sheets.googleapis.com/v4/spreadsheets/` +
+       `${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`
+     )
+       .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+       .then(json => {
+         window.itineraries = (json.values||[]).slice(1).map(r => ({
+           itineraryId: r[0],
+           name:        r[1],
+           createdDate: r[2]
+         }));
+         // Now that we have data, re-open the modal:
+         openAddModal(placeId);
+       })
+       .catch(err => console.error('Failed to load itineraries:', err));
+     return;
+   }
 	
 	// populate the itinerary dropdown safely
 	const sel = document.getElementById('modalItinSelect');
@@ -776,7 +895,7 @@ function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const vi
 	if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; 
 	if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; 
 	if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
-popup += `<br><button onclick="openAddModal('${p.id}'); event.stopPropagation()">+ Add to itinerary</button>`;
+popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add to itinerary</button>`;
 const strokeColor=p.visited?'#DAA520':'#555'; 
 const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
 const el = document.createElement('div');
@@ -795,28 +914,15 @@ el.className = 'place-marker';
 	.addTo(map);
 	
 	// ── When the popup opens, wire up the “+ Add” button ──
-	pop.on('open', () => {
-	// find the button inside this popup
-	const btn = pop.getElement().querySelector('.add-to-itin');
-	if (!btn) return;
-	btn.addEventListener('click', ev => {
-		ev.preventDefault();
-		ev.stopPropagation();
-	
-		// — show the modal just like before —
-		const placeId = btn.dataset.placeId;
-		const sel     = document.getElementById('modalItinSelect');
-		sel.innerHTML = window.itineraries
-		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
-		.join('');
-		document.getElementById('modalDate').value   = new Date().toISOString().slice(0,10);
-		document.getElementById('modalDay').value    = 1;
-		document.getElementById('modalTime').value   = '';
-		document.getElementById('modalNotes').value  = '';
-		document.getElementById('addItinForm').dataset.placeId = placeId;
-		document.getElementById('itinAddModal').style.display    = 'block';
-	});
-	});
+  document.body.addEventListener('click', e => {
+    const btn = e.target.closest('.add-to-itin');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('➕ Add to itinerary clicked:', btn.dataset.placeId);
+    openAddModal(btn.dataset.placeId);
+  });
+
 	  marker.placeId = p.id;
 	el.addEventListener('click', e => {
 	  e.stopPropagation();
@@ -1106,14 +1212,15 @@ renderCarousel(visible); }
 	  );
 
 	  // wire up selection
-	  c.querySelectorAll('.insert-hotspot').forEach(el => {
-		el.onclick = () => {
-		  // clear previous highlight
-		  c.querySelectorAll('.insert-hotspot').forEach(h=>h.style.background='');
-		  el.style.background = 'var(--menuButton)';
-		  window.insertPositionIndex = Number(el.dataset.index);
-		};
-	  });
+		c.querySelectorAll('.insert-hotspot').forEach(el => {
+			el.onclick = () => {
+			// clear previous highlight
+			c.querySelectorAll('.insert-hotspot').forEach(h => h.classList.remove('selected'));
+			// highlight this one
+			el.classList.add('selected');
+			window.insertPositionIndex = Number(el.dataset.index);
+			};
+		});
 	}
 
 
@@ -1138,10 +1245,13 @@ document.getElementById('addItinForm').onsubmit = ev => {
   // hide step 1 form fields
   document.getElementById('addItinForm').style.display       = 'none';
   document.getElementById('modalNext').style.display         = 'none';
-  // show step 2 container
-  document.getElementById('insertStepContainer').style.display = 'block';
-  // render the insertion carousel for that day
-  renderInsertCarousel(window.pendingNewItem.day);
+  // Step 2: fetch existing items, then show insertion UI
+  fetchItineraryItems()
+    .then(() => {
+      document.getElementById('insertStepContainer').style.display = 'flex';
+      renderInsertCarousel(window.pendingNewItem.day);
+    })
+    .catch(err => console.error('Failed to load itinerary items:', err));
 };
 
 // Step 2: Back → return to metadata
@@ -1201,6 +1311,24 @@ document.getElementById('insertConfirm').onclick = () => {
   document.getElementById('itinAddModal').style.display        = 'none';
   renderItineraryItems();
 };
+  function fetchItineraryItems() {
+    const url = 
+      `https://sheets.googleapis.com/v4/spreadsheets/`
+      + `${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`;
+    return fetch(url)
+      .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+      .then(json => {
+        window.itineraryItems = (json.values||[]).slice(1).map(r => ({
+          itineraryId: r[0],
+          day:          Number(r[1]),
+          sortOrder:    Number(r[2]),
+          placeId:      r[3],
+          date:         r[4],
+          time:         r[5],
+          notes:        r[6]
+        }));
+      });
+  }
   </script>
 </body>
 </html>
