@@ -359,6 +359,17 @@
 		border: 1px solid var(--borders);
 		border-radius: 4px;
 		font-family: 'Dorgan', sans-serif;
+		background-color: var(--searchBG);
+		color: #333;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+				appearance: none;
+	}
+	
+	/* Options need their own bg in some browsers */
+	#addItinForm select option {
+		background-color: var(--searchBG);
+		color: #333;
 	}
 	#addItinForm button {
 		align-self: flex-end;
