@@ -393,8 +393,8 @@
 	
 	/* Insert hotspots styling */
 	.insert-hotspot {
-		flex: 0 0 1%;
-		max-width: 1%;
+		flex: 0 0 15%;
+		max-width: 15%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -430,8 +430,19 @@
     bottom: auto    !important;
     z-index: auto   !important;
   }
-
-
+  .insert-day-label {
+    font-family: 'Dorgan', cursive;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 4px 8px 0 8px;
+    text-align: left;
+    color: #000;
+  }
+  #insertConfirm[disabled] {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
   </style>
 </head>
 <body>
@@ -598,6 +609,7 @@
 	  </div>
 	  </form>
 		<div id="insertStepContainer">
+		<div id="insertDayLabel" class="insert-day-label"></div>
 		<div id="insertCarousel" class="place-carousel"></div>
 		<div style="
 		  display: flex;
@@ -1214,6 +1226,8 @@ renderCarousel(visible); }
 
 	function renderInsertCarousel(day) {
 	  const c = document.getElementById('insertCarousel');
+	  const dl = document.getElementById('insertDayLabel');
+	  if (dl) dl.textContent = `Day ${day}`;
 	  c.innerHTML = '';
 	  // 1) gather & sort cards for that day
 	  const cards = window.itineraryItems
@@ -1251,13 +1265,15 @@ renderCarousel(visible); }
 	  );
 
 	  // wire up selection
+		const confirmBtn = document.getElementById('insertConfirm');
 		c.querySelectorAll('.insert-hotspot').forEach(el => {
 			el.onclick = () => {
 			// clear previous highlight
 			c.querySelectorAll('.insert-hotspot').forEach(h => h.classList.remove('selected'));
-			// highlight this one
 			el.classList.add('selected');
 			window.insertPositionIndex = Number(el.dataset.index);
+			// now it's valid to add
+			confirmBtn.disabled = false;
 			};
 		});
 	}
@@ -1284,8 +1300,9 @@ document.getElementById('addItinForm').onsubmit = ev => {
   // hide step 1 form fields
   document.getElementById('addItinForm').style.display       = 'none';
   document.getElementById('modalNext').style.display         = 'none';
-  // Data already loaded; just show step 2
   insertStepContainer.style.display = 'flex';
+  // disable Add until a hotspot is picked
+  document.getElementById('insertConfirm').disabled = true;
   renderInsertCarousel(window.pendingNewItem.day);
 };
 
@@ -1300,6 +1317,7 @@ document.getElementById('insertBack').onclick = () => {
   document.getElementById('insertCarousel').innerHTML = '';
   // 2) Clear any selected index so renderInsertCarousel can start fresh
   window.insertPositionIndex = undefined;
+  document.getElementById('insertConfirm').disabled = true;
 };
 
 // Step 2: Confirm → insert & persist
