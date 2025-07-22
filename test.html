@@ -1031,80 +1031,60 @@ renderCarousel(visible); }
 	// ── Itineraries: fetch from Sheets and render ──
 	  const viewBtn = document.getElementById('viewItineraries');
 	  const selectEl = document.getElementById('itinerarySelect');
-	  viewBtn.onclick = () => {
-	if (selectEl.style.display === 'block') {
-		// hide dropdown, carousel, and restore all pins
-		selectEl.style.display = 'none';
-		const curLbl = document.getElementById('itinDayCurrent');
-		const nxtLbl = document.getElementById('itinDayNext');
-		curLbl.style.display = 'none';
-		nxtLbl.style.display = 'none';
-		document.getElementById('itineraryCarousel').style.display = 'none';
-		showAllMarkers();
-		viewBtn.textContent = 'View Itineraries';
-		} else {
-		  // currently hidden → show & load
-		  viewBtn.textContent = 'Hide Itineraries';
-		selectEl.style.display = 'block';
-		selectEl.innerHTML = '<option disabled selected>Loading…</option>';
+  viewBtn.onclick = () => {
+    if (selectEl.style.display === 'block') {
+      // hide dropdown, carousel, and restore all pins
+      selectEl.style.display = 'none';
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'none';
+      nxtLbl.style.display = 'none';
+      document.getElementById('itineraryCarousel').style.display = 'none';
+      showAllMarkers();
+      viewBtn.textContent = 'View Itineraries';
+      return;
+    }
 
-		  // 1️⃣ Fetch itinerary list
-		  fetch(
-			`https://sheets.googleapis.com/v4/spreadsheets/` +
-			`${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`
-		  )
-			.then(res => res.ok ? res.json() : Promise.reject(res.statusText))
-			.then(json => {
-			  window.itineraries = (json.values||[]).slice(1).map(r => ({
-				itineraryId: r[0], name: r[1], createdDate: r[2]
-			  }));
-			  // 2️⃣ Fetch items
-			  return fetch(
-				`https://sheets.googleapis.com/v4/spreadsheets/` +
-				`${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`
-			  );
-			})
-			.then(res => res.ok ? res.json() : Promise.reject(res.statusText))
-			.then(json => {
-			window.itineraryItems = (json.values||[]).slice(1).map(r => ({
-			itineraryId: r[0],       // Col A
-			day:         Number(r[1]),// Col B
-			sortOrder:   Number(r[2]),// Col C
-			placeId:     r[3],       // Col D
-			date:        r[4],       // Col E
-			time:        r[5],       // Col F
-			notes:       r[6]        // Col G
-			  }));
-			  // Populate the dropdown
-			  selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
-			  window.itineraries.forEach(it => {
-				const opt = document.createElement('option');
-				opt.value = it.itineraryId;
-				opt.textContent = it.name;
-				selectEl.appendChild(opt);
-			  });
-			  // Store selection
-			selectEl.onchange = e => {
-			  selectedItinId = e.target.value;
+    // show instantly (data already loaded at startup)
+    viewBtn.textContent    = 'Hide Itineraries';
+    selectEl.style.display = 'block';
 
-			  // show and init both labels
-			  const curLbl = document.getElementById('itinDayCurrent');
-			  const nxtLbl = document.getElementById('itinDayNext');
-			  curLbl.style.display = 'block';
-			  nxtLbl.style.display = 'block';
-			  curLbl.textContent = 'Day 1';
-			  nxtLbl.textContent = '';
-			  
-			  renderItineraryItems();
-			  filterMarkersForItinerary(selectedItinId);
-			};
-			})
-			.catch(err => {
-			  console.error('Error loading itineraries:', err);
-			  selectEl.innerHTML = '<option style="color:red;">Failed to load</option>';
-			});
-		}
-	  };
+    // if for some reason arrays are empty (first load failed), load once now
+    if (!window.itineraries.length || !window.itineraryItems.length) {
+      ensureItinData().then(buildItinSelect).catch(err => {
+        console.error('Error loading itineraries:', err);
+        selectEl.innerHTML = '<option style="color:red;">Failed to load</option>';
+      });
+    } else {
+      buildItinSelect();
+    }
+  };
+
+  // helper to populate dropdown & bind onchange
+  function buildItinSelect() {
+    selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
+    window.itineraries.forEach(it => {
+      const opt = document.createElement('option');
+      opt.value = it.itineraryId;
+      opt.textContent = it.name;
+      selectEl.appendChild(opt);
+    });
+
+    selectEl.onchange = e => {
+      selectedItinId = e.target.value;
+
+      // show/init labels
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'block';
+      nxtLbl.style.display = 'block';
+      curLbl.textContent   = 'Day 1';
+      nxtLbl.textContent   = '';
+
+      renderItineraryItems();
+      filterMarkersForItinerary(selectedItinId);
+    };
+  }
 	
 	function renderItineraryItems() {
   const carousel = document.getElementById('itineraryCarousel');
