@@ -36,8 +36,57 @@
   
   
 <script>
-  window.itineraries = [];
-  window.itineraryItems = [];
+	// ── Itinerary data cache & loaders ──
+	window.itineraries     = [];
+	window.itineraryItems  = [];
+	window._itinDataPromise = null;
+	
+	function _fetchItineraries() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraries = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			name:        r[1],
+			createdDate: r[2]
+		}));
+		});
+	}
+	
+	function _fetchItineraryItems() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraryItems = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			day:         Number(r[1]),
+			sortOrder:   Number(r[2]),
+			placeId:     r[3],
+			date:        r[4],
+			time:        r[5],
+			notes:       r[6]
+		}));
+		});
+	}
+	
+	function ensureItinData(force = false) {
+	if (!force && window._itinDataPromise) return window._itinDataPromise;
+	window._itinDataPromise = Promise.all([
+		_fetchItineraries(),
+		_fetchItineraryItems()
+	]).catch(err => {
+		console.error('Itinerary load failed:', err);
+		window._itinDataPromise = null; // allow retry
+		throw err;
+	});
+	return window._itinDataPromise;
+	}
+	
+	function refreshItinData() {
+	return ensureItinData(true);
+	}
   window.addEventListener('DOMContentLoaded', () => {
     Object.entries(CONFIG.colors).forEach(([key, val]) => {
       document.documentElement.style.setProperty(`--${key}`, val);
@@ -585,26 +634,16 @@
 	form.remove();
 	}
 	function openAddModal(placeId) {
-	// If we haven't loaded itineraries yet, trigger that first:
-   if (!window.itineraries || window.itineraries.length === 0) {
-     console.warn('Itineraries not loaded; fetching now…');
-     fetch(
-       `https://sheets.googleapis.com/v4/spreadsheets/` +
-       `${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`
-     )
-       .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
-       .then(json => {
-         window.itineraries = (json.values||[]).slice(1).map(r => ({
-           itineraryId: r[0],
-           name:        r[1],
-           createdDate: r[2]
-         }));
-         // Now that we have data, re-open the modal:
-         openAddModal(placeId);
-       })
-       .catch(err => console.error('Failed to load itineraries:', err));
-     return;
-   }
+	// Ensure both sheets are loaded once
+	if (!window.itineraries.length || !window.itineraryItems.length) {
+		ensureItinData()
+		.then(() => openAddModal(placeId))
+		.catch(err => {
+			console.error('Failed to load itinerary data:', err);
+			alert('Could not load itinerary data. Try again shortly.');
+		});
+		return;
+	}
 	
 	// populate the itinerary dropdown safely
 	const sel = document.getElementById('modalItinSelect');
@@ -1245,20 +1284,22 @@ document.getElementById('addItinForm').onsubmit = ev => {
   // hide step 1 form fields
   document.getElementById('addItinForm').style.display       = 'none';
   document.getElementById('modalNext').style.display         = 'none';
-  // Step 2: fetch existing items, then show insertion UI
-  fetchItineraryItems()
-    .then(() => {
-      document.getElementById('insertStepContainer').style.display = 'flex';
-      renderInsertCarousel(window.pendingNewItem.day);
-    })
-    .catch(err => console.error('Failed to load itinerary items:', err));
+  // Data already loaded; just show step 2
+  insertStepContainer.style.display = 'flex';
+  renderInsertCarousel(window.pendingNewItem.day);
 };
 
 // Step 2: Back → return to metadata
 document.getElementById('insertBack').onclick = () => {
   document.getElementById('insertStepContainer').style.display = 'none';
   document.getElementById('addItinForm').style.display         = 'flex';
-  document.getElementById('modalNext').style.display           = 'inline-block';
+  document.getElementById('modalNext').style.display           = 'block';
+  
+  // ── RESET STEP‑2 STATE ──
+  // 1) Clear previous hotspots/cards
+  document.getElementById('insertCarousel').innerHTML = '';
+  // 2) Clear any selected index so renderInsertCarousel can start fresh
+  window.insertPositionIndex = undefined;
 };
 
 // Step 2: Confirm → insert & persist
@@ -1311,24 +1352,16 @@ document.getElementById('insertConfirm').onclick = () => {
   document.getElementById('itinAddModal').style.display        = 'none';
   renderItineraryItems();
 };
-  function fetchItineraryItems() {
-    const url = 
-      `https://sheets.googleapis.com/v4/spreadsheets/`
-      + `${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`;
-    return fetch(url)
-      .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
-      .then(json => {
-        window.itineraryItems = (json.values||[]).slice(1).map(r => ({
-          itineraryId: r[0],
-          day:          Number(r[1]),
-          sortOrder:    Number(r[2]),
-          placeId:      r[3],
-          date:         r[4],
-          time:         r[5],
-          notes:        r[6]
-        }));
-      });
-  }
+  refreshItinData()
+    .then(() => {
+      // re-render the insert carousel (or itinerary view) with fresh data
+      renderInsertCarousel(window.pendingNewItem.day);
+      // close modal / clean up as you already do
+    })
+    .catch(err => {
+      console.error('Refresh after add failed:', err);
+      // still close modal if you want, but warn user
+    });
   </script>
 </body>
 </html>
