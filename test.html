@@ -351,20 +351,31 @@
 	#addItinForm label {
 		font-size: 1em;
 	}
-	#addItinForm select,
-	#addItinForm input,
-	#addItinForm textarea {
-		width: 100%;
-		padding: 6px 8px;
-		border: 1px solid var(--borders);
-		border-radius: 4px;
-		font-family: 'Dorgan', sans-serif;
-		background-color: var(--searchBG);
-		color: #333;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-				appearance: none;
-	}
+  #addItinForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* make sure children can shrink inside flex */
+    min-width: 0;
+  }
+  /* shrink fields so they don't touch the modal edges */
+  #addItinForm select,
+  #addItinForm input,
+  #addItinForm textarea {
+    width: 92%;
+    max-width: 92%;
+    box-sizing: border-box;
+    margin: 0 auto;
+    padding: 6px 8px;
+    border: 1px solid var(--borders);
+    border-radius: 4px;
+    font-family: 'Dorgan', sans-serif;
+    background-color: var(--searchBG);
+    color: #333;
+    -webkit-appearance: none;
+       -moz-appearance: none;
+            appearance: none;
+  }
 	
 	/* Options need their own bg in some browsers */
 	#addItinForm select option {
