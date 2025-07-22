@@ -461,17 +461,50 @@
     text-align: left;
     color: #000;
   }
-  #insertConfirm[disabled] {
-    opacity: 0.4;
-    pointer-events: none;
-    cursor: not-allowed;
-  }
+	/* Hide the strip when collapsed in itinerary mode, but KEEP the Menu button */
+	#filters.itineraryActive:not(.expanded) {
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	box-shadow: none !important;
+	height: auto !important;
+	}
+	#filters.itineraryActive:not(.expanded) > *:not(#toggleFilters) {
+	display: none !important;
+	}
+	/* When itinerary mode is on, never show search or deselect */
+	#filters.itineraryActive #placeSearch,
+	#filters.itineraryActive #toggleSubcats,
+	#filters.itineraryActive .search-toggle-container {
+	display: none !important;
+	}
   </style>
 </head>
 <body>
   <div class="filters" id="filters">
-    <button id="toggleFilters">Menu</button>
-<div class="search-toggle-container">
+    <button id="toggleFilters">Menu</button>	
+	<!-- Itinerary Mode button moved up, right under Menu -->
+	<button
+		id="itineraryMode"
+		style="
+		display: none;
+		width: calc(100% - 16px);
+		margin: 8px 8px 8px;
+		padding: 6px 8px;
+		background: var(--menuButton);
+		border-bottom: 1px solid #ddd;
+		border-radius: 4px;
+		border: none;
+		font-family: 'Dorgan', cursive;
+		font-size: 1em;
+		color: #333;
+		text-align: center;
+		cursor: pointer;
+		">
+		Enter Itinerary Mode
+	</button>
+	
+	<div class="search-toggle-container">
   <input type="search" id="placeSearch"
     placeholder="Search…"
     style="display:none; flex:2; margin:8px;" />
@@ -484,25 +517,6 @@
     Deselect All
   </button>
 </div>
-	<button
-	  id="itineraryMode"
-	  style="
-		display: none;
-		width: calc(100% - 16px);
-		margin: 0 8px 8px;
-		padding: 6px 8px;
-		background: var(--menuButton);
-		border-bottom: 1px solid #ddd;
-		border-radius: 4px;
-		border: none;
-		font-family: 'Dorgan', cursive;
-		font-size: 1em;
-		color: #333;
-		text-align: left;
-		cursor: pointer;
-	  ">
-	  Enter Itinerary Mode
-	</button>
 	<div id="panelContainer" class="panel-container"></div>
 
 	<div
@@ -879,9 +893,22 @@
 	};
 	
 	document.getElementById('itineraryMode').onclick = () => {
-	  // flip the itinerary‐mode flag
-	  const fd     = document.getElementById('filters');
-	  const inItin = fd.classList.toggle('itineraryActive');
+	// flip the itinerary‐mode flag
+	const fd     = document.getElementById('filters');
+	const inItin = fd.classList.toggle('itineraryActive');
+	
+	// also hide/show search + deselect buttons here
+	const searchEl   = document.getElementById('placeSearch');
+	const deselectEl = document.getElementById('toggleSubcats');
+	if (inItin) {
+		searchEl.style.display   = 'none';
+		deselectEl.style.display = 'none';
+	} else {
+		// restore based on menu expansion state
+		const expanded = fd.classList.contains('expanded');
+		searchEl.style.display   = expanded ? 'block' : 'none';
+		deselectEl.style.display = expanded ? 'block' : 'none';
+	}
 
 	  // show/hide the main panel vs itinerary panel
 	  document.getElementById('panelContainer').style.display =
