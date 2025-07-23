@@ -669,7 +669,7 @@
 	</div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyxNLiu37H4bAVKg1IyoL8Ac8ANqSGRjaATcm5Qp6AiHv5luTahPemCpCcnkRCSsXc/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx0ceUx2X28OjfrFBAIsT4ri7ApoVF9ZSZSlIMi7Xx0mvpSn9loh28LeZsoSJKAPYd1/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 	function postToAPI(payload) {
 	const form = document.createElement('form');
@@ -1169,15 +1169,15 @@ renderCarousel(visible); }
         <p>${it.notes || ''}</p>
       `;
     } else {
-      // ── NORMAL place card ──
-      card.innerHTML = `
-        <h4>${place.name}</h4>
-        ${it.notes ? `<p>${it.notes}</p>` : ''}
-        <p>${it.date} ${it.time}</p>
-        ${place.regions.length
-          ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
-          : ''}
-      `;
+   const timeText = (it.time && it.time.trim()) ? ` • ${it.time}` : '';
+   card.innerHTML = `
+       <h4>${place.name}</h4>
+       ${it.notes ? `<p>${it.notes}</p>` : ''}
+       <p>${it.date}${timeText}</p>
+       ${place.regions.length
+         ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
+         : ''}
+     `;
 
       // flying to the map on click
       card.onclick = () => {
