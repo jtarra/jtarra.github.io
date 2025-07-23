@@ -898,6 +898,26 @@
 	if (inItin) {
 		searchEl.style.display   = 'none';
 		deselectEl.style.display = 'none';
+		// ── RESET FILTERS when entering itinerary mode ──
+		// 1) Clear & repopulate the filter sets
+		selSub.clear();
+		places.forEach(p => p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`)));
+		selReg.clear(); regSet.forEach(r => selReg.add(r));
+		selVis.clear(); selVis.add('Been there'); selVis.add('Not yet');
+	
+		// 2) Re-check all filter checkboxes in the UI
+		document.querySelectorAll('#panelContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
+	
+		// 3) Reset the “Deselect All” toggle state/text
+		allOn = true;
+		document.getElementById('toggleSubcats').textContent = 'Deselect All';
+	
+		// 4) Clear search box & restore full carousel
+		document.getElementById('placeSearch').value = '';
+		renderCarousel(places);
+	
+		// 5) Redraw markers with everything on
+		drawMarkers();
 	} else {
 		// restore based on menu expansion state
 		const expanded = fd.classList.contains('expanded');
@@ -1077,6 +1097,7 @@ renderCarousel(visible); }
   // helper to populate dropdown & bind onchange
   function buildItinSelect() {
     selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
+	selectEl.style.fontFamily = "var(--menuFont), sans-serif";
     window.itineraries.forEach(it => {
       const opt = document.createElement('option');
       opt.value = it.itineraryId;
