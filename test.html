@@ -689,9 +689,9 @@
 		return;
 	}
 	
-	// populate the itinerary dropdown safely
 	const sel = document.getElementById('modalItinSelect');
-	sel.innerHTML = window.itineraries
+	sel.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+	window.itineraries
 		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
 		.join('');
 	
