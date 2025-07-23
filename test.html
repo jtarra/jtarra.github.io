@@ -716,12 +716,11 @@
           window.places = places;
 		  initMap(places,reviewsBy);
 	// Background-load itineraries once (no UI block)
-	const bgLoad = () => ensureItinData().catch(err => console.warn('Itin load failed:', err));
-	if ('requestIdleCallback' in window) {
-		requestIdleCallback(bgLoad, { timeout: 2000 });
-	} else {
-		setTimeout(bgLoad, 0);
-	}
+	window.addEventListener('load', () => {
+	setTimeout(() => {
+		ensureItinData().catch(err => console.warn('Itinerary load failed:', err));
+	}, 1200);  // tweak delay if you want
+	});
         }).catch(console.error);
 
       function initMap(places,reviewsBy){
