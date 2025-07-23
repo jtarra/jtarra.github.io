@@ -142,7 +142,7 @@
 	}
 	#itinerarySelect,
 	#itinerarySelect option {
-	  font-family: var(--menuFont), sans-serif !important;
+	  font-family: var(--menuFont), sans-serif;
 	}
     #map { width: 100%; height: 100%; }
     .filters {
@@ -1097,15 +1097,10 @@ renderCarousel(visible); }
   // helper to populate dropdown & bind onchange
   function buildItinSelect() {
     selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
-    // force font on the select itself
-    selectEl.style.fontFamily = "var(--menuFont), sans-serif";
-
     window.itineraries.forEach(it => {
       const opt = document.createElement('option');
       opt.value = it.itineraryId;
       opt.textContent = it.name;
-      // force font inline for stubborn Safari/iOS
-      opt.style.fontFamily = "var(--menuFont), sans-serif";
       selectEl.appendChild(opt);
     });
 
