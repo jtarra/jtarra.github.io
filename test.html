@@ -408,7 +408,16 @@
 		font-family: var(--menuFont), cursive;
 		cursor: pointer;
 	}
-	
+	#modalNext[disabled] {
+		opacity: .45;
+		cursor: default;
+		pointer-events: none;
+	}
+	#insertConfirm[disabled]{
+	opacity:.45;
+	pointer-events:none;
+	cursor:default;
+	}
 	/* Step‑2 insertion carousel container */
 	#insertStepContainer {
 		margin-top: 16px;
@@ -660,7 +669,7 @@
 	</div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxnIbwL3nxCJpRj1s4hHp19cOJ4XFKyCFMpUGBd-p77VU3jIqSZzYSPGLu6N6kAuS2m/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyxNLiu37H4bAVKg1IyoL8Ac8ANqSGRjaATcm5Qp6AiHv5luTahPemCpCcnkRCSsXc/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 	function postToAPI(payload) {
 	const form = document.createElement('form');
@@ -703,6 +712,11 @@
 	document.getElementById('modalNotes').value     = '';
 	// stash placeId on the form
 	document.getElementById('addItinForm').dataset.placeId = placeId;
+	// show the modal
+	const nextBtn = document.getElementById('modalNext');
+	nextBtn.disabled = true;
+	sel.onchange = () => { nextBtn.disabled = !sel.value; };
+	
 	// show the modal
 	document.getElementById('itinAddModal').style.display = 'block';
 	}
@@ -1333,10 +1347,14 @@ document.getElementById('modalCancel').onclick = () => {
 // 3.3 Handle form submission
 // Step 1: Next → show insertion carousel
 document.getElementById('addItinForm').onsubmit = ev => {
-  ev.preventDefault();
-  // stash the metadata
+	ev.preventDefault();
+	// guard: no itinerary picked
+	const itinVal = document.getElementById('modalItinSelect').value;
+	if (!itinVal) return;   // do nothing if still on placeholder
+	
+	// stash the metadata
 	window.pendingNewItem = {
-	itineraryId: document.getElementById('modalItinSelect').value,
+	itineraryId: itinVal,
 	placeId:     document.getElementById('addItinForm').dataset.placeId,  // ← capture it here
 	day:         Number(document.getElementById('modalDay').value),
 	date:        document.getElementById('modalDate').value,
