@@ -28,6 +28,7 @@
         searchBG:  	   '#F5F1EC',	// Search bar background color
         caroCardBg:    '#FAF1D2',	// Carousel Cards BG color
         borders: 	   '#D0B59A',	// thin border lines
+		subcatBG:	   '#F8E9D5',	// background behind subcategories
 		},
 	  fonts: {
 	  	catFont: 	   'Bardy',		// category labels on filter page
@@ -251,7 +252,7 @@
 	   }
     /* Panel Bodies */
     .panel-body { display: none; padding: 8px 12px;
-      background: #F8E9D5; border-radius: 6px;							/* Expanded Categories BG color */
+      background: var(--subcatBG); border-radius: 6px;							/* Expanded Categories BG color */
     }
     .panel-body.active { display: block; }
     .panel-body label {
