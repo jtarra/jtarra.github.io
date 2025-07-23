@@ -715,6 +715,13 @@
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           window.places = places;
 		  initMap(places,reviewsBy);
+	// Background-load itineraries once (no UI block)
+	const bgLoad = () => ensureItinData().catch(err => console.warn('Itin load failed:', err));
+	if ('requestIdleCallback' in window) {
+		requestIdleCallback(bgLoad, { timeout: 2000 });
+	} else {
+		setTimeout(bgLoad, 0);
+	}
         }).catch(console.error);
 
       function initMap(places,reviewsBy){
@@ -1381,16 +1388,7 @@ document.getElementById('insertConfirm').onclick = () => {
   document.getElementById('itinAddModal').style.display        = 'none';
   renderItineraryItems();
 };
-  refreshItinData()
-    .then(() => {
-      // re-render the insert carousel (or itinerary view) with fresh data
-      renderInsertCarousel(window.pendingNewItem.day);
-      // close modal / clean up as you already do
-    })
-    .catch(err => {
-      console.error('Refresh after add failed:', err);
-      // still close modal if you want, but warn user
-    });
+
   </script>
 </body>
 </html>
