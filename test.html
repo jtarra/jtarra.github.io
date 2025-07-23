@@ -29,14 +29,12 @@
         caroCardBg:    '#FAF1D2',	// Carousel Cards BG color
         borders: 	   '#D0B59A',	// thin border lines
 		},
-		// ── Font families (edit here when you want to swap) ──
 	  fonts: {
 	  	catFont: 	   'Bardy',		// category labels on filter page
 	  	subcatFont:    'Dorgan',	// subcategories under the category dropdowns
 	  	popupFont:     'Dorgan',	// map popups
 		menuFont:      'Dorgan',	// menu UI and buttons (select all, itinerary mode, menu)
 		carouselFont:  'Dorgan'		// filter & itinerary carousels
-		
 	  }
 	};
 	
@@ -98,9 +96,12 @@
 	return ensureItinData(true);
 	}
   window.addEventListener('DOMContentLoaded', () => {
-    Object.entries(CONFIG.colors).forEach(([key, val]) => {
-      document.documentElement.style.setProperty(`--${key}`, val);
-    });
+	Object.entries(CONFIG.colors).forEach(([k, v]) =>
+		document.documentElement.style.setProperty(`--${k}`, v)
+	);
+	Object.entries(CONFIG.fonts || {}).forEach(([k, v]) =>
+		document.documentElement.style.setProperty(`--${k}`, v)
+	);
   });
 </script> 
   <style>
@@ -122,7 +123,7 @@
 	  border: 1px solid var(--borders);
 	  border-radius: 8px;
 	  padding: 8px 8px 8px 8px;
-	  font-family: 'var(--menuFont)', sans-serif;
+	  font-family: var(--menuFont), sans-serif;
 	  font-size: 1em;
 	  color: #333;
 	  background-image: url('data:image/svg+xml;utf8,\
@@ -201,7 +202,7 @@
     #toggleFilters {
       display: block; width: 100%; padding: 8px;
       background: var(--menuButton); border: none; border-bottom: 1px solid #ddd;			
-      font-family: 'var(--menuFont)', cursive; cursor: pointer;							/* Show/Hide Filters button font */
+      font-family: var(--menuFont), cursive; cursor: pointer;							/* Show/Hide Filters button font */
       color: #000;
     }
 
@@ -210,7 +211,7 @@
     .panel-header {
       display: flex; align-items: center; padding: 6px 8px;
       background: var(--menuButton); border-radius: 6px; cursor: pointer;
-      font-family: 'var(--catFont)', cursive; font-size: 1.6em;						/* Category Tabs font */
+      font-family: var(--catFont), cursive; font-size: 1.6em;						/* Category Tabs font */
       color: var(--catText); text-shadow: 2px 2px 0 var(--catShadow);	
     }
     .panel-header input[type="checkbox"],
@@ -251,7 +252,7 @@
     .panel-body.active { display: block; }
     .panel-body label {
       display: block; margin-bottom: 6px;
-      font-family: 'var(--subcatFont)', sans-serif; font-size: 1.1em;				/* Subcategory Font */
+      font-family: var(--subcatFont), sans-serif; font-size: 1.1em;				/* Subcategory Font */
       position: relative;
     }
 
@@ -274,12 +275,12 @@
     padding: 6px;
     box-sizing: border-box;
     cursor: pointer;
-	font-family: 'var(--carouselFont)', sans-serif; 						/* Carousel Cards' Font */
+	font-family: var(--carouselFont), sans-serif; 						/* Carousel Cards' Font */
     }
 	.maplibregl-popup-content-wrapper,
 	.maplibregl-popup-content {
 		border-radius: 8px !important;
-		font-family: 'var(--popupFont)', sans-serif;					/* Popup Cards' Font */
+		font-family: var(--popupFont), sans-serif;					/* Popup Cards' Font */
 		font-size: 14px !important;							/* Popup Cards' Text size */
 		color: #333 !important;
 		}
@@ -298,7 +299,7 @@
       border-radius: 4px;
       backdrop-filter: blur(4px);
       background-color: var(--searchBG);
-      font-family: 'var(--menuFont)', sans-serif;					/* Search Box Font */
+      font-family: var(--menuFont), sans-serif;					/* Search Box Font */
       font-size: 1em;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
@@ -322,13 +323,13 @@
 	  color: #000;
 	  border: none;
 	  border-bottom: 1px solid #ddd;
-	  font-family: 'var(--menuFont)', cursive;						/* Filter select/unselect all button font */
+	  font-family: var(--menuFont), cursive;						/* Filter select/unselect all button font */
 	  cursor: pointer;
 	}
 	
 	#itinDayCurrent,
 	#itinDayNext {
-		font-family: 'var(--menuFont)', cursive;
+		font-family: var(--menuFont), cursive;
 		font-size: 1.4em;
 		font-weight: bold;
 		text-decoration: underline;
@@ -350,7 +351,7 @@
 		/* fixed width with padding */
 		width: 320px;
 		max-width: calc(100% - 32px);
-		font-family: 'var(--menuFont)', sans-serif;
+		font-family: var(--menuFont), sans-serif;
 	}
 	/* Form layout inside modal */
 	#addItinForm {
@@ -379,7 +380,7 @@
     padding: 6px 8px;
     border: 1px solid var(--borders);
     border-radius: 4px;
-    font-family: 'var(--menuFont)', sans-serif;
+    font-family: var(--menuFont), sans-serif;
     background-color: var(--searchBG);
     color: #333;
     -webkit-appearance: none;
@@ -399,7 +400,7 @@
 		border: none;
 		border-radius: 4px;
 		padding: 6px 12px;
-		font-family: 'var(--menuFont)', cursive;
+		font-family: var(--menuFont), cursive;
 		cursor: pointer;
 	}
 	
@@ -415,7 +416,7 @@
 		border: none;
 		border-radius: 4px;
 		padding: 6px 12px;
-		font-family: 'var(--menuFont)', cursive;
+		font-family: var(--menuFont), cursive;
 		cursor: pointer;
 	}
 	/* Back button aligned left */
@@ -463,7 +464,7 @@
     z-index: auto   !important;
   }
   .insert-day-label {
-    font-family: 'var(--menuFont)', cursive;
+    font-family: var(--menuFont), cursive;
     font-size: 1.1em;
     font-weight: bold;
     margin: 4px 8px 0 8px;
@@ -504,7 +505,7 @@
 		border-bottom: 1px solid #ddd;
 		border-radius: 4px;
 		border: none;
-		font-family: 'var(--menuFont)', cursive;
+		font-family: var(--menuFont), cursive;
 		font-size: 1em;
 		color: #333;
 		text-align: center;
@@ -521,7 +522,7 @@
     style="display:none; flex:1; margin:8px;
            background:var(--menuButton); border:none;
            border-bottom:1px solid #ddd;
-           font-family:'var(--menuFont)', cursive;
+           font-family:var(--menuFont), cursive;
            cursor:pointer;">
     Deselect All
   </button>
@@ -540,17 +541,17 @@
 		">
 	   <button
 		  id="createItinerary"
-		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: 'var(--menuFont)', cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
+		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
 		  Create New Itinerary
 		</button>
 		<button
 		  id="modifyItineraries"
-		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: 'var(--menuFont)', cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
+		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
 		  Modify Itineraries
 		</button>
 		<button
 		  id="viewItineraries"
-		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: 'var(--menuFont)', cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
+		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
 		  View Itineraries
 		</button>
 	<select id="itinerarySelect" style="display:none;">
