@@ -689,7 +689,7 @@
 	}
 	function openAddModal(placeId) {
 	// Ensure both sheets are loaded once
-	if (!window.itineraries.length || !window.itineraryItems.length) {
+	if (!window._itinDataPromise) {
 		ensureItinData()
 		.then(() => openAddModal(placeId))
 		.catch(err => {
