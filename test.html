@@ -669,7 +669,7 @@
 	</div>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx0ceUx2X28OjfrFBAIsT4ri7ApoVF9ZSZSlIMi7Xx0mvpSn9loh28LeZsoSJKAPYd1/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwfm2r0Iw8DWY407GEaSedc2pFMOFE4du47URkGb7nWQ54ED-ut7PJQQHgrgO5Aj0Wm/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 	function postToAPI(payload) {
 	const form = document.createElement('form');
@@ -689,7 +689,7 @@
 	}
 	function openAddModal(placeId) {
 	// Ensure both sheets are loaded once
-	if (!window._itinDataPromise) {
+	if (!window.itineraries.length || !window.itineraryItems.length) {
 		ensureItinData()
 		.then(() => openAddModal(placeId))
 		.catch(err => {
@@ -1284,6 +1284,55 @@ renderCarousel(visible); }
 	}
 	})();
 
+// ENSURE "CREATE NEW ITINERARY" MODAL HANDLERS ARE WIRED AFTER DOM IS LOADED
+window.addEventListener('DOMContentLoaded', function() {
+  const createItinBtn = document.getElementById('createItinerary');
+  const createItinModal = document.getElementById('createItinModal');
+  const createItinForm = document.getElementById('createItinForm');
+  const cancelCreateItin = document.getElementById('cancelCreateItin');
+  const itinTitleInput = document.getElementById('itinTitle');
+
+   createItinBtn.onclick = () => {
+     itinTitleInput.value = '';
+     createItinModal.style.display = 'block';
+     itinTitleInput.focus();
+   };
+
+ 	createItinForm.onsubmit = (e) => {
+ 		e.preventDefault();
+ 		const title = itinTitleInput.value.trim();
+ 		if (!title) {
+ 			itinTitleInput.focus();
+ 			return;
+ 		}
+ 		// Compute a new unique itineraryId: find max existing + 1 (fallback to 1 if none)
+ 		let newId = 1;
+ 		if (window.itineraries && window.itineraries.length > 0) {
+ 			const ids = window.itineraries.map(it => Number(it.itineraryId)).filter(n => !isNaN(n));
+ 			newId = Math.max(...ids, 0) + 1;
+ 		}
+ 		const nowDate = new Date().toISOString().slice(0, 10);
+ 		const newItin = {
+ 			itineraryId: String(newId),
+ 			name: title,
+ 			createdDate: nowDate
+ 		};
+ 		// Optimistically update frontend
+ 		window.itineraries.push(newItin);
+ 		// Post to backend sheet
+ 		postToAPI({
+ 			secret: API_SECRET,
+ 			action: 'addItinerary',
+ 			itineraryId: newItin.itineraryId,
+ 			name: newItin.name,
+ 			createdDate: newItin.createdDate
+ 		});
+ 		createItinModal.style.display = 'none';
+ 		itinTitleInput.value = '';
+ 		// Optionally, update UI dropdowns/etc here if desired
+ 	};
+});
+
 	function renderInsertCarousel(day) {
 	  const c = document.getElementById('insertCarousel');
 	  const dl = document.getElementById('insertDayLabel');
@@ -1445,5 +1494,18 @@ document.getElementById('insertConfirm').onclick = () => {
       // still close modal if you want, but warn user
     });
   </script>
+  <div id="createItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20000; width:320px; max-width:96%; font-family: var(--menuFont), sans-serif;">
+    <form id="createItinForm" style="display:flex; flex-direction:column; gap:14px;">
+      <label for="itinTitle" style="font-size:1em;">Itinerary Title
+        <input type="text" id="itinTitle" required maxlength="60" autocomplete="off"
+          style="width: 98%; box-sizing: border-box; padding:7px 8px; border:1px solid var(--borders); border-radius:4px; font-size:1em; background: var(--searchBG); color:#333;">
+      </label>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="cancelCreateItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;">Cancel</button>
+        <button type="submit" id="submitCreateItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;">Create</button>
+      </div>
+    </form>
+  </div>
 </body>
 </html>
