@@ -358,6 +358,23 @@
 		max-width: calc(100% - 32px);
 		font-family: var(--menuFont), sans-serif;
 	}
+ 	#createItinModal {
+ 		background: var(--menuBg);
+ 		border: 1px solid var(--borders);
+ 		border-radius: 8px;
+ 		box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm input, #createItinForm button {
+ 		border: 1px solid var(--borders);
+ 		background: var(--searchBG);
+ 		color: #333;
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm button {
+ 		background: var(--menuButton);
+ 		cursor: pointer;
+ 	}
 	/* Form layout inside modal */
 	#addItinForm {
 		display: flex;
@@ -1297,6 +1314,10 @@ window.addEventListener('DOMContentLoaded', function() {
      createItinModal.style.display = 'block';
      itinTitleInput.focus();
    };
+    cancelCreateItin.onclick = () => {
+      createItinModal.style.display = 'none';
+      itinTitleInput.value = '';
+    };
 
  	createItinForm.onsubmit = (e) => {
  		e.preventDefault();
