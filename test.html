@@ -281,7 +281,8 @@
     box-sizing: border-box;
     cursor: pointer;
 	font-family: var(--carouselFont), sans-serif; 						/* Carousel Cards' Font */
-    }
+    position: relative;
+	}
 	.maplibregl-popup-content-wrapper,
 	.maplibregl-popup-content {
 		border-radius: 8px !important;
@@ -1354,6 +1355,101 @@ window.addEventListener('DOMContentLoaded', function() {
  	};
 });
 
+ window.addEventListener('DOMContentLoaded', function() {
+   const modifyBtn = document.getElementById('modifyItineraries');
+   const modifyModal = document.getElementById('modifyItinModal');
+   const modifySelect = document.getElementById('modifyItinSelect');
+   const modifyCarousel = document.getElementById('modifyItinCarousel');
+   const cancelModify = document.getElementById('cancelModifyItin');
+
+   modifyBtn.onclick = () => {
+     // populate dropdown
+     modifySelect.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+       window.itineraries.map(it => `<option value="${it.itineraryId}">${it.name}</option>`).join('');
+     modifyCarousel.innerHTML = '';
+     modifyModal.style.display = 'block';
+   };
+
+   cancelModify.onclick = () => {
+     modifyModal.style.display = 'none';
+     modifySelect.value = '';
+     modifyCarousel.innerHTML = '';
+   };
+
+   modifySelect.onchange = () => {
+     const id = modifySelect.value;
+     // Filter items for that itinerary
+     const items = window.itineraryItems
+       .filter(it => it.itineraryId === id)
+       .sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+     // Build carousel
+     modifyCarousel.innerHTML = '';
+     items.forEach(it => {
+       const place = (window.places || []).find(p => p.id === it.placeId);
+       const card = document.createElement('div');
+       card.className = 'place-card';
+	   card.dataset.day = it.day;
+       card.innerHTML = `
+         <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1.1em;color:#B12F2F;" class="remove-item" title="Remove">&times;</span>
+         <h4>${place ? place.name : 'Note'}</h4>
+         ${it.notes ? `<p>${it.notes}</p>` : ''}
+         <p>${it.date}${it.time ? ` • ${it.time}` : ''}</p>
+         ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+       `;
+       // Remove X click handler: UI only for now
+       card.querySelector('.remove-item').onclick = e => {
+         e.stopPropagation();
+         card.style.opacity = 0.4;  // UI feedback, not backend yet
+         // TODO: Remove from backend when implemented
+       };
+       modifyCarousel.appendChild(card);
+     });
+     // Day label logic: current & next
+     const label = document.getElementById('modifyDayLabel');
+     const nextLabel = document.getElementById('modifyDayNextLabel');
+     const cards = modifyCarousel.querySelectorAll('.place-card');
+     function updateDayLabels() {
+       const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+       // 1) Find the very first card that is at least partially visible
+       const firstVisible = Array.from(cards).find(c => {
+         const r = c.getBoundingClientRect();
+         return r.right > wrapRect.left + 1;
+       });
+       if (!firstVisible) {
+         label.style.display = 'none';
+         nextLabel.style.display = 'none';
+         return;
+       }
+       const day = firstVisible.dataset.day;
+       label.textContent = `Day ${day}`;
+       // position cur label over that card
+       const cr = firstVisible.getBoundingClientRect();
+       const relX = cr.left - wrapRect.left;
+       label.style.left = `${relX > 0 ? relX : 0}px`;
+       label.style.display = 'block';
+       // 2) Show faded label for next day, if its card is visible
+       const nextDay = String(Number(day) + 1);
+       const nextCard = Array.from(cards).find(c => c.dataset.day === nextDay);
+       if (nextCard) {
+         const nr = nextCard.getBoundingClientRect();
+         const relNextX = nr.left - wrapRect.left;
+         if (relNextX < wrapRect.width) {
+           nextLabel.textContent   = `Day ${nextDay}`;
+           nextLabel.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
+           nextLabel.style.display = 'block';
+         } else {
+           nextLabel.style.display = 'none';
+         }
+       } else {
+         nextLabel.style.display = 'none';
+       }
+     }
+     modifyCarousel.addEventListener('scroll', updateDayLabels);
+     updateDayLabels();
+   };
+ });
+
+
 	function renderInsertCarousel(day) {
 	  const c = document.getElementById('insertCarousel');
 	  const dl = document.getElementById('insertDayLabel');
@@ -1528,5 +1624,25 @@ document.getElementById('insertConfirm').onclick = () => {
       </div>
     </form>
   </div>
+  <div id="modifyItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20001; width:340px; max-width:98%; font-family: var(--menuFont), sans-serif;">
+    <div style="margin-bottom:14px;">
+      <label for="modifyItinSelect" style="font-size:1em;">Itinerary:
+        <select id="modifyItinSelect" style="width:100%; margin-top:6px; padding:7px 8px; border-radius:4px; background:var(--searchBG); font-family:var(--menuFont),sans-serif;"></select>
+      </label>
+    </div>
+    <div id="modifyCarouselWrapper" style="position:relative; padding-top:24px;">
+      <div id="modifyDayLabel"
+        style="display:none; position:absolute; top:4px; left:0; font-weight:bold; white-space:nowrap; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.1em; text-decoration:underline;">
+      </div>
+   <div id="modifyDayNextLabel"
+     style="display:none; position:absolute; top:4px; left:0; font-weight:bold; white-space:nowrap; opacity:0.5; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.1em; text-decoration:underline;">
+   </div>
+      <div id="modifyItinCarousel" class="place-carousel" style="min-height:60px; border:1px solid var(--borders);"></div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+       <button type="button" id="cancelModifyItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;">Cancel</button>
+     </div>
+   </div>
 </body>
 </html>
