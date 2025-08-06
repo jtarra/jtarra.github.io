@@ -603,7 +603,6 @@
 				  position:absolute;
 				  top:4px;              <!-- lift above cards -->
 				  left:0;
-				  font-weight:bold;
 				  white-space:nowrap;
 				  pointer-events:none;
 				  z-index:1000;">
@@ -615,7 +614,6 @@
 				  position:absolute;
 				  top:4px;
 				  left:0;
-				  font-weight:bold;
 				  white-space:nowrap;
 				  opacity:0.5;            <!-- slightly faded -->
 				  pointer-events:none;
@@ -1629,17 +1627,17 @@ document.getElementById('insertConfirm').onclick = () => {
   <div id="modifyItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
     background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20001; width:340px; max-width:98%; font-family: var(--menuFont), sans-serif;">
     <div style="margin-bottom:14px;">
-	<div style="margin-bottom:8px; font-size:1em; font-weight:bold;">Select Itinerary</div>
+	<div style="margin-bottom:8px; font-size:1em;">Select Itinerary</div>
       <select id="modifyItinSelect"
         style="width:100%; font-size:1em; padding:9px 12px; border-radius:5px; background:var(--searchBG); border:1px solid var(--borders); font-family:var(--menuFont),sans-serif; margin-bottom:4px;color:#333;">
       </select>
     </div>
     <div id="modifyCarouselWrapper" style="position:relative; padding-top:24px;">
       <div id="modifyDayLabel"
-        style="display:none; position:absolute; top:4px; left:0; font-weight:bold; white-space:nowrap; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.1em; text-decoration:underline;">
+        style="display:none; position:absolute; top:4px; left:0; white-space:nowrap; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.1em; text-decoration:underline;">
       </div>
    <div id="modifyDayNextLabel"
-     style="display:none; position:absolute; top:4px; left:0; font-weight:bold; white-space:nowrap; opacity:0.5; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.1em; text-decoration:underline;">
+     style="display:none; position:absolute; top:4px; left:0; white-space:nowrap; opacity:0.5; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.1em; text-decoration:underline;">
    </div>
       <div id="modifyItinCarousel" class="place-carousel" style="min-height:60px; border:1px solid var(--borders);"></div>
     </div>
