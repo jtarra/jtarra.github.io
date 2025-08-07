@@ -40,7 +40,14 @@
 	};
 	
 /* MAIN USER CONFIG */
-
+     // Dynamically set --vh to avoid 100vh iOS bugs
+     function setRealVh() {
+       let vh = window.innerHeight * 0.01;
+       document.documentElement.style.setProperty('--realVh', `${vh}px`);
+     }
+     window.addEventListener('resize', setRealVh);
+     window.addEventListener('orientationchange', setRealVh);
+     window.addEventListener('DOMContentLoaded', setRealVh);
 </script>
   
   
@@ -106,9 +113,6 @@
   });
 </script> 
   <style>
-:root {
-  --real-vh: 100vh;
-}
 	/* V Add Fonts here V */
     @font-face { font-family: 'Bardy'; src: url('MapResources/Fonts/Bardy.woff') format('woff'); }
     @font-face { font-family: 'Dorgan'; src: url('MapResources/Fonts/Dorgan.woff') format('woff'); }
@@ -152,30 +156,19 @@
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
       background: var(--menuBg); border-radius: 8px;									
-      overflow: hidden; width: 120px; max-height: calc(var(--real-vh) - 20px); 
+      overflow: hidden; max-height: 40px; width: 120px;
       transition: max-height 0.3s, width 0.3s;
       display: flex;
       flex-direction: column;
     }
     .filters.expanded {
-      overflow-y: auto;
-      height: calc(var(--real-vh) - 20px);
-      max-height: calc(var(--real-vh) - 20px);
+      max-height: calc(var(--realVh, 1vh) * 100 - 20px);
       width: 280px;
     }
   .panel-container {
     flex: 1;
     overflow-y: auto;
   }
-	body.menuOpen {
-	  overflow: hidden !important;
-	  height: 100vh !important;
-	  position: fixed !important;
-	  width: 100vw !important;
-	}
-	html, body {
-	overscroll-behavior: contain;
-	}
    .filters:not(.expanded) .panel-container {
 	  display: none !important;
 	}
@@ -570,14 +563,9 @@
 	#modifyItinSelect, #modifyItinSelect option {
 	  font-family: var(--menuFont), sans-serif;
 	}
-	<script>
-	  function setRealVh() {
-		document.documentElement.style.setProperty('--real-vh', window.innerHeight + 'px');
-	  }
-	  window.addEventListener('resize', setRealVh);
-	  window.addEventListener('orientationchange', setRealVh);
-	  window.addEventListener('DOMContentLoaded', setRealVh);
-	</script>
+    body.menu-open {
+      overflow: hidden;
+    }
   </style>
 </head>
 <body>
@@ -978,7 +966,7 @@
           const wrapper=document.getElementById('panelContainer');
 	 document.getElementById('toggleFilters').onclick = () => {
 	  const ex = fd.classList.toggle('expanded');
-	  setRealVh();
+	  document.body.classList.toggle('menu-open', ex);
 	  document.getElementById('toggleFilters').textContent =
 	    ex ? 'Close Menu' : 'Menu';
 	  document.getElementById('placeSearch').style.display =
@@ -987,7 +975,6 @@
 	    ex ? 'block' : 'none';
 	  document.getElementById('itineraryMode').style.display =
 	    ex ? 'block' : 'none';
-	document.body.classList.toggle('menuOpen', ex);
 	};
 	
 	document.getElementById('itineraryMode').onclick = () => {
