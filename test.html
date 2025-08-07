@@ -152,14 +152,15 @@
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
       background: var(--menuBg); border-radius: 8px;									
-      overflow: hidden; max-height: calc(var(--real-vh) - 40px); width: 120px;
+      overflow: hidden; width: 120px; max-height: calc(var(--real-vh) - 20px); 
       transition: max-height 0.3s, width 0.3s;
       display: flex;
       flex-direction: column;
     }
     .filters.expanded {
       overflow-y: auto;
-	max-height: calc(var(--real-vh) - 40px);   /* <-- force always fit visible height */
+      height: calc(var(--real-vh) - 20px);
+      max-height: calc(var(--real-vh) - 20px);
       width: 280px;
     }
   .panel-container {
