@@ -159,13 +159,19 @@
     }
     .filters.expanded {
       overflow-y: auto;
-	max-height: 100%;
+	max-height: calc(var(--real-vh) - 20px);   /* <-- force always fit visible height */
       width: 280px;
     }
   .panel-container {
     flex: 1;
     overflow-y: auto;
   }
+	body.menuOpen {
+	  overflow: hidden !important;
+	  height: 100vh !important;
+	  position: fixed !important;
+	  width: 100vw !important;
+	}
    .filters:not(.expanded) .panel-container {
 	  display: none !important;
 	}
@@ -976,6 +982,7 @@
 	    ex ? 'block' : 'none';
 	  document.getElementById('itineraryMode').style.display =
 	    ex ? 'block' : 'none';
+	document.body.classList.toggle('menuOpen', ex);
 	};
 	
 	document.getElementById('itineraryMode').onclick = () => {
