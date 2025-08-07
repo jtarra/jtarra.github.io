@@ -106,6 +106,9 @@
   });
 </script> 
   <style>
+:root {
+  --real-vh: 100vh;
+}
 	/* V Add Fonts here V */
     @font-face { font-family: 'Bardy'; src: url('MapResources/Fonts/Bardy.woff') format('woff'); }
     @font-face { font-family: 'Dorgan'; src: url('MapResources/Fonts/Dorgan.woff') format('woff'); }
@@ -149,13 +152,14 @@
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
       background: var(--menuBg); border-radius: 8px;									
-      overflow: hidden; max-height: 40px; width: 120px;
+      overflow: hidden; max-height: calc(var(--real-vh) - 20px); width: 120px;
       transition: max-height 0.3s, width 0.3s;
       display: flex;
       flex-direction: column;
     }
     .filters.expanded {
-      max-height: calc(100vh - 20px);
+      overflow-y: auto;
+	max-height: 100%;
       width: 280px;
     }
   .panel-container {
@@ -556,6 +560,14 @@
 	#modifyItinSelect, #modifyItinSelect option {
 	  font-family: var(--menuFont), sans-serif;
 	}
+	<script>
+	  function setRealVh() {
+		document.documentElement.style.setProperty('--real-vh', window.innerHeight + 'px');
+	  }
+	  window.addEventListener('resize', setRealVh);
+	  window.addEventListener('orientationchange', setRealVh);
+	  window.addEventListener('DOMContentLoaded', setRealVh);
+	</script>
   </style>
 </head>
 <body>
