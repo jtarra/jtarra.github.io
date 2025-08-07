@@ -173,6 +173,9 @@
 	  position: fixed !important;
 	  width: 100vw !important;
 	}
+	html, body {
+	overscroll-behavior: contain;
+	}
    .filters:not(.expanded) .panel-container {
 	  display: none !important;
 	}
@@ -975,6 +978,7 @@
           const wrapper=document.getElementById('panelContainer');
 	 document.getElementById('toggleFilters').onclick = () => {
 	  const ex = fd.classList.toggle('expanded');
+	  setRealVh();
 	  document.getElementById('toggleFilters').textContent =
 	    ex ? 'Close Menu' : 'Menu';
 	  document.getElementById('placeSearch').style.display =
