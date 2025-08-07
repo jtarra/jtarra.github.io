@@ -746,10 +746,24 @@
 		.join('');
 	
 	// reset form fields
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	document.getElementById('addItinForm').style.display = 'flex';
+	document.getElementById('modalNext').style.display   = 'block';
+	document.getElementById('insertStepContainer').style.display = 'none';
+	document.getElementById('insertCarousel').innerHTML = '';
+	window.insertPositionIndex = undefined;
+	window.pendingNewItem = undefined;
 	document.getElementById('modalDay').value       = 1;
 	document.getElementById('modalDate').value      = new Date().toISOString().slice(0,10);
 	document.getElementById('modalTime').value      = '';
 	document.getElementById('modalNotes').value     = '';
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	document.getElementById('addItinForm').style.display = 'flex';
+	document.getElementById('modalNext').style.display   = 'block';
+	document.getElementById('insertStepContainer').style.display = 'none';
+	document.getElementById('insertCarousel').innerHTML = '';
+	window.insertPositionIndex = undefined;
+	window.pendingNewItem = undefined;
 	// stash placeId on the form
 	document.getElementById('addItinForm').dataset.placeId = placeId;
 	// show the modal
