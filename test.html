@@ -1066,7 +1066,7 @@ function renderCarousel(v){
       `<div class="place-card">
           <h4>${p.name}</h4>
 		${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
-          <p><em>${p.category} – ${p.subcategories.join(', ')}</em></p>
+          <p><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em></p>
 	  ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
           </div>`
     );
@@ -1086,7 +1086,7 @@ function renderCarousel(v){
 	};
   });
 }        
-function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>${p.notes}` : ''}` + `<br><em>${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } 
+function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>🗒️ ${p.notes}` : ''}` + `<br><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } 
 	if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; 
 	if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; 
 	if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
@@ -1236,8 +1236,8 @@ renderCarousel(visible); }
    const timeText = (it.time && it.time.trim()) ? ` • ${it.time}` : '';
    card.innerHTML = `
        <h4>${place.name}</h4>
-       ${it.notes ? `<p>${it.notes}</p>` : ''}
-       <p>${it.date}${timeText}</p>
+       ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+       <p>🗓️ ${it.date}${timeText}</p>
        ${place.regions.length
          ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
          : ''}
@@ -1440,8 +1440,8 @@ window.addEventListener('DOMContentLoaded', function() {
        card.innerHTML = `
          <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1.1em;color:#B12F2F;" class="remove-item" title="Remove">&times;</span>
          <h4>${place ? place.name : 'Note'}</h4>
-         ${it.notes ? `<p>${it.notes}</p>` : ''}
-         <p>${it.date}${it.time ? ` • ${it.time}` : ''}</p>
+         ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+         <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
          ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
        `;
        // Remove X click handler: UI only for now
@@ -1513,7 +1513,7 @@ window.addEventListener('DOMContentLoaded', function() {
 		const place = window.places.find(p=>p.id===it.placeId) || {};
 		return `<div class="place-card" style="opacity:0.7;">
 		  <h4>${place.name||'Note'}</h4>
-		  <p>${it.time||''}</p>
+		  <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
 		</div>`;
 	  };
 
