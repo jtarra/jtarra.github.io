@@ -106,12 +106,6 @@
   });
 </script> 
   <style>
- .no-scroll {
-   position: fixed;
-   overflow: hidden !important;
-   width: 100vw;
-   height: 100vh;
- }
 :root {
   --real-vh: 100vh;
 }
@@ -124,7 +118,6 @@
       width: 100%;
       height: 100%;
       font-family: sans-serif;
-	  overscroll-behavior: none;
     }
 	#itinerarySelect {
 	  appearance: none;
@@ -166,7 +159,7 @@
     }
     .filters.expanded {
       overflow-y: auto;
-	max-height: 100%;
+	max-height: calc(var(--real-vh) - 20px);  /* Always fit within viewport */
       width: 280px;
     }
   .panel-container {
@@ -1030,13 +1023,6 @@
 		inItin ? 'none' : 'flex';
 	  document.getElementById('itineraryContainer').style.display =
 		inItin ? 'block' : 'none';
-
-    // Lock body scroll on iOS (when itinerary mode is open)
-    if (inItin) {
-      document.body.classList.add('no-scroll');
-    } else {
-      document.body.classList.remove('no-scroll');
-    }
 
 	  // update the button label
 	  const btn = document.getElementById('itineraryMode');
