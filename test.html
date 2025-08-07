@@ -106,6 +106,12 @@
   });
 </script> 
   <style>
+ .no-scroll {
+   position: fixed;
+   overflow: hidden !important;
+   width: 100vw;
+   height: 100vh;
+ }
 :root {
   --real-vh: 100vh;
 }
@@ -1024,6 +1030,13 @@
 		inItin ? 'none' : 'flex';
 	  document.getElementById('itineraryContainer').style.display =
 		inItin ? 'block' : 'none';
+
+    // Lock body scroll on iOS (when itinerary mode is open)
+    if (inItin) {
+      document.body.classList.add('no-scroll');
+    } else {
+      document.body.classList.remove('no-scroll');
+    }
 
 	  // update the button label
 	  const btn = document.getElementById('itineraryMode');
