@@ -155,7 +155,7 @@
       flex-direction: column;
     }
     .filters.expanded {
-      max-height: calc(100vh - 20px);
+      max-height: calc(var(--real-vh) - 20px);
       width: 280px;
     }
   .panel-container {
@@ -556,6 +556,18 @@
 	#modifyItinSelect, #modifyItinSelect option {
 	  font-family: var(--menuFont), sans-serif;
 	}
+     :root {
+       --real-vh: 100vh;
+     }
+	<script>
+	  // Set --real-vh to be the actual viewport height, accounting for iOS Safari quirks
+	  function setRealVh() {
+		document.documentElement.style.setProperty('--real-vh', window.innerHeight + 'px');
+	  }
+	  window.addEventListener('resize', setRealVh);
+	  window.addEventListener('orientationchange', setRealVh);
+	  window.addEventListener('DOMContentLoaded', setRealVh);
+	</script>
   </style>
 </head>
 <body>
