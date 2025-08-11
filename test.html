@@ -7,8 +7,10 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="utf-8" />
   <title>Hawaii</title>
-  <script>
-  //* MAIN USER CONFIG */
+
+
+<!-- MAIN USER CONFIG -->
+<script>
     const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
@@ -38,121 +40,57 @@
 		carouselFont:  'Dorgan'		// filter & itinerary carousels
 	  }
 	};
-	
-/* MAIN USER CONFIG */
-     // Dynamically set --vh to avoid 100vh iOS bugs
-     function setRealVh() {
-       let vh = window.innerHeight * 0.01;
-       document.documentElement.style.setProperty('--realVh', `${vh}px`);
-     }
-     window.addEventListener('resize', setRealVh);
-     window.addEventListener('orientationchange', setRealVh);
-     window.addEventListener('DOMContentLoaded', setRealVh);
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwfm2r0Iw8DWY407GEaSedc2pFMOFE4du47URkGb7nWQ54ED-ut7PJQQHgrgO5Aj0Wm/exec';  // ← replace with your Web App URL
+	const API_SECRET      = 'Fart';
 </script>
-  
-  
-<script>
-	// ── Itinerary data cache & loaders ──
-	window.itineraries     = [];
-	window.itineraryItems  = [];
-	window._itinDataPromise = null;
-	
-	function _fetchItineraries() {
-	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`;
-	return fetch(url)
-		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
-		.then(json => {
-		window.itineraries = (json.values || []).slice(1).map(r => ({
-			itineraryId: r[0],
-			name:        r[1],
-			createdDate: r[2]
-		}));
-		});
-	}
-	
-	function _fetchItineraryItems() {
-	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`;
-	return fetch(url)
-		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
-		.then(json => {
-		window.itineraryItems = (json.values || []).slice(1).map(r => ({
-			itineraryId: r[0],
-			day:         Number(r[1]),
-			sortOrder:   Number(r[2]),
-			placeId:     r[3],
-			date:        r[4],
-			time:        r[5],
-			notes:       r[6]
-		}));
-		});
-	}
-	
-	function ensureItinData(force = false) {
-	if (!force && window._itinDataPromise) return window._itinDataPromise;
-	window._itinDataPromise = Promise.all([
-		_fetchItineraries(),
-		_fetchItineraryItems()
-	]).catch(err => {
-		console.error('Itinerary load failed:', err);
-		window._itinDataPromise = null; // allow retry
-		throw err;
-	});
-	return window._itinDataPromise;
-	}
-	
-	function refreshItinData() {
-	return ensureItinData(true);
-	}
-  window.addEventListener('DOMContentLoaded', () => {
-	Object.entries(CONFIG.colors).forEach(([k, v]) =>
-		document.documentElement.style.setProperty(`--${k}`, v)
-	);
-	Object.entries(CONFIG.fonts || {}).forEach(([k, v]) =>
-		document.documentElement.style.setProperty(`--${k}`, v)
-	);
-  });
-</script> 
-  <style>
-	/* V Add Fonts here V */
+
+<!-- Fonts -->
+<style>
     @font-face { font-family: 'Bardy'; src: url('MapResources/Fonts/Bardy.woff') format('woff'); }
     @font-face { font-family: 'Dorgan'; src: url('MapResources/Fonts/Dorgan.woff') format('woff'); }
-	/* ^ Add Fonts here ^ */
+</style>
+
+<!-- Core CSS -->
+<style>
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
       font-family: sans-serif;
     }
-	#itinerarySelect {
-	  appearance: none;
-	  -webkit-appearance: none;
-	  -moz-appearance: none;
-	  background-color: var(--searchBG);
-	  border: 1px solid var(--borders);
-	  border-radius: 8px;
-	  padding: 8px 8px 8px 8px;
-	  font-family: var(--menuFont), sans-serif;
-	  font-size: 1em;
-	  color: #333;
-	  background-image: url('data:image/svg+xml;utf8,\
-		<svg xmlns="http://www.w3.org/2000/svg"\
-			 width="12" height="12" viewBox="0 0 12 12">\
-		  <path d="M2 4l4 4 4-4"\
-				stroke="%23666" fill="none" stroke-width="2"/>\
-		</svg>');
-	  background-repeat: no-repeat;
-	  background-position: right 8px center;
-	  background-size: 12px;
+	#map { width: 100%; height: 100%; }
+</style>
+
+<!-- Maplibre -->
+<style>
+	.maplibregl-popup-content-wrapper,
+	.maplibregl-popup-content {
+		border-radius: 8px !important;
+		font-family: var(--popupFont), sans-serif;					/* Popup Cards' Font */
+		font-size: 14px !important;							/* Popup Cards' Text size */
+		color: #333 !important;
+		}
+	.maplibregl-popup-content-wrapper a,
+	.maplibregl-popup-content a {
+	  color: #0078A8 !important;
+		}
+	.maplibregl-popup-content strong {
+	  font-weight: normal !important;
+	  font-size: 1.25em !important;
+	  font-family: var(--carouselFont), sans-serif !important;
+	  margin: 6px 0 4px 0;
 	}
-	#itinerarySelect:focus {
-	  outline: 2px solid var(--borders);
-	  outline-offset: 2px;
-	}
-	#itinerarySelect,
-	#itinerarySelect option {
-	  font-family: var(--menuFont), sans-serif;
-	}
-    #map { width: 100%; height: 100%; }
+    .maplibregl-popup-content h4,
+    .maplibregl-popup-content-wrapper h4 {
+      font-weight: normal !important;
+      font-size: 1.25em !important;
+      font-family: var(--carouselFont), sans-serif !important;
+      margin: 6px 0 4px 0;
+    }
+</style>
+
+<!-- Filters -->
+<style>
     .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
       background: var(--menuBg); border-radius: 8px;									
@@ -299,30 +237,6 @@
     #placeCarousel .place-card p {
       margin: 2px 0 0 0;
     }
-	.maplibregl-popup-content-wrapper,
-	.maplibregl-popup-content {
-		border-radius: 8px !important;
-		font-family: var(--popupFont), sans-serif;					/* Popup Cards' Font */
-		font-size: 14px !important;							/* Popup Cards' Text size */
-		color: #333 !important;
-		}
-	.maplibregl-popup-content-wrapper a,
-	.maplibregl-popup-content a {
-	  color: #0078A8 !important;
-		}
-	.maplibregl-popup-content strong {
-	  font-weight: normal !important;
-	  font-size: 1.25em !important;
-	  font-family: var(--carouselFont), sans-serif !important;
-	  margin: 6px 0 4px 0;
-	}
-    .maplibregl-popup-content h4,
-    .maplibregl-popup-content-wrapper h4 {
-      font-weight: normal !important;
-      font-size: 1.25em !important;
-      font-family: var(--carouselFont), sans-serif !important;
-      margin: 6px 0 4px 0;
-    }
     #placeSearch {
       width: calc(100% - 16px);
       margin: 8px;
@@ -358,14 +272,86 @@
 	  font-family: var(--menuFont), cursive;						/* Filter select/unselect all button font */
 	  cursor: pointer;
 	}
-	
+	#filters.itineraryActive:not(.expanded) {
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	box-shadow: none !important;
+	height: auto !important;
+	}
+	#filters.itineraryActive:not(.expanded) > *:not(#toggleFilters) {
+	display: none !important;
+	}
+	/* When itinerary mode is on, never show search or deselect */
+	#filters.itineraryActive #placeSearch,
+	#filters.itineraryActive #toggleSubcats,
+	#filters.itineraryActive .search-toggle-container {
+	display: none !important;
+	}
+</style>
+
+<!-- Itinerary: View -->
+<style>
+	#itinerarySelect {
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;
+	  background-color: var(--searchBG);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 8px 8px 8px 8px;
+	  font-family: var(--menuFont), sans-serif;
+	  font-size: 1em;
+	  color: #333;
+	  background-image: url('data:image/svg+xml;utf8,\
+		<svg xmlns="http://www.w3.org/2000/svg"\
+			 width="12" height="12" viewBox="0 0 12 12">\
+		  <path d="M2 4l4 4 4-4"\
+				stroke="%23666" fill="none" stroke-width="2"/>\
+		</svg>');
+	  background-repeat: no-repeat;
+	  background-position: right 8px center;
+	  background-size: 12px;
+	}
+	#itinerarySelect:focus {
+	  outline: 2px solid var(--borders);
+	  outline-offset: 2px;
+	}
+	#itinerarySelect,
+	#itinerarySelect option {
+	  font-family: var(--menuFont), sans-serif;
+	}
 	#itinDayCurrent,
 	#itinDayNext {
 		font-family: var(--menuFont), cursive;
 		font-size: 1.4em;
 		text-decoration: underline;
 	}
-	
+</style>
+
+<!-- Itinerary: Create -->
+<style>
+	#createItinModal {
+ 		background: var(--menuBg);
+ 		border: 1px solid var(--borders);
+ 		border-radius: 8px;
+ 		box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm input, #createItinForm button {
+ 		border: 1px solid var(--borders);
+ 		background: var(--searchBG);
+ 		color: #333;
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm button {
+ 		background: var(--menuButton);
+ 		cursor: pointer;
+ 	}
+</style>
+
+<!-- Itinerary: Add -->
+<style>
 	#itinAddModal {
 		/* hide by default, center on screen */
 		display: none;
@@ -384,24 +370,6 @@
 		max-width: calc(100% - 32px);
 		font-family: var(--menuFont), sans-serif;
 	}
- 	#createItinModal {
- 		background: var(--menuBg);
- 		border: 1px solid var(--borders);
- 		border-radius: 8px;
- 		box-shadow: 0 4px 18px rgba(0,0,0,0.22);
- 		font-family: var(--menuFont), sans-serif;
- 	}
- 	#createItinForm input, #createItinForm button {
- 		border: 1px solid var(--borders);
- 		background: var(--searchBG);
- 		color: #333;
- 		font-family: var(--menuFont), sans-serif;
- 	}
- 	#createItinForm button {
- 		background: var(--menuButton);
- 		cursor: pointer;
- 	}
-	/* Form layout inside modal */
 	#addItinForm {
 		display: flex;
 		flex-direction: column;
@@ -527,23 +495,10 @@
     text-align: left;
     color: #000;
   }
-	/* Hide the strip when collapsed in itinerary mode, but KEEP the Menu button */
-	#filters.itineraryActive:not(.expanded) {
-	background: transparent !important;
-	border: none !important;
-	padding: 0 !important;
-	box-shadow: none !important;
-	height: auto !important;
-	}
-	#filters.itineraryActive:not(.expanded) > *:not(#toggleFilters) {
-	display: none !important;
-	}
-	/* When itinerary mode is on, never show search or deselect */
-	#filters.itineraryActive #placeSearch,
-	#filters.itineraryActive #toggleSubcats,
-	#filters.itineraryActive .search-toggle-container {
-	display: none !important;
-	}
+</style>
+
+<!-- Itinerary: Modify -->
+<style>
 	#modifyItinSelect {
 	  appearance: none;
 	  -webkit-appearance: none;
@@ -569,9 +524,1148 @@
     body.menu-open {
       overflow: hidden;
     }
-  </style>
+</style>
+
+
+
+<!-- Layout Helpers -->
+<script>
+    function setRealVh() {
+      let vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--realVh', `${vh}px`);
+    }
+    window.addEventListener('resize', setRealVh);
+    window.addEventListener('orientationchange', setRealVh);
+    window.addEventListener('DOMContentLoaded', setRealVh);
+</script>
+
+<!-- Itinerary -->
+<script>
+	window.itineraries     = [];
+	window.itineraryItems  = [];
+	window._itinDataPromise = null;
+	
+	function _fetchItineraries() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraries = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			name:        r[1],
+			createdDate: r[2]
+		}));
+		});
+	}
+	
+	function _fetchItineraryItems() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraryItems = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			day:         Number(r[1]),
+			sortOrder:   Number(r[2]),
+			placeId:     r[3],
+			date:        r[4],
+			time:        r[5],
+			notes:       r[6]
+		}));
+		});
+	}
+	
+	function ensureItinData(force = false) {
+	if (!force && window._itinDataPromise) return window._itinDataPromise;
+	window._itinDataPromise = Promise.all([
+		_fetchItineraries(),
+		_fetchItineraryItems()
+	]).catch(err => {
+		console.error('Itinerary load failed:', err);
+		window._itinDataPromise = null; // allow retry
+		throw err;
+	});
+	return window._itinDataPromise;
+	}
+	function refreshItinData() {
+	return ensureItinData(true);
+	}
+window.addEventListener('DOMContentLoaded', () => {
+	Object.entries(CONFIG.colors).forEach(([k, v]) =>
+		document.documentElement.style.setProperty(`--${k}`, v)
+	);
+	Object.entries(CONFIG.fonts || {}).forEach(([k, v]) =>
+		document.documentElement.style.setProperty(`--${k}`, v)
+	);
+
+    // Preload Itineraries and Items so Modify works even before View
+    ensureItinData().catch(err => console.error('Itinerary preload failed:', err));
+  });
+</script>
 </head>
+
 <body>
+<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+
+<!-- Boot -->
+<script>
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
+                + `/values:batchGet?key=${CONFIG.apiKey}`
+                + CONFIG.ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
+
+      fetch(url)
+        .then(r=>r.ok?r.json():Promise.reject(r.statusText))
+        .then(data=>{
+          const [hdrP,...rowsP] = data.valueRanges[0].values;
+          const places = rowsP.map(r=>{ 
+		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
+	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
+		  return { 
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });
+          const [hdrR,...rowsR] = data.valueRanges[1].values;
+          const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
+          window.places = places;
+		  window.reviewsBy = reviewsBy;
+        }).catch(console.error);
+  window.initMap = function(places, reviewsBy){
+    const fuse = new Fuse(places, {
+      getFn: (obj, path) => {
+        const value = obj[path];
+        if (typeof value === 'string') {
+          return value.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+        }
+        if (Array.isArray(value)) {
+          return value.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
+        }
+        return value;
+      },
+      keys: ['name','notes','tags'],
+      threshold: 0.15,
+      distance: 20,
+      ignoreLocation: true,
+      tokenize: true,
+      tokenSeparator: /[\s\-\/\.,;:!?\"'“”‘’]+/,
+      minMatchCharLength: 3,
+      includeScore: true
+    });
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          'raster-tiles': {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            ],
+            tileSize: 256,
+            attribution: CONFIG.attribution
+          }
+        },
+        layers: [{
+          id: 'osm-tiles',
+          type: 'raster',
+          source: 'raster-tiles'
+        }]
+      },
+      center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
+      zoom: CONFIG.mapZoom,
+      dragRotate:      false,
+      touchZoomRotate: true,
+      pitchWithRotate: false
+    });
+    window.map = map;
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.on('load', () => map.resize());
+    map.touchPitch.disable();
+    map.setMaxPitch(0);
+
+    // scope sync so markers/carousel (which use window.currentPopup) stay in lockstep
+    window.currentPopup = null;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude, longitude } = pos.coords;
+        const urls = CONFIG.userIconUrls;
+        const chosenUrl = urls[Math.floor(Math.random() * urls.length)];
+        const img = new Image();
+        img.src = chosenUrl;
+
+        img.onload = () => {
+          const maxWidth = 32;
+          const ratio    = img.height / img.width;
+          const w        = maxWidth;
+          const h        = Math.round(maxWidth * ratio);
+
+          const el = document.createElement('img');
+          el.src = chosenUrl;
+          el.style.width  = `${w}px`;
+          el.style.height = `${h}px`;
+
+          const popup = new maplibregl.Popup({
+            offset: { bottom: [0, -h] },
+            focusAfterOpen: false
+          }).setText('You are here.');
+
+          new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([longitude, latitude])
+            .setPopup(popup)
+            .addTo(map);
+
+          popup.on('open', () => {
+            if (window.currentPopup && window.currentPopup !== popup) {
+              window.currentPopup.remove();
+            }
+            window.currentPopup = popup;
+          });
+          popup.addTo(map);
+          window.currentPopup = popup;
+
+          map.flyTo({
+            center: [longitude, latitude],
+            zoom:   map.getZoom() + 1,
+            essential: true,
+          });
+        };
+      }, err => {
+        console.warn('Geolocation failed:', err.message);
+      });
+    }
+
+    // build category maps & selected sets (globals so drawMarkers/setupFilters can see them)
+    const catMap = {}, regSet = new Set();
+    places.forEach(p => {
+      const set = catMap[p.category] || (catMap[p.category] = new Set());
+      p.subcategories.forEach(sc => set.add(sc));
+      if (p.regions) p.regions.forEach(r => regSet.add(r));
+    });
+
+    window.selSub = new Set();
+    places.forEach(p => p.subcategories.forEach(sc => window.selSub.add(`${p.category} - ${sc}`)));
+    window.selReg = new Set(regSet);
+    window.selVis = new Set(['Been there','Not yet']);
+
+    const basePool = CONFIG.baseColors.slice(); shuffle(basePool);
+    window.categoryColors = {};
+    Object.keys(catMap).forEach(cat => {
+      window.categoryColors[cat] = basePool.length ? basePool.pop() : randomColor();
+    });
+
+    // build filter UI & draw pins
+    setupFilters(Object.keys(catMap), regSet, catMap);
+    drawMarkers();
+
+    // global “Select/Deselect All” for subcategories
+    let allOn = true;
+    const toggleSubcats = document.getElementById('toggleSubcats');
+    toggleSubcats.onclick = () => {
+      allOn = !allOn;
+      document.querySelectorAll('#panelContainer .panel').forEach(panel => {
+        const hdr = panel.querySelector('.panel-header');
+        const title = hdr.textContent.trim();
+        if (title !== 'Region' && title !== 'Visited?') {
+          const master = hdr.querySelector('input[type="checkbox"]');
+          master.checked = allOn;
+          master.dispatchEvent(new Event('change'));
+        }
+      });
+      toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
+    };
+
+    // search box → Fuse
+    const placeSearch = document.getElementById('placeSearch');
+    placeSearch.addEventListener('input', () => {
+      const raw = placeSearch.value.trim();
+      const q   = raw.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+      const results = q ? fuse.search(q).map(r => r.item) : places;
+      renderCarousel(results);
+    });
+  };
+(function() {
+  let markers = (window.markers = []);
+  let currentPopup = null;
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
+            + `/values:batchGet?key=${CONFIG.apiKey}`
+            + CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
+
+  fetch(url)
+    .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+    .then(data => {
+      // ----- Places -----
+      const [hdrP, ...rowsP] = data.valueRanges[0].values;
+      const places = rowsP.map(r => {
+        const o = Object.fromEntries(hdrP.map((h, i) => [h, r[i] || '']));
+        const [lat, lng] = o.Coordinates.split(',').map(Number);
+        return {
+          id: o.PlaceID,
+          name: o.Name,
+          category: o.Category,
+          subcategories: (o.Subcategory || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
+          regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
+          notes: o.Notes,
+          tags: (o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),
+          visited: o.Visited.trim().toUpperCase() === 'Y',
+          latlng: [lat, lng],
+          mapsLink: o.MapsLink,
+          appleLink: o.AppleMapsLink,
+          extraLink: o.ExtraLink
+        };
+      });
+
+      // ----- Reviews -----
+      const [hdrR, ...rowsR] = data.valueRanges[1].values;
+      const reviewsBy = {};
+      rowsR.forEach(r => {
+        const o = Object.fromEntries(hdrR.map((h, i) => [h, r[i] || '']));
+        const photos = (o.PhotoURL || '').trim().split(/\s*,\s*/).filter(Boolean);
+        (reviewsBy[o.PlaceID] || []).push({
+          date: o.VisitDate,
+          rating: +o.Rating || 0,
+          text: o.Review,
+          photos
+        });
+      });
+
+      // Store globals
+      window.places = places;
+      window.reviewsBy = reviewsBy;
+
+      // Initialize map/UI
+      initMap(places, reviewsBy);
+    })
+    .catch(console.error);
+})();
+</script>
+
+
+<!-- Misc Utilities -->
+<script>
+	function postToAPI(payload) {
+	const form = document.createElement('form');
+	form.method = 'POST';
+	form.action = SHEETS_ENDPOINT;
+	form.target = 'hidden_iframe';
+	Object.entries(payload).forEach(([key, val]) => {
+		const inp = document.createElement('input');
+		inp.type  = 'hidden';
+		inp.name  = key;
+		inp.value = val;
+		form.appendChild(inp);
+	});
+	document.body.appendChild(form);
+	form.submit();
+	form.remove();
+	}
+	function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
+    function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
+</script>
+
+<!-- Add to itinerary -->
+<script>
+	function openAddModal(placeId) {
+	// Ensure both sheets are loaded once
+	if (!window.itineraries.length || !window.itineraryItems.length) {
+		ensureItinData()
+		.then(() => openAddModal(placeId))
+		.catch(err => {
+			console.error('Failed to load itinerary data:', err);
+			alert('Could not load itinerary data. Try again shortly.');
+		});
+		return;
+	}
+	
+	const sel = document.getElementById('modalItinSelect');
+	sel.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+	window.itineraries
+		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
+		.join('');
+	
+	// reset form fields
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	document.getElementById('addItinForm').style.display = 'flex';
+	document.getElementById('modalNext').style.display   = 'block';
+	document.getElementById('insertStepContainer').style.display = 'none';
+	document.getElementById('insertCarousel').innerHTML = '';
+	window.insertPositionIndex = undefined;
+	window.pendingNewItem = undefined;
+	document.getElementById('modalDay').value       = 1;
+	document.getElementById('modalDate').value      = new Date().toISOString().slice(0,10);
+	document.getElementById('modalTime').value      = '';
+	document.getElementById('modalNotes').value     = '';
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	// stash placeId on the form
+	document.getElementById('addItinForm').dataset.placeId = placeId;
+	// show the modal
+	const nextBtn = document.getElementById('modalNext');
+	nextBtn.disabled = true;
+	sel.onchange = () => { nextBtn.disabled = !sel.value; };
+	
+	// show the modal
+	document.getElementById('itinAddModal').style.display = 'block';
+	}
+</script>
+
+<!-- View itinerary -->
+<script>
+	// ── Itineraries: fetch from Sheets and render ──
+	window.addEventListener('DOMContentLoaded', () => {
+	const viewBtn  = document.getElementById('viewItineraries');
+	const selectEl = document.getElementById('itinerarySelect');
+	if (!viewBtn || !selectEl) return;
+	viewBtn.onclick = () => {
+    if (selectEl.style.display === 'block') {
+      // hide dropdown, carousel, and restore all pins
+      selectEl.style.display = 'none';
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'none';
+      nxtLbl.style.display = 'none';
+      document.getElementById('itineraryCarousel').style.display = 'none';
+      showAllMarkers();
+      viewBtn.textContent = 'View Itineraries';
+      return;
+    }
+
+    // show instantly (data already loaded at startup)
+    viewBtn.textContent    = 'Hide Itineraries';
+    selectEl.style.display = 'block';
+
+    // if for some reason arrays are empty (first load failed), load once now
+    if (!window.itineraries.length || !window.itineraryItems.length) {
+      ensureItinData().then(buildItinSelect).catch(err => {
+        console.error('Error loading itineraries:', err);
+        selectEl.innerHTML = '<option style="color:red;">Failed to load</option>';
+      });
+    } else {
+      buildItinSelect();
+    }
+   };
+ });
+
+  // helper to populate dropdown & bind onchange
+	function buildItinSelect() {
+		const selectEl = document.getElementById('itinerarySelect');
+		selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
+		window.itineraries.forEach(it => {
+		  const opt = document.createElement('option');
+		  opt.value = it.itineraryId;
+		  opt.textContent = it.name;
+		  selectEl.appendChild(opt);
+		});
+
+    selectEl.onchange = e => {
+      selectedItinId = e.target.value;
+
+      // show/init labels
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'block';
+      nxtLbl.style.display = 'block';
+      curLbl.textContent   = 'Day 1';
+      nxtLbl.textContent   = '';
+
+      renderItineraryItems();
+      filterMarkersForItinerary(selectedItinId);
+    };
+  }
+	
+	function renderItineraryItems() {
+  const carousel = document.getElementById('itineraryCarousel');
+  // clear out any old cards
+  carousel.innerHTML = '';
+
+  // grab just the items for this trip
+	const items = (window.itineraryItems || [])
+	.filter(it => it.itineraryId === selectedItinId)
+	.sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+
+  if (!items.length) {
+    // no items → hide the carousel
+    carousel.style.display = 'none';
+    return;
+  }
+
+  // otherwise build one card per stop
+  items.forEach(it => {
+    // look up the place info
+    // look up the place (may be undefined)
+    const place = (window.places || []).find(p => p.id === it.placeId);
+
+    // create the card container
+    const card = document.createElement('div');
+    card.className       = 'place-card';
+    card.dataset.day     = it.day;
+
+    if (!it.placeId || !place) {
+      // ── NOTES-ONLY card ──
+      card.innerHTML = `
+        <h4>Note:</h4>
+        <p>${it.notes || ''}</p>
+      `;
+    } else {
+   const timeText = (it.time && it.time.trim()) ? ` • ${it.time}` : '';
+   card.innerHTML = `
+       <h4>${place.name}</h4>
+       ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+       <p>🗓️ ${it.date}${timeText}</p>
+       ${place.regions.length
+         ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
+         : ''}
+     `;
+
+      // flying to the map on click
+      card.onclick = () => {
+		const m = window.markers.find(mk => mk.placeId === it.placeId);
+        if (!m) return;
+        if (currentPopup && currentPopup !== m.getPopup()) currentPopup.remove();
+        const popup = m.getPopup();
+        popup.addTo(window.map);
+        currentPopup = popup;
+        const [lng, lat] = m.getLngLat().toArray();
+        window.map.flyTo({
+          center: [lng, lat],
+          zoom:   14,
+          speed:  1.0,
+          curve:  1.6,
+          essential: true
+        });
+      };
+    }
+
+    // finally, add the card to the carousel
+    carousel.appendChild(card);
+  });
+
+	  const firstCard = carousel.querySelector('.place-card');
+	  const cardW     = firstCard
+		? firstCard.getBoundingClientRect().width + 8
+		: 168;
+	  const step = cardW;
+
+	  const dayPositions = [];
+	  items.forEach((it, idx) => {
+		if (idx === 0 || it.day !== items[idx - 1].day) {
+		  dayPositions.push({ day: it.day, offset: idx * cardW });
+		}
+	  });
+
+
+	carousel.style.display = 'flex';
+	
+	// ── BOUNDING‐RECT based day labels ──
+  const curLbl     = document.getElementById('itinDayCurrent');
+  const nxtLbl     = document.getElementById('itinDayNext');
+  const wrapperEl  = document.getElementById('itineraryCarouselWrapper');
+  const cards      = Array.from(carousel.querySelectorAll('.place-card'));
+
+  function updateDayLabels() {
+    const wrapRect = wrapperEl.getBoundingClientRect();
+
+    // 1) find the very first card that is at least partially visible
+    const firstVisible = cards.find(c => {
+      const r = c.getBoundingClientRect();
+      // r.right > wrap left means some of it is on screen
+      return r.right > wrapRect.left + 1;
+    });
+    if (!firstVisible) return;
+
+    const day = firstVisible.dataset.day;
+    curLbl.textContent = `Day ${day}`;
+    // position curLbl over that card
+    const cr = firstVisible.getBoundingClientRect();
+    const relX = cr.left - wrapRect.left;
+    curLbl.style.left = `${relX > 0 ? relX : 0}px`;
+    curLbl.style.display = 'block';
+
+    // 2) peek the next day if its first card exists
+    const nextDay = String(Number(day) + 1);
+    const nextCard = cards.find(c => c.dataset.day === nextDay);
+    if (nextCard) {
+      const nr = nextCard.getBoundingClientRect();
+      const relNextX = nr.left - wrapRect.left;
+      // only show if its card is entering the wrapper
+      if (relNextX < wrapRect.width) {
+        nxtLbl.textContent   = `Day ${nextDay}`;
+        nxtLbl.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
+        nxtLbl.style.display = 'block';
+      } else {
+        nxtLbl.style.display = 'none';
+      }
+    } else {
+      nxtLbl.style.display = 'none';
+    }
+  }
+
+  // bind & fire
+  carousel.addEventListener('scroll', updateDayLabels);
+  updateDayLabels();
+
+}
+	function filterMarkersForItinerary(itinId) {
+	  window.markers.forEach(mk => {
+		const keep = window.itineraryItems.some(
+		  it => it.itineraryId === itinId && it.placeId === mk.placeId
+		);
+		mk.getElement().style.display = keep ? '' : 'none';
+	  });
+	}
+
+	/** Show all markers again */
+	function showAllMarkers() {
+	  window.markers.forEach(mk => {
+		mk.getElement().style.display = '';
+	  });
+	}
+</script>
+
+<!-- View itinerary -->
+<script>
+// ENSURE "CREATE NEW ITINERARY" MODAL HANDLERS ARE WIRED AFTER DOM IS LOADED
+window.addEventListener('DOMContentLoaded', function() {
+  const createItinBtn = document.getElementById('createItinerary');
+  const createItinModal = document.getElementById('createItinModal');
+  const createItinForm = document.getElementById('createItinForm');
+  const cancelCreateItin = document.getElementById('cancelCreateItin');
+  const itinTitleInput = document.getElementById('itinTitle');
+
+   createItinBtn.onclick = () => {
+     itinTitleInput.value = '';
+     createItinModal.style.display = 'block';
+     itinTitleInput.focus();
+   };
+    cancelCreateItin.onclick = () => {
+      createItinModal.style.display = 'none';
+      itinTitleInput.value = '';
+    };
+
+ 	createItinForm.onsubmit = (e) => {
+ 		e.preventDefault();
+ 		const title = itinTitleInput.value.trim();
+ 		if (!title) {
+ 			itinTitleInput.focus();
+ 			return;
+ 		}
+ 		// Compute a new unique itineraryId: find max existing + 1 (fallback to 1 if none)
+ 		let newId = 1;
+ 		if (window.itineraries && window.itineraries.length > 0) {
+ 			const ids = window.itineraries.map(it => Number(it.itineraryId)).filter(n => !isNaN(n));
+ 			newId = Math.max(...ids, 0) + 1;
+ 		}
+ 		const nowDate = new Date().toISOString().slice(0, 10);
+ 		const newItin = {
+ 			itineraryId: String(newId),
+ 			name: title,
+ 			createdDate: nowDate
+ 		};
+ 		// Optimistically update frontend
+ 		window.itineraries.push(newItin);
+ 		// Post to backend sheet
+ 		postToAPI({
+ 			secret: API_SECRET,
+ 			action: 'addItinerary',
+ 			itineraryId: newItin.itineraryId,
+ 			name: newItin.name,
+ 			createdDate: newItin.createdDate
+ 		});
+ 		createItinModal.style.display = 'none';
+ 		itinTitleInput.value = '';
+ 		// Optionally, update UI dropdowns/etc here if desired
+ 	};
+});
+
+ window.addEventListener('DOMContentLoaded', function() {
+   const modifyBtn = document.getElementById('modifyItineraries');
+   const modifyModal = document.getElementById('modifyItinModal');
+   const modifySelect = document.getElementById('modifyItinSelect');
+   const modifyCarousel = document.getElementById('modifyItinCarousel');
+   const cancelModify = document.getElementById('cancelModifyItin');
+
+   modifyBtn.onclick = () => {
+     // populate dropdown
+     modifySelect.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+       window.itineraries.map(it => `<option value="${it.itineraryId}">${it.name}</option>`).join('');
+     modifyCarousel.innerHTML = '';
+     modifyModal.style.display = 'block';
+   };
+
+   cancelModify.onclick = () => {
+     modifyModal.style.display = 'none';
+     modifySelect.value = '';
+     modifyCarousel.innerHTML = '';
+     document.getElementById('modifyDayLabel').style.display = 'none';
+     document.getElementById('modifyDayNextLabel').style.display = 'none';
+   };
+
+   modifySelect.onchange = () => {
+     const id = modifySelect.value;
+     // Filter items for that itinerary
+     const items = window.itineraryItems
+       .filter(it => it.itineraryId === id)
+       .sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+     // Build carousel
+     modifyCarousel.innerHTML = '';
+     items.forEach(it => {
+       const place = (window.places || []).find(p => p.id === it.placeId);
+       const card = document.createElement('div');
+       card.className = 'place-card';
+	   card.dataset.day = it.day;
+       card.innerHTML = `
+         <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1.1em;color:#B12F2F;" class="remove-item" title="Remove">&times;</span>
+         <h4>${place ? place.name : 'Note'}</h4>
+         ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+         <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
+         ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+       `;
+       // Remove X click handler: UI only for now
+       card.querySelector('.remove-item').onclick = e => {
+         e.stopPropagation();
+         card.style.opacity = 0.4;  // UI feedback, not backend yet
+         // TODO: Remove from backend when implemented
+       };
+       modifyCarousel.appendChild(card);
+     });
+     // Day label logic: current & next
+     const label = document.getElementById('modifyDayLabel');
+     const nextLabel = document.getElementById('modifyDayNextLabel');
+     const cards = modifyCarousel.querySelectorAll('.place-card');
+     function updateDayLabels() {
+       const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+       // 1) Find the very first card that is at least partially visible
+       const firstVisible = Array.from(cards).find(c => {
+         const r = c.getBoundingClientRect();
+         return r.right > wrapRect.left + 1;
+       });
+       if (!firstVisible) {
+         label.style.display = 'none';
+         nextLabel.style.display = 'none';
+         return;
+       }
+       const day = firstVisible.dataset.day;
+       label.textContent = `Day ${day}`;
+       // position cur label over that card
+       const cr = firstVisible.getBoundingClientRect();
+       const relX = cr.left - wrapRect.left;
+       label.style.left = `${relX > 0 ? relX : 0}px`;
+       label.style.display = 'block';
+       // 2) Show faded label for next day, if its card is visible
+       const nextDay = String(Number(day) + 1);
+       const nextCard = Array.from(cards).find(c => c.dataset.day === nextDay);
+       if (nextCard) {
+         const nr = nextCard.getBoundingClientRect();
+         const relNextX = nr.left - wrapRect.left;
+         if (relNextX < wrapRect.width) {
+           nextLabel.textContent   = `Day ${nextDay}`;
+           nextLabel.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
+           nextLabel.style.display = 'block';
+         } else {
+           nextLabel.style.display = 'none';
+         }
+       } else {
+         nextLabel.style.display = 'none';
+       }
+     }
+     modifyCarousel.addEventListener('scroll', updateDayLabels);
+     updateDayLabels();
+   };
+ });
+</script>
+
+<!-- Add itinerary -->
+<script>
+	function renderInsertCarousel(day) {
+	  const c = document.getElementById('insertCarousel');
+	  const dl = document.getElementById('insertDayLabel');
+	  if (dl) dl.textContent = `Day ${day}`;
+	  c.innerHTML = '';
+	  // 1) gather & sort cards for that day
+	  const cards = window.itineraryItems
+		.filter(it => it.itineraryId===window.pendingNewItem.itineraryId && it.day===day)
+		.sort((a,b)=>a.sortOrder - b.sortOrder);
+
+	  // helper to create a place‐card (reuse your render logic or simplify)
+	  const makeCard = it => {
+		const place = window.places.find(p=>p.id===it.placeId) || {};
+		return `<div class="place-card" style="opacity:0.7;">
+		  <h4>${place.name||'Note'}</h4>
+		  <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
+		</div>`;
+	  };
+
+	  // Insert hotspot at position 1…n+1
+	  cards.forEach((it, i) => {
+		// hotspot before this card (index = i+1)
+		c.insertAdjacentHTML('beforeend',
+		  `<div class="insert-hotspot" data-index="${i+1}"
+			 style="flex:0 0 200px; display:flex;align-items:center;
+					justify-content:center;cursor:pointer;opacity:0.5;">
+			 +  
+		   </div>`
+		);
+		c.insertAdjacentHTML('beforeend', makeCard(it));
+	  });
+	  // final hotspot at end: index = cards.length+1
+	  c.insertAdjacentHTML('beforeend',
+		`<div class="insert-hotspot" data-index="${cards.length+1}"
+		   style="flex:0 0 200px; display:flex;align-items:center;
+				  justify-content:center;cursor:pointer;opacity:0.5;">
+		   +  
+		 </div>`
+	  );
+
+	  // wire up selection
+		const confirmBtn = document.getElementById('insertConfirm');
+		c.querySelectorAll('.insert-hotspot').forEach(el => {
+			el.onclick = () => {
+			// clear previous highlight
+			c.querySelectorAll('.insert-hotspot').forEach(h => h.classList.remove('selected'));
+			el.classList.add('selected');
+			window.insertPositionIndex = Number(el.dataset.index);
+			// now it's valid to add
+			confirmBtn.disabled = false;
+			};
+		});
+	}
+window.addEventListener('DOMContentLoaded', () => {
+  const modalCancel         = document.getElementById('modalCancel');
+  const addItinForm         = document.getElementById('addItinForm');
+  const insertBack          = document.getElementById('insertBack');
+  const insertConfirm       = document.getElementById('insertConfirm');
+  const insertStepContainer = document.getElementById('insertStepContainer');
+
+  // Bail out if any required elements aren’t present yet
+  if (!modalCancel || !addItinForm || !insertBack || !insertConfirm || !insertStepContainer) return;
+
+  // Cancel → hide modal
+  modalCancel.onclick = () => {
+    document.getElementById('itinAddModal').style.display = 'none';
+  };
+
+  // Step 1: Next → stash data, show insertion carousel
+  addItinForm.onsubmit = ev => {
+    ev.preventDefault();
+
+    const itinVal = document.getElementById('modalItinSelect').value;
+    if (!itinVal) return;
+
+    window.pendingNewItem = {
+      itineraryId: itinVal,
+      placeId:     addItinForm.dataset.placeId,
+      day:         Number(document.getElementById('modalDay').value),
+      date:        document.getElementById('modalDate').value,
+      time:        document.getElementById('modalTime').value,
+      notes:       document.getElementById('modalNotes').value
+    };
+
+    addItinForm.style.display = 'none';
+    document.getElementById('modalNext').style.display = 'none';
+    insertStepContainer.style.display = 'flex';          // ← uses the bound element
+    document.getElementById('insertConfirm').disabled = true;
+
+    renderInsertCarousel(window.pendingNewItem.day);
+  };
+
+  // Step 2: Back → return to metadata
+  insertBack.onclick = () => {
+    insertStepContainer.style.display = 'none';
+    addItinForm.style.display         = 'flex';
+    document.getElementById('modalNext').style.display = 'block';
+    document.getElementById('insertCarousel').innerHTML = '';
+    window.insertPositionIndex = undefined;
+    document.getElementById('insertConfirm').disabled = true;
+  };
+
+  // Step 2: Confirm → insert & persist
+  insertConfirm.onclick = () => {
+    const { itineraryId, placeId, day, date, time, notes } = window.pendingNewItem || {};
+    const idx = window.insertPositionIndex;
+
+    if (!itineraryId || !day || !idx) return; // guard
+
+    // Shift existing items at or after idx
+    const dayItems = (window.itineraryItems || []).filter(it => it.itineraryId === itineraryId && it.day === day);
+    dayItems.sort((a,b) => b.sortOrder - a.sortOrder).forEach(it => {
+      it.sortOrder++;
+      postToAPI({
+        secret:      API_SECRET,
+        action:      'updateItem',
+        itineraryId: it.itineraryId,
+        placeId:     it.placeId,
+        day:         it.day,
+        date:        it.date,
+        time:        it.time,
+        notes:       it.notes,
+        sortOrder:   it.sortOrder
+      });
+    });
+
+    // Add the new item at idx
+    const newItem = { itineraryId, placeId, day, date, time, notes, sortOrder: idx };
+    window.itineraryItems.push(newItem);
+    postToAPI({
+      secret:      API_SECRET,
+      action:      'addItem',
+      itineraryId: newItem.itineraryId,
+      placeId:     newItem.placeId,
+      day:         newItem.day,
+      date:        newItem.date,
+      time:        newItem.time,
+      notes:       newItem.notes,
+      sortOrder:   newItem.sortOrder
+    });
+
+    // Close modal and refresh UI
+    document.getElementById('itinAddModal').style.display = 'none';
+    renderItineraryItems();
+
+    // Optional: pull fresh data from Sheets in the background
+    refreshItinData().catch(err => console.error('Refresh after add failed:', err));
+  };
+});
+</script>
+
+
+<!-- Markers + Carousel -->
+<script>
+  // Exported so map and filters can call them
+  window.renderCarousel = function renderCarousel(v){
+    const c = document.getElementById('placeCarousel');
+    c.innerHTML = '';
+    v.forEach(p => {
+      c.insertAdjacentHTML('beforeend',
+        `<div class="place-card">
+            <h4>${p.name}</h4>
+            ${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
+            <p><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em></p>
+        ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
+            </div>`
+      );
+      const cardEl = c.lastElementChild;
+      cardEl.onclick = () => {
+        const m = window.markers.find(mk => {
+          const [lng, lat] = mk.getLngLat().toArray();
+          return lat === p.latlng[0] && lng === p.latlng[1];
+        });
+        if (m) {
+          if (window.currentPopup) window.currentPopup.remove();
+          const popup = m.getPopup();
+          popup.addTo(window.map);
+          window.currentPopup = popup;
+          window.map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, speed: 1.0, curve: 1.6, essential: true });
+        }
+      };
+    });
+  };
+
+  window.drawMarkers = function drawMarkers(){
+    window.markers.forEach(m => m.remove()); window.markers = [];
+    const visible = [];
+    places.forEach(p=>{
+      if(!selVis.has(p.visited?'Been there':'Not yet')) return;
+      if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return;
+      if (p.regions && !p.regions.some(r => selReg.has(r))) return;
+      visible.push(p);
+      let popup = `<strong>${p.name}</strong>`
+        + `${p.notes ? `<br>🗒️ ${p.notes}` : ''}`
+        + `<br><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em>`
+        + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;
+      const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
+      if(revs.length){
+        popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">';
+        revs.forEach(r=>{
+          popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
+          r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`);
+          popup+='</div>';
+        });
+        popup+='</div></details>';
+      }
+      if(p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+      if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+      if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
+      popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add to itinerary</button>`;
+
+      const strokeColor=p.visited?'#DAA520':'#555';
+      const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
+      const el = document.createElement('div');
+      el.innerHTML = svgIcon;
+      el.className = 'place-marker';
+
+      const pop = new maplibregl.Popup({
+        offset: 25,
+        closeOnClick: false,
+        focusAfterOpen: false
+      }).setHTML(popup);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([ p.latlng[1], p.latlng[0] ])
+        .setPopup(pop)
+        .addTo(window.map);
+
+      // delegate “+ Add to itinerary”
+      document.body.addEventListener('click', e => {
+        const btn = e.target.closest('.add-to-itin');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openAddModal(btn.dataset.placeId);
+      });
+
+      marker.placeId = p.id;
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const currentZoom = window.map.getZoom();
+        const targetZoom  = 12;
+		
+        window.map.flyTo({
+          center: [ p.latlng[1], p.latlng[0] ],
+          zoom: Math.max(currentZoom, targetZoom),
+          speed: 1.0, curve: 1.6, essential: true
+        });
+        if (window.currentPopup && window.currentPopup !== marker.getPopup()) {
+          window.currentPopup.remove();
+        }
+        const popup = marker.getPopup();
+        popup.addTo(window.map);
+        window.currentPopup = popup;
+      });
+
+      window.markers.push(marker);
+    });
+
+    renderCarousel(visible);
+  };
+</script>
+
+<!-- Filters Logic -->
+<script>
+  window.setupFilters = function(categories,regions,catMap){
+    const fd=document.getElementById('filters');
+    const wrapper=document.getElementById('panelContainer');
+
+    document.getElementById('toggleFilters').onclick = () => {
+      const ex = fd.classList.toggle('expanded');
+      document.body.classList.toggle('menu-open', ex);
+      document.getElementById('toggleFilters').textContent = ex ? 'Close Menu' : 'Menu';
+      document.getElementById('placeSearch').style.display   = ex ? 'block' : 'none';
+      document.getElementById('toggleSubcats').style.display = ex ? 'block' : 'none';
+      document.getElementById('itineraryMode').style.display = ex ? 'block' : 'none';
+    };
+
+    document.getElementById('itineraryMode').onclick = () => {
+      // flip flag
+      const fd     = document.getElementById('filters');
+      const inItin = fd.classList.toggle('itineraryActive');
+
+      const searchEl   = document.getElementById('placeSearch');
+      const deselectEl = document.getElementById('toggleSubcats');
+      if (inItin) {
+        searchEl.style.display   = 'none';
+        deselectEl.style.display = 'none';
+
+        // reset filters
+        selSub.clear();
+        places.forEach(p => p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`)));
+        selReg.clear(); regions.forEach(r => selReg.add(r));
+        selVis.clear(); selVis.add('Been there'); selVis.add('Not yet');
+
+        document.querySelectorAll('#panelContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
+        allOn = true;
+        document.getElementById('toggleSubcats').textContent = 'Deselect All';
+
+        document.getElementById('placeSearch').value = '';
+        renderCarousel(places);
+        drawMarkers();
+      } else {
+        const expanded = fd.classList.contains('expanded');
+        searchEl.style.display   = expanded ? 'block' : 'none';
+        deselectEl.style.display = expanded ? 'block' : 'none';
+      }
+
+      document.getElementById('panelContainer').style.display   = inItin ? 'none'  : 'block';
+      document.getElementById('placeCarousel').style.display    = inItin ? 'none'  : 'flex';
+      document.getElementById('itineraryContainer').style.display = inItin ? 'block' : 'none';
+
+      const btn = document.getElementById('itineraryMode');
+      btn.textContent = inItin ? 'Exit Itinerary Mode' : 'Enter Itinerary Mode';
+
+      if (!inItin) {
+        showAllMarkers();
+        const selectEl = document.getElementById('itinerarySelect');
+        selectEl.style.display = 'none';
+        selectEl.selectedIndex  = 0;
+        document.getElementById('itineraryCarousel').style.display = 'none';
+        const viewBtn = document.getElementById('viewItineraries');
+        viewBtn.textContent = 'View Itineraries';
+        document.getElementById('itinDayCurrent').style.display = 'none';
+        document.getElementById('itinDayNext').style.display    = 'none';
+      }
+    };
+
+    function makeCB(val,setRef,label){
+      const lbl=document.createElement('label');
+      const cb=document.createElement('input');
+      cb.type='checkbox'; cb.value=val; cb.checked=true;
+      cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+      cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); };
+      lbl.append(cb,' ',label); return lbl;
+    }
+
+    function addPanel(title,items,isRegion=false,masterOnly=false){
+      const p=document.createElement('div'); p.className='panel';
+      const h=document.createElement('div'); h.className='panel-header';
+      if(!masterOnly){
+        const m=document.createElement('input'); m.type='checkbox'; m.checked=true;
+        m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+        m.onclick=e=>e.stopPropagation();
+        m.onchange=()=>{
+          p.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+            if(cb!==m){
+              cb.checked=m.checked; const k=cb.value;
+              isRegion? (m.checked?selReg.add(k):selReg.delete(k))
+                      : (m.checked?selSub.add(k):selSub.delete(k));
+            }
+          });
+          drawMarkers();
+        };
+        h.append(m);
+      }
+      h.append(document.createTextNode(title));
+      if(!isRegion&&title!=='Visited?'){
+        const sw=document.createElement('div'); sw.className='color-swatch';
+        sw.style.background=categoryColors[title]; h.append(sw);
+      }
+      const arr=document.createElement('span'); arr.className='arrow'; h.append(arr);
+      const b=document.createElement('div'); b.className='panel-body';
+      if (title === 'Visited?') {
+        items.forEach(it => b.append(makeCB(it,selVis,it)));
+      } else {
+        items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));
+      }
+      h.onclick = () => {
+        const o = b.classList.toggle('active');
+        arr.classList.toggle('expanded', o);
+      };
+      p.append(h,b); wrapper.append(p);
+    }
+
+    if(regions.size) addPanel('Region',[...regions].sort(),true);
+    addPanel('Visited?',['Been there','Not yet'],false,true);
+    if(categories.includes('Food'))          addPanel('Food',[...catMap['Food']].sort(),false);
+    if(categories.includes('Sweet Treats'))  addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
+    categories
+      .filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous')
+      .sort()
+      .forEach(c=>addPanel(c,[...catMap[c]].sort()));
+    if (categories.includes('Miscellaneous')) {
+      addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
+    }
+  };
+</script>
+
+
   <div class="filters" id="filters">
     <button id="toggleFilters">Menu</button>	
 	<!-- Itinerary Mode button moved up, right under Menu -->
@@ -730,949 +1824,6 @@
 		</div>
 		</div>
 	</div>
-  <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-  <script>
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwfm2r0Iw8DWY407GEaSedc2pFMOFE4du47URkGb7nWQ54ED-ut7PJQQHgrgO5Aj0Wm/exec';  // ← replace with your Web App URL
-	const API_SECRET      = 'Fart';
-	function postToAPI(payload) {
-	const form = document.createElement('form');
-	form.method = 'POST';
-	form.action = SHEETS_ENDPOINT;
-	form.target = 'hidden_iframe';
-	Object.entries(payload).forEach(([key, val]) => {
-		const inp = document.createElement('input');
-		inp.type  = 'hidden';
-		inp.name  = key;
-		inp.value = val;
-		form.appendChild(inp);
-	});
-	document.body.appendChild(form);
-	form.submit();
-	form.remove();
-	}
-	function openAddModal(placeId) {
-	// Ensure both sheets are loaded once
-	if (!window.itineraries.length || !window.itineraryItems.length) {
-		ensureItinData()
-		.then(() => openAddModal(placeId))
-		.catch(err => {
-			console.error('Failed to load itinerary data:', err);
-			alert('Could not load itinerary data. Try again shortly.');
-		});
-		return;
-	}
-	
-	const sel = document.getElementById('modalItinSelect');
-	sel.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
-	window.itineraries
-		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
-		.join('');
-	
-	// reset form fields
-	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
-	document.getElementById('addItinForm').style.display = 'flex';
-	document.getElementById('modalNext').style.display   = 'block';
-	document.getElementById('insertStepContainer').style.display = 'none';
-	document.getElementById('insertCarousel').innerHTML = '';
-	window.insertPositionIndex = undefined;
-	window.pendingNewItem = undefined;
-	document.getElementById('modalDay').value       = 1;
-	document.getElementById('modalDate').value      = new Date().toISOString().slice(0,10);
-	document.getElementById('modalTime').value      = '';
-	document.getElementById('modalNotes').value     = '';
-	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
-	document.getElementById('addItinForm').style.display = 'flex';
-	document.getElementById('modalNext').style.display   = 'block';
-	document.getElementById('insertStepContainer').style.display = 'none';
-	document.getElementById('insertCarousel').innerHTML = '';
-	window.insertPositionIndex = undefined;
-	window.pendingNewItem = undefined;
-	// stash placeId on the form
-	document.getElementById('addItinForm').dataset.placeId = placeId;
-	// show the modal
-	const nextBtn = document.getElementById('modalNext');
-	nextBtn.disabled = true;
-	sel.onchange = () => { nextBtn.disabled = !sel.value; };
-	
-	// show the modal
-	document.getElementById('itinAddModal').style.display = 'block';
-	}
-
-    (function(){
-	let markers = [];
-	let currentPopup = null;
-      function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
-      function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
-
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
-                + `/values:batchGet?key=${CONFIG.apiKey}`
-                + CONFIG.ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
-
-      fetch(url)
-        .then(r=>r.ok?r.json():Promise.reject(r.statusText))
-        .then(data=>{
-          const [hdrP,...rowsP] = data.valueRanges[0].values;
-          const places = rowsP.map(r=>{ 
-		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
-	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
-		  return { 
-			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });
-          const [hdrR,...rowsR] = data.valueRanges[1].values;
-          const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
-          window.places = places;
-		  initMap(places,reviewsBy);
-        }).catch(console.error);
-
-      function initMap(places,reviewsBy){
-	const fuse = new Fuse(places, {
-		   getFn: (obj, path) => {
-		     const value = obj[path];
-		     if (typeof value === 'string') {
-		       return value.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
-		     }
-		     if (Array.isArray(value)) {
-		       return value.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
-		     }
-		     return value;
-		   },
-		  keys: ['name','notes','tags'],
-		  threshold: 0.15, 
-		  distance: 20,
-		  ignoreLocation: true,
-		  tokenize: true,
-		  tokenSeparator: /[\s\-\/\.,;:!?\"'“”‘’]+/,
-		  minMatchCharLength: 3, 
-		  includeScore: true
-		});
-	const map = new maplibregl.Map({
-	  container: 'map',
-	  style: {
-	    version: 8,
-	    sources: {
-	      'raster-tiles': {
-	        type: 'raster',
-	        tiles: [ 
-			'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-			'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-			'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
-			],
-	        tileSize: 256,
-	        attribution: CONFIG.attribution
-	      }
-	    },
-	    layers: [{
-	      id: 'osm-tiles',
-	      type: 'raster',
-	      source: 'raster-tiles'
-	    }]
-	  },
-	  center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
-	  zoom: CONFIG.mapZoom,
-	  dragRotate:      false,
-	  touchZoomRotate: true,
-	  pitchWithRotate: false
-	});
-	window.map = map;
-	map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-	map.on('load', () => map.resize());
-	      map.touchPitch.disable();
-	      map.setMaxPitch(0);
-	currentPopup = null;
-	if (navigator.geolocation) {
-	  navigator.geolocation.getCurrentPosition(pos => {
-	    const { latitude, longitude } = pos.coords;
-	    const urls = CONFIG.userIconUrls;
-	    const chosenUrl = urls[Math.floor(Math.random() * urls.length)];
-	    const img = new Image();
-	    img.src = chosenUrl;
-	
-	    img.onload = () => {
-	      const maxWidth = 32;
-	      const ratio    = img.height / img.width;
-	      const w        = maxWidth;
-	      const h        = Math.round(maxWidth * ratio);
-	
-	      const el = document.createElement('img');
-	      el.src = chosenUrl;
-	      el.style.width  = `${w}px`;
-	      el.style.height = `${h}px`;
-	
-		const popup = new maplibregl.Popup({
-		offset: { bottom: [0, -h] },
-		focusAfterOpen: false
-		}).setText('You are here.');
-		const userMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-		.setLngLat([longitude, latitude])
-		.setPopup(popup)
-		.addTo(map);
-		popup.on('open', () => {
-		if (currentPopup && currentPopup !== popup) {
-		currentPopup.remove();
-		}
-		currentPopup = popup;
-			});
-		popup.addTo(map);
-		currentPopup = popup;
-	
-	   map.flyTo({
-	     center: [longitude, latitude],
-	     zoom:   map.getZoom() + 1,
-	     essential: true,
-	   });
-	 };
-	  }, err => {
-	    console.warn('Geolocation failed:', err.message);
-	  });
-	}
-
-        const catMap={},regSet=new Set(); 
-		places.forEach(p => {
-		const set = catMap[p.category] || (catMap[p.category] = new Set());
-		p.subcategories.forEach(sc => set.add(sc));
-		if (p.regions) p.regions.forEach(r => regSet.add(r));
-		});
-        const selSub = new Set();
-		places.forEach(p => {
-		p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`));
-		});
-	const selReg=new Set(regSet); const selVis=new Set(['Been there','Not yet']);
-        const basePool=CONFIG.baseColors.slice(); shuffle(basePool);
-        const categoryColors={}; Object.keys(catMap).forEach(cat=>{ categoryColors[cat]=basePool.length?basePool.pop():randomColor(); });
-        setupFilters(Object.keys(catMap),regSet,catMap);
-        drawMarkers();
-	 let allOn = true;
-		const toggleSubcats = document.getElementById('toggleSubcats');
-		toggleSubcats.onclick = () => {
-		  allOn = !allOn;
-		  document.querySelectorAll('#panelContainer .panel').forEach(panel => {
-		    const hdr = panel.querySelector('.panel-header');
-		    const title = hdr.textContent.trim();
-		    if (title !== 'Region' && title !== 'Visited?') {
-		      const master = hdr.querySelector('input[type="checkbox"]');
-		      master.checked = allOn;
-		      master.dispatchEvent(new Event('change'));
-		    }
-		  });
-		  toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
-		};
-        const placeSearch = document.getElementById('placeSearch');
-        placeSearch.addEventListener('input', () => {
-		  const raw = placeSearch.value.trim();
-		  const q   = raw.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
-		  const results = q
-		    ? fuse.search(q).map(r => r.item)
-		    : places;
-		  renderCarousel(results);
-		});
-        function setupFilters(categories,regions,catMap){
-          const fd=document.getElementById('filters');
-          const wrapper=document.getElementById('panelContainer');
-	 document.getElementById('toggleFilters').onclick = () => {
-	  const ex = fd.classList.toggle('expanded');
-	  document.body.classList.toggle('menu-open', ex);
-	  document.getElementById('toggleFilters').textContent =
-	    ex ? 'Close Menu' : 'Menu';
-	  document.getElementById('placeSearch').style.display =
-	    ex ? 'block' : 'none';
-	  document.getElementById('toggleSubcats').style.display =
-	    ex ? 'block' : 'none';
-	  document.getElementById('itineraryMode').style.display =
-	    ex ? 'block' : 'none';
-	};
-	
-	document.getElementById('itineraryMode').onclick = () => {
-	// flip the itinerary‐mode flag
-	const fd     = document.getElementById('filters');
-	const inItin = fd.classList.toggle('itineraryActive');
-	
-	// also hide/show search + deselect buttons here
-	const searchEl   = document.getElementById('placeSearch');
-	const deselectEl = document.getElementById('toggleSubcats');
-	if (inItin) {
-		searchEl.style.display   = 'none';
-		deselectEl.style.display = 'none';
-		// ── RESET FILTERS when entering itinerary mode ──
-		// 1) Clear & repopulate the filter sets
-		selSub.clear();
-		places.forEach(p => p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`)));
-		selReg.clear(); regSet.forEach(r => selReg.add(r));
-		selVis.clear(); selVis.add('Been there'); selVis.add('Not yet');
-	
-		// 2) Re-check all filter checkboxes in the UI
-		document.querySelectorAll('#panelContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
-	
-		// 3) Reset the “Deselect All” toggle state/text
-		allOn = true;
-		document.getElementById('toggleSubcats').textContent = 'Deselect All';
-	
-		// 4) Clear search box & restore full carousel
-		document.getElementById('placeSearch').value = '';
-		renderCarousel(places);
-	
-		// 5) Redraw markers with everything on
-		drawMarkers();
-	} else {
-		// restore based on menu expansion state
-		const expanded = fd.classList.contains('expanded');
-		searchEl.style.display   = expanded ? 'block' : 'none';
-		deselectEl.style.display = expanded ? 'block' : 'none';
-	}
-
-	  // show/hide the main panel vs itinerary panel
-	  document.getElementById('panelContainer').style.display =
-		inItin ? 'none' : 'block';
-	  document.getElementById('placeCarousel').style.display =
-		inItin ? 'none' : 'flex';
-	  document.getElementById('itineraryContainer').style.display =
-		inItin ? 'block' : 'none';
-
-	  // update the button label
-	  const btn = document.getElementById('itineraryMode');
-	  btn.textContent = inItin
-		? 'Exit Itinerary Mode'
-		: 'Enter Itinerary Mode';
-
-	  // ── When exiting itinerary mode, reset everything ──
-	  if (!inItin) {
-		// 1) restore all map markers
-		showAllMarkers();
-
-		// 2) hide & clear the itinerary dropdown
-		const selectEl = document.getElementById('itinerarySelect');
-		selectEl.style.display = 'none';
-		selectEl.selectedIndex  = 0;  // back to the placeholder option
-
-		// 3) hide the itinerary carousel
-		document.getElementById('itineraryCarousel').style.display = 'none';
-		const viewBtn = document.getElementById('viewItineraries');
-		viewBtn.textContent = 'View Itineraries';
-		
-		// 4) hide both Day‐labels
-		document.getElementById('itinDayCurrent').style.display = 'none';
-		document.getElementById('itinDayNext').style.display    = 'none';
-	  }
-	};
-          function makeCB(val,setRef,label){ const lbl=document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.value=val; cb.checked=true; cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); }; lbl.append(cb,' ',label); return lbl; }
-          function addPanel(title,items,isRegion=false,masterOnly=false){ const p=document.createElement('div'); p.className='panel'; const h=document.createElement('div'); h.className='panel-header'; if(!masterOnly){ const m=document.createElement('input'); m.type='checkbox'; m.checked=true; m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)]; m.onclick=e=>e.stopPropagation(); m.onchange=()=>{ p.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(cb!==m){ cb.checked=m.checked; const k=cb.value; isRegion? (m.checked?selReg.add(k):selReg.delete(k)):(m.checked?selSub.add(k):selSub.delete(k)); }}); drawMarkers(); }; h.append(m); } h.append(document.createTextNode(title)); if(!isRegion&&title!=='Visited?'){ const sw=document.createElement('div'); sw.className='color-swatch'; sw.style.background=categoryColors[title]; h.append(sw); } const arr=document.createElement('span'); arr.className='arrow'; h.append(arr); const b=document.createElement('div'); b.className='panel-body'; 
-		if (title === 'Visited?') {
-			items.forEach(it => b.append(makeCB(it,selVis,it)));
-				} else {
-				items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));}
-		h.onclick = () => {
-		  const o = b.classList.toggle('active');
-		  arr.classList.toggle('expanded', o);
-		};
-	p.append(h,b); wrapper.append(p); }
-          if(regions.size) addPanel('Region',[...regions].sort(),true);
-          addPanel('Visited?',['Been there','Not yet'],false,true);
-          if(categories.includes('Food')) addPanel('Food',[...catMap['Food']].sort(),false);
-          if(categories.includes('Sweet Treats')) addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
-          categories.filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous').sort().forEach(c=>addPanel(c,[...catMap[c]].sort()));
-	  if (categories.includes('Miscellaneous')) {
-  		addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
-		}
-        }
-function renderCarousel(v){
-  const c = document.getElementById('placeCarousel');
-  c.innerHTML = '';
-  v.forEach(p => {
-    c.insertAdjacentHTML('beforeend',
-      `<div class="place-card">
-          <h4>${p.name}</h4>
-		${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
-          <p><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em></p>
-	  ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
-          </div>`
-    );
-  const cardEl = c.lastElementChild;
-	  cardEl.onclick = () => {
-	  const m = markers.find(mk => {
-		const [lng, lat] = mk.getLngLat().toArray();
-		return lat === p.latlng[0] && lng === p.latlng[1];
-	  });
-	  if (m) {
-	if (currentPopup) currentPopup.remove();
-	const popup = m.getPopup();
-	popup.addTo(map);
-	currentPopup = popup;
-		map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, speed: 1.0, curve: 1.6, essential: true });
-	  }
-	};
-  });
-}        
-function drawMarkers(){ markers.forEach(m => m.remove()); markers = []; const visible = []; places.forEach(p=>{ if(!selVis.has(p.visited?'Been there':'Not yet')) return; if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return; if (p.regions && !p.regions.some(r => selReg.has(r))) return; visible.push(p); let popup = `<strong>${p.name}</strong>` + `${p.notes ? `<br>🗒️ ${p.notes}` : ''}` + `<br><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em>` + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)); if(revs.length){ popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">'; revs.forEach(r=>{ popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`; r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`); popup+='</div>'; }); popup+='</div></details>'; } 
-	if(p.mapsLink) popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`; 
-	if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`; 
-	if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
-popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add to itinerary</button>`;
-const strokeColor=p.visited?'#DAA520':'#555'; 
-const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
-const el = document.createElement('div');
-el.innerHTML = svgIcon;
-el.className = 'place-marker';
-
-	const pop = new maplibregl.Popup({
-		offset: 25,
-		closeOnClick: false,
-		focusAfterOpen: false
-	}).setHTML(popup);
-	
-	const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-	.setLngLat([ p.latlng[1], p.latlng[0] ])
-	.setPopup(pop)
-	.addTo(map);
-	
-	// ── When the popup opens, wire up the “+ Add” button ──
-  document.body.addEventListener('click', e => {
-    const btn = e.target.closest('.add-to-itin');
-    if (!btn) return;
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('➕ Add to itinerary clicked:', btn.dataset.placeId);
-    openAddModal(btn.dataset.placeId);
-  });
-
-	  marker.placeId = p.id;
-	el.addEventListener('click', e => {
-	  e.stopPropagation();
-	  const currentZoom = map.getZoom();
-	  const targetZoom  = 12;
-	  map.flyTo({
-	    center: [ p.latlng[1], p.latlng[0] ],
-	    zoom: currentZoom < targetZoom ? targetZoom : currentZoom,
-		speed: 1.0, 
-		curve: 1.6, 
-	    essential: true
-	  });
-	  if (currentPopup && currentPopup !== marker.getPopup()) {
-		currentPopup.remove();
-		}
-		const popup = marker.getPopup();
-		popup.addTo(map);
-		currentPopup = popup;
-	});
-	markers.push(marker);
-	 });
-renderCarousel(visible); }
-      }
-	// ── Itineraries: fetch from Sheets and render ──
-	  const viewBtn = document.getElementById('viewItineraries');
-	  const selectEl = document.getElementById('itinerarySelect');
-  viewBtn.onclick = () => {
-    if (selectEl.style.display === 'block') {
-      // hide dropdown, carousel, and restore all pins
-      selectEl.style.display = 'none';
-      const curLbl = document.getElementById('itinDayCurrent');
-      const nxtLbl = document.getElementById('itinDayNext');
-      curLbl.style.display = 'none';
-      nxtLbl.style.display = 'none';
-      document.getElementById('itineraryCarousel').style.display = 'none';
-      showAllMarkers();
-      viewBtn.textContent = 'View Itineraries';
-      return;
-    }
-
-    // show instantly (data already loaded at startup)
-    viewBtn.textContent    = 'Hide Itineraries';
-    selectEl.style.display = 'block';
-
-    // if for some reason arrays are empty (first load failed), load once now
-    if (!window.itineraries.length || !window.itineraryItems.length) {
-      ensureItinData().then(buildItinSelect).catch(err => {
-        console.error('Error loading itineraries:', err);
-        selectEl.innerHTML = '<option style="color:red;">Failed to load</option>';
-      });
-    } else {
-      buildItinSelect();
-    }
-  };
-
-  // helper to populate dropdown & bind onchange
-  function buildItinSelect() {
-    selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
-    window.itineraries.forEach(it => {
-      const opt = document.createElement('option');
-      opt.value = it.itineraryId;
-      opt.textContent = it.name;
-      selectEl.appendChild(opt);
-    });
-
-    selectEl.onchange = e => {
-      selectedItinId = e.target.value;
-
-      // show/init labels
-      const curLbl = document.getElementById('itinDayCurrent');
-      const nxtLbl = document.getElementById('itinDayNext');
-      curLbl.style.display = 'block';
-      nxtLbl.style.display = 'block';
-      curLbl.textContent   = 'Day 1';
-      nxtLbl.textContent   = '';
-
-      renderItineraryItems();
-      filterMarkersForItinerary(selectedItinId);
-    };
-  }
-	
-	function renderItineraryItems() {
-  const carousel = document.getElementById('itineraryCarousel');
-  // clear out any old cards
-  carousel.innerHTML = '';
-
-  // grab just the items for this trip
-	const items = (window.itineraryItems || [])
-	.filter(it => it.itineraryId === selectedItinId)
-	.sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
-
-  if (!items.length) {
-    // no items → hide the carousel
-    carousel.style.display = 'none';
-    return;
-  }
-
-  // otherwise build one card per stop
-  items.forEach(it => {
-    // look up the place info
-    // look up the place (may be undefined)
-    const place = (window.places || []).find(p => p.id === it.placeId);
-
-    // create the card container
-    const card = document.createElement('div');
-    card.className       = 'place-card';
-    card.dataset.day     = it.day;
-
-    if (!it.placeId || !place) {
-      // ── NOTES-ONLY card ──
-      card.innerHTML = `
-        <h4>Note:</h4>
-        <p>${it.notes || ''}</p>
-      `;
-    } else {
-   const timeText = (it.time && it.time.trim()) ? ` • ${it.time}` : '';
-   card.innerHTML = `
-       <h4>${place.name}</h4>
-       ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
-       <p>🗓️ ${it.date}${timeText}</p>
-       ${place.regions.length
-         ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
-         : ''}
-     `;
-
-      // flying to the map on click
-      card.onclick = () => {
-        const m = markers.find(mk => mk.placeId === it.placeId);
-        if (!m) return;
-        if (currentPopup && currentPopup !== m.getPopup()) currentPopup.remove();
-        const popup = m.getPopup();
-        popup.addTo(window.map);
-        currentPopup = popup;
-        const [lng, lat] = m.getLngLat().toArray();
-        window.map.flyTo({
-          center: [lng, lat],
-          zoom:   14,
-          speed:  1.0,
-          curve:  1.6,
-          essential: true
-        });
-      };
-    }
-
-    // finally, add the card to the carousel
-    carousel.appendChild(card);
-  });
-
-	  const firstCard = carousel.querySelector('.place-card');
-	  const cardW     = firstCard
-		? firstCard.getBoundingClientRect().width + 8
-		: 168;
-	  const step = cardW;
-
-	  const dayPositions = [];
-	  items.forEach((it, idx) => {
-		if (idx === 0 || it.day !== items[idx - 1].day) {
-		  dayPositions.push({ day: it.day, offset: idx * cardW });
-		}
-	  });
-
-
-	carousel.style.display = 'flex';
-	
-	// ── BOUNDING‐RECT based day labels ──
-  const curLbl     = document.getElementById('itinDayCurrent');
-  const nxtLbl     = document.getElementById('itinDayNext');
-  const wrapperEl  = document.getElementById('itineraryCarouselWrapper');
-  const cards      = Array.from(carousel.querySelectorAll('.place-card'));
-
-  function updateDayLabels() {
-    const wrapRect = wrapperEl.getBoundingClientRect();
-
-    // 1) find the very first card that is at least partially visible
-    const firstVisible = cards.find(c => {
-      const r = c.getBoundingClientRect();
-      // r.right > wrap left means some of it is on screen
-      return r.right > wrapRect.left + 1;
-    });
-    if (!firstVisible) return;
-
-    const day = firstVisible.dataset.day;
-    curLbl.textContent = `Day ${day}`;
-    // position curLbl over that card
-    const cr = firstVisible.getBoundingClientRect();
-    const relX = cr.left - wrapRect.left;
-    curLbl.style.left = `${relX > 0 ? relX : 0}px`;
-    curLbl.style.display = 'block';
-
-    // 2) peek the next day if its first card exists
-    const nextDay = String(Number(day) + 1);
-    const nextCard = cards.find(c => c.dataset.day === nextDay);
-    if (nextCard) {
-      const nr = nextCard.getBoundingClientRect();
-      const relNextX = nr.left - wrapRect.left;
-      // only show if its card is entering the wrapper
-      if (relNextX < wrapRect.width) {
-        nxtLbl.textContent   = `Day ${nextDay}`;
-        nxtLbl.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
-        nxtLbl.style.display = 'block';
-      } else {
-        nxtLbl.style.display = 'none';
-      }
-    } else {
-      nxtLbl.style.display = 'none';
-    }
-  }
-
-  // bind & fire
-  carousel.addEventListener('scroll', updateDayLabels);
-  updateDayLabels();
-
-}
-	function filterMarkersForItinerary(itinId) {
-	  markers.forEach(mk => {
-		const keep = window.itineraryItems.some(
-		  it => it.itineraryId === itinId && it.placeId === mk.placeId
-		);
-		mk.getElement().style.display = keep ? '' : 'none';
-	  });
-	}
-
-	/** Show all markers again */
-	function showAllMarkers() {
-	  markers.forEach(mk => {
-		mk.getElement().style.display = '';
-	  });
-	}
-	})();
-
-// ENSURE "CREATE NEW ITINERARY" MODAL HANDLERS ARE WIRED AFTER DOM IS LOADED
-window.addEventListener('DOMContentLoaded', function() {
-  const createItinBtn = document.getElementById('createItinerary');
-  const createItinModal = document.getElementById('createItinModal');
-  const createItinForm = document.getElementById('createItinForm');
-  const cancelCreateItin = document.getElementById('cancelCreateItin');
-  const itinTitleInput = document.getElementById('itinTitle');
-
-   createItinBtn.onclick = () => {
-     itinTitleInput.value = '';
-     createItinModal.style.display = 'block';
-     itinTitleInput.focus();
-   };
-    cancelCreateItin.onclick = () => {
-      createItinModal.style.display = 'none';
-      itinTitleInput.value = '';
-    };
-
- 	createItinForm.onsubmit = (e) => {
- 		e.preventDefault();
- 		const title = itinTitleInput.value.trim();
- 		if (!title) {
- 			itinTitleInput.focus();
- 			return;
- 		}
- 		// Compute a new unique itineraryId: find max existing + 1 (fallback to 1 if none)
- 		let newId = 1;
- 		if (window.itineraries && window.itineraries.length > 0) {
- 			const ids = window.itineraries.map(it => Number(it.itineraryId)).filter(n => !isNaN(n));
- 			newId = Math.max(...ids, 0) + 1;
- 		}
- 		const nowDate = new Date().toISOString().slice(0, 10);
- 		const newItin = {
- 			itineraryId: String(newId),
- 			name: title,
- 			createdDate: nowDate
- 		};
- 		// Optimistically update frontend
- 		window.itineraries.push(newItin);
- 		// Post to backend sheet
- 		postToAPI({
- 			secret: API_SECRET,
- 			action: 'addItinerary',
- 			itineraryId: newItin.itineraryId,
- 			name: newItin.name,
- 			createdDate: newItin.createdDate
- 		});
- 		createItinModal.style.display = 'none';
- 		itinTitleInput.value = '';
- 		// Optionally, update UI dropdowns/etc here if desired
- 	};
-});
-
- window.addEventListener('DOMContentLoaded', function() {
-   const modifyBtn = document.getElementById('modifyItineraries');
-   const modifyModal = document.getElementById('modifyItinModal');
-   const modifySelect = document.getElementById('modifyItinSelect');
-   const modifyCarousel = document.getElementById('modifyItinCarousel');
-   const cancelModify = document.getElementById('cancelModifyItin');
-
-   modifyBtn.onclick = () => {
-     // populate dropdown
-     modifySelect.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
-       window.itineraries.map(it => `<option value="${it.itineraryId}">${it.name}</option>`).join('');
-     modifyCarousel.innerHTML = '';
-     modifyModal.style.display = 'block';
-   };
-
-   cancelModify.onclick = () => {
-     modifyModal.style.display = 'none';
-     modifySelect.value = '';
-     modifyCarousel.innerHTML = '';
-     document.getElementById('modifyDayLabel').style.display = 'none';
-     document.getElementById('modifyDayNextLabel').style.display = 'none';
-   };
-
-   modifySelect.onchange = () => {
-     const id = modifySelect.value;
-     // Filter items for that itinerary
-     const items = window.itineraryItems
-       .filter(it => it.itineraryId === id)
-       .sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
-     // Build carousel
-     modifyCarousel.innerHTML = '';
-     items.forEach(it => {
-       const place = (window.places || []).find(p => p.id === it.placeId);
-       const card = document.createElement('div');
-       card.className = 'place-card';
-	   card.dataset.day = it.day;
-       card.innerHTML = `
-         <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1.1em;color:#B12F2F;" class="remove-item" title="Remove">&times;</span>
-         <h4>${place ? place.name : 'Note'}</h4>
-         ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
-         <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
-         ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
-       `;
-       // Remove X click handler: UI only for now
-       card.querySelector('.remove-item').onclick = e => {
-         e.stopPropagation();
-         card.style.opacity = 0.4;  // UI feedback, not backend yet
-         // TODO: Remove from backend when implemented
-       };
-       modifyCarousel.appendChild(card);
-     });
-     // Day label logic: current & next
-     const label = document.getElementById('modifyDayLabel');
-     const nextLabel = document.getElementById('modifyDayNextLabel');
-     const cards = modifyCarousel.querySelectorAll('.place-card');
-     function updateDayLabels() {
-       const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
-       // 1) Find the very first card that is at least partially visible
-       const firstVisible = Array.from(cards).find(c => {
-         const r = c.getBoundingClientRect();
-         return r.right > wrapRect.left + 1;
-       });
-       if (!firstVisible) {
-         label.style.display = 'none';
-         nextLabel.style.display = 'none';
-         return;
-       }
-       const day = firstVisible.dataset.day;
-       label.textContent = `Day ${day}`;
-       // position cur label over that card
-       const cr = firstVisible.getBoundingClientRect();
-       const relX = cr.left - wrapRect.left;
-       label.style.left = `${relX > 0 ? relX : 0}px`;
-       label.style.display = 'block';
-       // 2) Show faded label for next day, if its card is visible
-       const nextDay = String(Number(day) + 1);
-       const nextCard = Array.from(cards).find(c => c.dataset.day === nextDay);
-       if (nextCard) {
-         const nr = nextCard.getBoundingClientRect();
-         const relNextX = nr.left - wrapRect.left;
-         if (relNextX < wrapRect.width) {
-           nextLabel.textContent   = `Day ${nextDay}`;
-           nextLabel.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
-           nextLabel.style.display = 'block';
-         } else {
-           nextLabel.style.display = 'none';
-         }
-       } else {
-         nextLabel.style.display = 'none';
-       }
-     }
-     modifyCarousel.addEventListener('scroll', updateDayLabels);
-     updateDayLabels();
-   };
- });
-
-
-	function renderInsertCarousel(day) {
-	  const c = document.getElementById('insertCarousel');
-	  const dl = document.getElementById('insertDayLabel');
-	  if (dl) dl.textContent = `Day ${day}`;
-	  c.innerHTML = '';
-	  // 1) gather & sort cards for that day
-	  const cards = window.itineraryItems
-		.filter(it => it.itineraryId===window.pendingNewItem.itineraryId && it.day===day)
-		.sort((a,b)=>a.sortOrder - b.sortOrder);
-
-	  // helper to create a place‐card (reuse your render logic or simplify)
-	  const makeCard = it => {
-		const place = window.places.find(p=>p.id===it.placeId) || {};
-		return `<div class="place-card" style="opacity:0.7;">
-		  <h4>${place.name||'Note'}</h4>
-		  <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
-		</div>`;
-	  };
-
-	  // Insert hotspot at position 1…n+1
-	  cards.forEach((it, i) => {
-		// hotspot before this card (index = i+1)
-		c.insertAdjacentHTML('beforeend',
-		  `<div class="insert-hotspot" data-index="${i+1}"
-			 style="flex:0 0 200px; display:flex;align-items:center;
-					justify-content:center;cursor:pointer;opacity:0.5;">
-			 +  
-		   </div>`
-		);
-		c.insertAdjacentHTML('beforeend', makeCard(it));
-	  });
-	  // final hotspot at end: index = cards.length+1
-	  c.insertAdjacentHTML('beforeend',
-		`<div class="insert-hotspot" data-index="${cards.length+1}"
-		   style="flex:0 0 200px; display:flex;align-items:center;
-				  justify-content:center;cursor:pointer;opacity:0.5;">
-		   +  
-		 </div>`
-	  );
-
-	  // wire up selection
-		const confirmBtn = document.getElementById('insertConfirm');
-		c.querySelectorAll('.insert-hotspot').forEach(el => {
-			el.onclick = () => {
-			// clear previous highlight
-			c.querySelectorAll('.insert-hotspot').forEach(h => h.classList.remove('selected'));
-			el.classList.add('selected');
-			window.insertPositionIndex = Number(el.dataset.index);
-			// now it's valid to add
-			confirmBtn.disabled = false;
-			};
-		});
-	}
-
-
-// 3.2 Cancel button hides modal
-document.getElementById('modalCancel').onclick = () => {
-  document.getElementById('itinAddModal').style.display = 'none';
-};
-
-// 3.3 Handle form submission
-// Step 1: Next → show insertion carousel
-document.getElementById('addItinForm').onsubmit = ev => {
-	ev.preventDefault();
-	// guard: no itinerary picked
-	const itinVal = document.getElementById('modalItinSelect').value;
-	if (!itinVal) return;   // do nothing if still on placeholder
-	
-	// stash the metadata
-	window.pendingNewItem = {
-	itineraryId: itinVal,
-	placeId:     document.getElementById('addItinForm').dataset.placeId,  // ← capture it here
-	day:         Number(document.getElementById('modalDay').value),
-	date:        document.getElementById('modalDate').value,
-	time:        document.getElementById('modalTime').value,
-	notes:       document.getElementById('modalNotes').value
-	};
-  // hide step 1 form fields
-  document.getElementById('addItinForm').style.display       = 'none';
-  document.getElementById('modalNext').style.display         = 'none';
-  insertStepContainer.style.display = 'flex';
-  // disable Add until a hotspot is picked
-  document.getElementById('insertConfirm').disabled = true;
-  renderInsertCarousel(window.pendingNewItem.day);
-};
-
-// Step 2: Back → return to metadata
-document.getElementById('insertBack').onclick = () => {
-  document.getElementById('insertStepContainer').style.display = 'none';
-  document.getElementById('addItinForm').style.display         = 'flex';
-  document.getElementById('modalNext').style.display           = 'block';
-  
-  // ── RESET STEP‑2 STATE ──
-  // 1) Clear previous hotspots/cards
-  document.getElementById('insertCarousel').innerHTML = '';
-  // 2) Clear any selected index so renderInsertCarousel can start fresh
-  window.insertPositionIndex = undefined;
-  document.getElementById('insertConfirm').disabled = true;
-};
-
-// Step 2: Confirm → insert & persist
-document.getElementById('insertConfirm').onclick = () => {
-  const { itineraryId, placeId, day, date, time, notes } = window.pendingNewItem;
-  const idx = window.insertPositionIndex;       // set in renderInsertCarousel
-  // shift existing
-  const dayItems = window.itineraryItems
-    .filter(it => it.itineraryId===itineraryId && it.day===day);
-  // bump sortOrder >= idx
-  dayItems
-    .sort((a,b)=>b.sortOrder - a.sortOrder)
-    .forEach(it => {
-      it.sortOrder++;
-      postToAPI({ 
-        secret:      API_SECRET,
-        action:      'updateItem',
-        itineraryId: it.itineraryId,
-        placeId:     it.placeId,
-        day:         it.day,
-        date:        it.date,
-        time:        it.time,
-        notes:       it.notes,
-        sortOrder:   it.sortOrder
-      });
-    });
-  // create new item at idx
-	const newItem = {
-	itineraryId,
-	placeId,             // ← now included
-	day,
-	date,
-	time,
-	notes,
-	sortOrder: idx
-	};
-  window.itineraryItems.push(newItem);
-	postToAPI({ 
-	secret:      API_SECRET,
-	action:      'addItem',
-	itineraryId: newItem.itineraryId,
-	placeId:     newItem.placeId,
-	day:         newItem.day,
-	date:        newItem.date,
-	time:        newItem.time,
-	notes:       newItem.notes,
-	sortOrder:   newItem.sortOrder
-	});
-  // cleanup & re-render
-  document.getElementById('itinAddModal').style.display        = 'none';
-  renderItineraryItems();
-};
-  refreshItinData()
-    .then(() => {
-      // re-render the insert carousel (or itinerary view) with fresh data
-      renderInsertCarousel(window.pendingNewItem.day);
-      // close modal / clean up as you already do
-    })
-    .catch(err => {
-      console.error('Refresh after add failed:', err);
-      // still close modal if you want, but warn user
-    });
-  </script>
   <div id="createItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
     background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20000; width:320px; max-width:96%; font-family: var(--menuFont), sans-serif;">
     <form id="createItinForm" style="display:flex; flex-direction:column; gap:14px;">
@@ -1707,4 +1858,3 @@ document.getElementById('insertConfirm').onclick = () => {
      </div>
    </div>
 </body>
-</html>	
