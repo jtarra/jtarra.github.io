@@ -1214,7 +1214,7 @@ window.addEventListener('DOMContentLoaded', function() {
        card.className = 'place-card';
 	   card.dataset.day = it.day;
        card.innerHTML = `
-         <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1.1em;color:#B12F2F;" class="remove-item" title="Remove">&times;</span>
+		<span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1.3em;color:#B12F2F;background:#fff3f3;border:2px solid var(--borders);border-radius:50%;padding:2px 4px;transition:background 0.2s,color 0.2s;" class="remove-item" title="Remove" onmouseover="this.style.background='red';this.style.color='white';" onmouseout="this.style.background='#fff3f3';this.style.color='#B12F2F';">🗑️</span>
          <h4>${place ? place.name : 'Note'}</h4>
          ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
          <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
@@ -1824,6 +1824,11 @@ window.addEventListener('DOMContentLoaded', () => {
 		</div>
 		</div>
 	</div>
+
+
+
+
+
   <div id="createItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
     background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20000; width:320px; max-width:96%; font-family: var(--menuFont), sans-serif;">
     <form id="createItinForm" style="display:flex; flex-direction:column; gap:14px;">
