@@ -40,7 +40,7 @@
 		carouselFont:  'Dorgan'		// filter & itinerary carousels
 	  }
 	};
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwfm2r0Iw8DWY407GEaSedc2pFMOFE4du47URkGb7nWQ54ED-ut7PJQQHgrgO5Aj0Wm/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbylBnSoCjEQ1vXj9ejujV8aPGKKYLPQV02iWl-v81cyXZ9shZs6h6B2u8G_sAY_Ay5v/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 </script>
 
@@ -524,6 +524,9 @@
     body.menu-open {
       overflow: hidden;
     }
+	#modifyItinCarousel .place-card h4 {
+	  padding-right: 32px;
+	}
 </style>
 
 
@@ -1214,18 +1217,55 @@ window.addEventListener('DOMContentLoaded', function() {
        card.className = 'place-card';
 	   card.dataset.day = it.day;
        card.innerHTML = `
-		<span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1.3em;color:#B12F2F;background:#fff3f3;border:2px solid var(--borders);border-radius:50%;padding:2px 4px;transition:background 0.2s,color 0.2s;" class="remove-item" title="Remove" onmouseover="this.style.background='red';this.style.color='white';" onmouseout="this.style.background='#fff3f3';this.style.color='#B12F2F';">🗑️</span>
+         <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1em;color:#DB504A;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="remove-item" title="Remove" onmouseover="this.style.background='var(--menuButton)';this.style.borderColor='#DB504A';" onmouseout="this.style.background='var(--menuBg)';this.style.borderColor='var(--borders)';">🗑️</span>
          <h4>${place ? place.name : 'Note'}</h4>
          ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
          <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
          ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
        `;
-       // Remove X click handler: UI only for now
-       card.querySelector('.remove-item').onclick = e => {
-         e.stopPropagation();
-         card.style.opacity = 0.4;  // UI feedback, not backend yet
-         // TODO: Remove from backend when implemented
-       };
+		card.querySelector('.remove-item').onclick = e => {
+		  e.stopPropagation();
+		  if (confirm('Are you sure you want to remove this item?')) {
+			// Grey out the card to show it's being removed
+			card.style.opacity = 0.4;
+			card.style.pointerEvents = 'none'; // Disable further clicks
+			
+			// Use the same postToAPI that works for everything else
+			postToAPI({
+			  secret: API_SECRET,
+			  action: 'removeItem',
+			  itineraryId: it.itineraryId,
+			  day: it.day,
+			  sortOrder: it.sortOrder
+			});
+			
+			// Optionally add some visual indicator
+			const removeBtn = card.querySelector('.remove-item');
+			removeBtn.style.color = '#666';
+			removeBtn.title = 'Removed';
+			
+			// UPDATE: Remove the item from frontend data immediately
+			const indexToRemove = window.itineraryItems.findIndex(item => 
+			  item.itineraryId === it.itineraryId && 
+			  item.day === it.day && 
+			  item.sortOrder === it.sortOrder
+			);
+			
+			if (indexToRemove !== -1) {
+			  // Remove the item from the array
+			  window.itineraryItems.splice(indexToRemove, 1);
+			  
+			  // Update sortOrder for remaining items in the same itinerary/day
+			  window.itineraryItems.forEach(item => {
+				if (item.itineraryId === it.itineraryId && 
+					item.day === it.day && 
+					item.sortOrder > it.sortOrder) {
+				  item.sortOrder--;
+				}
+			  });
+			}
+		  }
+		};
        modifyCarousel.appendChild(card);
      });
      // Day label logic: current & next
@@ -1824,11 +1864,6 @@ window.addEventListener('DOMContentLoaded', () => {
 		</div>
 		</div>
 	</div>
-
-
-
-
-
   <div id="createItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
     background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20000; width:320px; max-width:96%; font-family: var(--menuFont), sans-serif;">
     <form id="createItinForm" style="display:flex; flex-direction:column; gap:14px;">
