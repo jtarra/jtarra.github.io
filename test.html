@@ -98,6 +98,10 @@
       transition: max-height 0.3s, width 0.3s;
       display: flex;
       flex-direction: column;
+	  touch-action: manipulation;
+	  -webkit-user-select: none;
+	  -moz-user-select: none;
+	  user-select: none;
     }
     .filters.expanded {
       max-height: calc(var(--realVh, 1vh) * 100 - 20px);
