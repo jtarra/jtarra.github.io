@@ -866,43 +866,35 @@ window.addEventListener('DOMContentLoaded', () => {
 	}
 	function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
     function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
-// Prevent all zoom methods on iOS Safari (but allow map interactions)
-document.addEventListener('gesturestart', function (e) {
-    if (!e.target.closest('#map')) {
-        e.preventDefault();
-    }
-});
+	// Prevent all zoom methods on iOS Safari
+	document.addEventListener('gesturestart', function (e) {
+		e.preventDefault();
+	});
 
-document.addEventListener('gesturechange', function (e) {
-    if (!e.target.closest('#map')) {
-        e.preventDefault();
-    }
-});
+	document.addEventListener('gesturechange', function (e) {
+		e.preventDefault();
+	});
 
-document.addEventListener('gestureend', function (e) {
-    if (!e.target.closest('#map')) {
-        e.preventDefault();
-    }
-});
+	document.addEventListener('gestureend', function (e) {
+		e.preventDefault();
+	});
 
-// Prevent double-tap zoom (but allow map interactions)
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function (event) {
-    if (!event.target.closest('#map')) {
-        const now = (new Date()).getTime();
-        if (now - lastTouchEnd <= 300) {
-            event.preventDefault();
-        }
-        lastTouchEnd = now;
-    }
-}, false);
+	// Prevent double-tap zoom
+	let lastTouchEnd = 0;
+	document.addEventListener('touchend', function (event) {
+		const now = (new Date()).getTime();
+		if (now - lastTouchEnd <= 300) {
+			event.preventDefault();
+		}
+		lastTouchEnd = now;
+	}, false);
 
-// Prevent pinch zoom (but allow map interactions)
-document.addEventListener('touchmove', function (event) {
-    if (!event.target.closest('#map') && event.scale !== 1) { 
-        event.preventDefault(); 
-    }
-}, { passive: false });
+	// Prevent pinch zoom
+	document.addEventListener('touchmove', function (event) {
+		if (event.scale !== 1) { 
+			event.preventDefault(); 
+		}
+	}, { passive: false });
 </script>
 
 <!-- Add to itinerary -->
