@@ -676,7 +676,7 @@ window.addEventListener('DOMContentLoaded', () => {
       center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
       zoom: CONFIG.mapZoom,
       dragRotate:      false,
-      touchZoomRotate: false,
+      touchZoomRotate: true,
       pitchWithRotate: false
     });
     window.map = map;
@@ -684,6 +684,8 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('load', () => map.resize());
     map.touchPitch.disable();
     map.setMaxPitch(0);
+	map.dragRotate.disable();
+	map.keyboard.disableRotation();
 
     // scope sync so markers/carousel (which use window.currentPopup) stay in lockstep
     window.currentPopup = null;
