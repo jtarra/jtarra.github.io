@@ -866,29 +866,30 @@ window.addEventListener('DOMContentLoaded', () => {
 	}
 	function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
     function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
-// Prevent all zoom methods on iOS Safari (but allow map interactions)
+// Prevent all zoom methods on iOS Safari except on map canvas specifically
 document.addEventListener('gesturestart', function (e) {
-    if (!e.target.closest('#map') && !e.target.closest('.maplibregl-popup')) {
+    // Only allow gestures on the actual map canvas, not popups or other elements
+    if (!e.target.closest('canvas')) {
         e.preventDefault();
     }
 });
 
 document.addEventListener('gesturechange', function (e) {
-    if (!e.target.closest('#map') && !e.target.closest('.maplibregl-popup')) {
+    if (!e.target.closest('canvas')) {
         e.preventDefault();
     }
 });
 
 document.addEventListener('gestureend', function (e) {
-    if (!e.target.closest('#map') && !e.target.closest('.maplibregl-popup')) {
+    if (!e.target.closest('canvas')) {
         e.preventDefault();
     }
 });
 
-// Prevent double-tap zoom (but allow map interactions)
+// Prevent double-tap zoom (but allow on map canvas)
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function (event) {
-    if (!event.target.closest('#map') && !event.target.closest('.maplibregl-popup')) {
+    if (!event.target.closest('canvas')) {
         const now = (new Date()).getTime();
         if (now - lastTouchEnd <= 300) {
             event.preventDefault();
@@ -897,9 +898,9 @@ document.addEventListener('touchend', function (event) {
     }
 }, false);
 
-// Prevent pinch zoom (but allow map interactions)
+// Prevent pinch zoom (but allow on map canvas)
 document.addEventListener('touchmove', function (event) {
-    if (!event.target.closest('#map') && !event.target.closest('.maplibregl-popup') && event.scale !== 1) { 
+    if (!event.target.closest('canvas') && event.scale !== 1) { 
         event.preventDefault(); 
     }
 }, { passive: false });
