@@ -1487,9 +1487,14 @@ window.addEventListener('DOMContentLoaded', () => {
       sortOrder:   newItem.sortOrder
     });
 
-    // Close modal and refresh UI
-    document.getElementById('itinAddModal').style.display = 'none';
-    renderItineraryItems();
+	// Close modal and refresh UI
+	document.getElementById('itinAddModal').style.display = 'none';
+
+	// Only refresh itinerary view if we're currently viewing one
+	const selectEl = document.getElementById('itinerarySelect');
+	if (selectEl.style.display === 'block' && selectEl.value) {
+		renderItineraryItems();
+	}
 
     // Optional: pull fresh data from Sheets in the background
     refreshItinData().catch(err => console.error('Refresh after add failed:', err));
