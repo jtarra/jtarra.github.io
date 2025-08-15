@@ -1487,17 +1487,24 @@ window.addEventListener('DOMContentLoaded', () => {
       sortOrder:   newItem.sortOrder
     });
 
-	// Close modal and refresh UI
-	document.getElementById('itinAddModal').style.display = 'none';
+// Close modal
+document.getElementById('itinAddModal').style.display = 'none';
 
-	// Only refresh itinerary view if we're currently viewing one
-	const selectEl = document.getElementById('itinerarySelect');
-	if (selectEl.style.display === 'block' && selectEl.value) {
-		renderItineraryItems();
-	}
+// Force refresh any open views - exactly like the remove function does
+const selectEl = document.getElementById('itinerarySelect');
+if (selectEl.style.display === 'block' && selectEl.value) {
+    // Set the global variable to match what's selected
+    window.selectedItinId = selectEl.value;
+    renderItineraryItems();
+    filterMarkersForItinerary(selectEl.value);
+}
 
-    // Optional: pull fresh data from Sheets in the background
-    refreshItinData().catch(err => console.error('Refresh after add failed:', err));
+const modifySelect = document.getElementById('modifyItinSelect');
+if (modifySelect.value) {
+    // Just trigger the change event to rebuild the modify carousel
+    const event = new Event('change');
+    modifySelect.dispatchEvent(event);
+}
   };
 });
 </script>
