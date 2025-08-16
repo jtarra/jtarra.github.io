@@ -39,7 +39,7 @@
 		carouselFont:  'Dorgan'		// filter & itinerary carousels
 	  }
 	};
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbylBnSoCjEQ1vXj9ejujV8aPGKKYLPQV02iWl-v81cyXZ9shZs6h6B2u8G_sAY_Ay5v/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby1DMeAMeIkEKyrynt66Kl111-UDVIvt1VvO9rLXetoYnSzmOCV84WZtKAfJ6-lUMzR/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 </script>
 
@@ -526,6 +526,10 @@
 	#modifyItinCarousel .place-card h4 {
 	  padding-right: 32px;
 	}
+	.remove-item:hover {
+		background: var(--menuButton) !important;
+		border-color: #DB504A !important;
+}
 </style>
 
 
@@ -1225,122 +1229,29 @@ window.addEventListener('DOMContentLoaded', function() {
      modifyModal.style.display = 'block';
    };
 
-   cancelModify.onclick = () => {
-     modifyModal.style.display = 'none';
-     modifySelect.value = '';
-     modifyCarousel.innerHTML = '';
-     document.getElementById('modifyDayLabel').style.display = 'none';
-     document.getElementById('modifyDayNextLabel').style.display = 'none';
-   };
+	cancelModify.onclick = () => {
+	  modifyModal.style.display = 'none';
+	  modifySelect.value = '';
+	  modifyCarousel.innerHTML = '';
+	  document.getElementById('modifyDayLabel').style.display = 'none';
+	  document.getElementById('modifyDayNextLabel').style.display = 'none';
+	  document.getElementById('addNoteBtn').style.display = 'none'; // Hide the button when closing
+	};
 
-   modifySelect.onchange = () => {
-     const id = modifySelect.value;
-     // Filter items for that itinerary
-     const items = window.itineraryItems
-       .filter(it => it.itineraryId === id)
-       .sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
-     // Build carousel
-     modifyCarousel.innerHTML = '';
-     items.forEach(it => {
-       const place = (window.places || []).find(p => p.id === it.placeId);
-       const card = document.createElement('div');
-       card.className = 'place-card';
-	   card.dataset.day = it.day;
-       card.innerHTML = `
-         <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1em;color:#DB504A;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="remove-item" title="Remove" onmouseover="this.style.background='var(--menuButton)';this.style.borderColor='#DB504A';" onmouseout="this.style.background='var(--menuBg)';this.style.borderColor='var(--borders)';">🗑️</span>
-         <h4>${place ? place.name : 'Note'}</h4>
-         ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
-         <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
-         ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
-       `;
-		card.querySelector('.remove-item').onclick = e => {
-		  e.stopPropagation();
-		  if (confirm('Are you sure you want to remove this item?')) {
-			// Grey out the card to show it's being removed
-			card.style.opacity = 0.4;
-			card.style.pointerEvents = 'none'; // Disable further clicks
-			
-			// Use the same postToAPI that works for everything else
-			postToAPI({
-			  secret: API_SECRET,
-			  action: 'removeItem',
-			  itineraryId: it.itineraryId,
-			  day: it.day,
-			  sortOrder: it.sortOrder
-			});
-			
-			// Optionally add some visual indicator
-			const removeBtn = card.querySelector('.remove-item');
-			removeBtn.style.color = '#666';
-			removeBtn.title = 'Removed';
-			
-			// UPDATE: Remove the item from frontend data immediately
-			const indexToRemove = window.itineraryItems.findIndex(item => 
-			  item.itineraryId === it.itineraryId && 
-			  item.day === it.day && 
-			  item.sortOrder === it.sortOrder
-			);
-			
-			if (indexToRemove !== -1) {
-			  // Remove the item from the array
-			  window.itineraryItems.splice(indexToRemove, 1);
-			  
-			  // Update sortOrder for remaining items in the same itinerary/day
-			  window.itineraryItems.forEach(item => {
-				if (item.itineraryId === it.itineraryId && 
-					item.day === it.day && 
-					item.sortOrder > it.sortOrder) {
-				  item.sortOrder--;
-				}
-			  });
-			}
-		  }
-		};
-       modifyCarousel.appendChild(card);
-     });
-     // Day label logic: current & next
-     const label = document.getElementById('modifyDayLabel');
-     const nextLabel = document.getElementById('modifyDayNextLabel');
-     const cards = modifyCarousel.querySelectorAll('.place-card');
-     function updateDayLabels() {
-       const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
-       // 1) Find the very first card that is at least partially visible
-       const firstVisible = Array.from(cards).find(c => {
-         const r = c.getBoundingClientRect();
-         return r.right > wrapRect.left + 1;
-       });
-       if (!firstVisible) {
-         label.style.display = 'none';
-         nextLabel.style.display = 'none';
-         return;
-       }
-       const day = firstVisible.dataset.day;
-       label.textContent = `Day ${day}`;
-       // position cur label over that card
-       const cr = firstVisible.getBoundingClientRect();
-       const relX = cr.left - wrapRect.left;
-       label.style.left = `${relX > 0 ? relX : 0}px`;
-       label.style.display = 'block';
-       // 2) Show faded label for next day, if its card is visible
-       const nextDay = String(Number(day) + 1);
-       const nextCard = Array.from(cards).find(c => c.dataset.day === nextDay);
-       if (nextCard) {
-         const nr = nextCard.getBoundingClientRect();
-         const relNextX = nr.left - wrapRect.left;
-         if (relNextX < wrapRect.width) {
-           nextLabel.textContent   = `Day ${nextDay}`;
-           nextLabel.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
-           nextLabel.style.display = 'block';
-         } else {
-           nextLabel.style.display = 'none';
-         }
-       } else {
-         nextLabel.style.display = 'none';
-       }
-     }
-     modifyCarousel.addEventListener('scroll', updateDayLabels);
-     updateDayLabels();
-   };
+modifySelect.onchange = () => {
+  const id = modifySelect.value;
+  
+  // Show/hide Add Note button
+  document.getElementById('addNoteBtn').style.display = id ? 'block' : 'none';
+  
+  // Reset note insertion mode if it was active
+  window.noteInsertionMode = false;
+  document.getElementById('addNoteBtn').textContent = 'Add a Note';
+  document.getElementById('addNoteBtn').style.background = 'var(--menuButton)';
+  
+  renderModifyCarousel(id, false); // false = normal mode
+};
+
  });
 </script>
 
@@ -1509,6 +1420,365 @@ if (modifySelect.value) {
 });
 </script>
 
+<!-- modify Itinerary -->
+<script>
+
+
+
+// Add Note functionality for modify modal
+window.addEventListener('DOMContentLoaded', function() {
+  const addNoteBtn = document.getElementById('addNoteBtn');
+  const noteTextModal = document.getElementById('noteTextModal');
+  const noteTextInput = document.getElementById('noteTextInput');
+  const noteTextBack = document.getElementById('noteTextBack');
+  const noteTextSubmit = document.getElementById('noteTextSubmit');
+  
+  let noteInsertionMode = false;
+  let pendingNotePosition = null;
+
+  // Toggle note insertion mode
+  addNoteBtn.onclick = () => {
+    noteInsertionMode = !noteInsertionMode;
+    const id = document.getElementById('modifyItinSelect').value;
+    
+    if (noteInsertionMode) {
+      addNoteBtn.textContent = 'Cancel Note';
+      addNoteBtn.style.background = '#DB504A';
+      renderModifyCarousel(id, true); // true = note insertion mode
+    } else {
+      addNoteBtn.textContent = 'Add a Note';
+      addNoteBtn.style.background = 'var(--menuButton)';
+      renderModifyCarousel(id, false); // false = normal mode
+    }
+  };
+
+  // Note text modal handlers
+  noteTextBack.onclick = () => {
+    noteTextModal.style.display = 'none';
+    noteTextInput.value = '';
+  };
+
+  noteTextSubmit.onclick = () => {
+    const noteText = noteTextInput.value.trim();
+    if (!noteText) {
+      alert('Please enter a note');
+      return;
+    }
+
+    if (!pendingNotePosition) return;
+
+    const { itineraryId, day, sortOrder } = pendingNotePosition;
+
+    // Shift existing items at or after this position
+    const dayItems = window.itineraryItems.filter(it => 
+      it.itineraryId === itineraryId && it.day === day && it.sortOrder >= sortOrder
+    );
+    dayItems.forEach(it => {
+      it.sortOrder++;
+      postToAPI({
+        secret: API_SECRET,
+        action: 'updateItem',
+        itineraryId: it.itineraryId,
+        placeId: it.placeId,
+        day: it.day,
+        date: it.date,
+        time: it.time,
+        notes: it.notes,
+        sortOrder: it.sortOrder
+      });
+    });
+
+    // Add the note
+    const noteItem = {
+      itineraryId,
+      placeId: '',
+      day,
+      sortOrder,
+      date: '',
+      time: '',
+      notes: noteText
+    };
+
+    window.itineraryItems.push(noteItem);
+    
+    postToAPI({
+      secret: API_SECRET,
+      action: 'addNote',
+      itineraryId: noteItem.itineraryId,
+      day: noteItem.day,
+      sortOrder: noteItem.sortOrder,
+      notes: noteItem.notes
+    });
+
+    // Close modal and exit note mode
+    noteTextModal.style.display = 'none';
+    noteTextInput.value = '';
+    noteInsertionMode = false;
+    addNoteBtn.textContent = 'Add a Note';
+    addNoteBtn.style.background = 'var(--menuButton)';
+    
+    // Refresh the carousel
+    renderModifyCarousel(itineraryId, false);
+  };
+
+  // Function to handle hotspot clicks
+  window.handleNoteHotspotClick = function(itineraryId, day, sortOrder) {
+    pendingNotePosition = { itineraryId, day, sortOrder };
+    noteTextModal.style.display = 'block';
+    noteTextInput.focus();
+  };
+});
+
+// Updated carousel rendering function
+function renderModifyCarousel(itineraryId, insertionMode = false) {
+  const modifyCarousel = document.getElementById('modifyItinCarousel');
+  const items = window.itineraryItems
+    .filter(it => it.itineraryId === itineraryId)
+    .sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+  
+  modifyCarousel.innerHTML = '';
+
+  let currentDay = 0;
+  items.forEach((it, index) => {
+    const place = window.places.find(p => p.id === it.placeId);
+    
+// Add hotspot before this item if in insertion mode
+if (insertionMode) {
+  // Handle day transitions
+  if (it.day !== currentDay) {
+    // Store the actual previous day value before we update currentDay
+    const previousDay = currentDay;
+    
+    // First hotspot: "End of previous day" (if there was a previous day)
+    if (previousDay > 0) {
+      // Find the highest sortOrder for the ACTUAL previous day
+      const prevDayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === previousDay
+      );
+      const maxSortOrder = prevDayItems.length > 0 ? Math.max(...prevDayItems.map(item => item.sortOrder)) : 0;
+      
+      const endOfDayHotspot = document.createElement('div');
+      endOfDayHotspot.className = 'insert-hotspot';
+      endOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+      endOfDayHotspot.textContent = '+';
+      // Use the explicit previousDay variable (Day 1)
+      endOfDayHotspot.onclick = () => handleNoteHotspotClick(itineraryId, previousDay, maxSortOrder + 1);
+      modifyCarousel.appendChild(endOfDayHotspot);
+    }
+    
+    // Second hotspot: "Beginning of new day"
+    const startOfDayHotspot = document.createElement('div');
+    startOfDayHotspot.className = 'insert-hotspot';
+startOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    startOfDayHotspot.textContent = '+';
+    // Use it.day (Day 2)
+    startOfDayHotspot.onclick = () => handleNoteHotspotClick(itineraryId, it.day, 1);
+    modifyCarousel.appendChild(startOfDayHotspot);
+  } else {
+    // Regular hotspot within the same day (before this specific item)
+    const hotspot = document.createElement('div');
+    hotspot.className = 'insert-hotspot';
+	hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    hotspot.textContent = '+';
+    hotspot.onclick = () => handleNoteHotspotClick(itineraryId, it.day, it.sortOrder);
+    modifyCarousel.appendChild(hotspot);
+  }
+}
+
+// ALWAYS update currentDay for day tracking (both insertion and normal mode)
+if (it.day !== currentDay) {
+  currentDay = it.day;
+}
+
+    // Regular item card
+    const card = document.createElement('div');
+    card.className = 'place-card';
+    card.dataset.day = it.day;
+    
+if (!insertionMode) {
+  card.innerHTML = `
+    <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1em;color:#DB504A;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="remove-item" title="Remove">🗑️</span>
+    <span style="position:absolute;top:36px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="edit-item" title="Edit">✍️</span>
+    <span style="position:absolute;top:68px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="move-item" title="Move">↔️</span>
+    <h4>${place ? place.name : 'Note'}</h4>
+    ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+    ${it.date ? `<p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>` : ''}
+    ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+  `;
+      
+	card.querySelector('.remove-item').onclick = e => {
+	  e.stopPropagation();
+	  if (confirm('Are you sure you want to remove this item?')) {
+		// Grey out the card to show it's being removed
+		card.style.opacity = 0.4;
+		card.style.pointerEvents = 'none'; // Disable further clicks
+		
+		// Use the same postToAPI that works for everything else
+		postToAPI({
+		  secret: API_SECRET,
+		  action: 'removeItem',
+		  itineraryId: it.itineraryId,
+		  day: it.day,
+		  sortOrder: it.sortOrder
+		});
+		
+		// Optionally add some visual indicator
+		const removeBtn = card.querySelector('.remove-item');
+		removeBtn.style.color = '#666';
+		removeBtn.title = 'Removed';
+		
+		// UPDATE: Remove the item from frontend data immediately
+		const indexToRemove = window.itineraryItems.findIndex(item => 
+		  item.itineraryId === it.itineraryId && 
+		  item.day === it.day && 
+		  item.sortOrder === it.sortOrder
+		);
+		
+		if (indexToRemove !== -1) {
+		  // Remove the item from the array
+		  window.itineraryItems.splice(indexToRemove, 1);
+		  
+		  // Update sortOrder for remaining items in the same itinerary/day
+		  window.itineraryItems.forEach(item => {
+			if (item.itineraryId === it.itineraryId && 
+				item.day === it.day && 
+				item.sortOrder > it.sortOrder) {
+			  item.sortOrder--;
+			}
+		  });
+		}
+	  }
+	};
+	} else {
+	  // Card for insertion mode (but with same info as normal mode)
+	  card.innerHTML = `
+		<h4>${place ? place.name : 'Note'}</h4>
+		${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+		${it.date ? `<p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>` : ''}
+		${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+	  `;
+	}
+    
+    modifyCarousel.appendChild(card);
+  });
+
+  // Add final hotspot at the end if in insertion mode
+  if (insertionMode && items.length > 0) {
+    const lastItem = items[items.length - 1];
+    const hotspot = document.createElement('div');
+    hotspot.className = 'insert-hotspot';
+hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    hotspot.textContent = '+';
+    hotspot.onclick = () => handleNoteHotspotClick(itineraryId, lastItem.day, lastItem.sortOrder + 1);
+    modifyCarousel.appendChild(hotspot);
+  }
+// Update the modifyCards reference for the day label function
+setTimeout(() => {
+  const modifyLabel = document.getElementById('modifyDayLabel');
+  const modifyNextLabel = document.getElementById('modifyDayNextLabel');
+  const modifyCards = modifyCarousel.querySelectorAll('.place-card');
+  
+  function updateModifyDayLabels() {
+    const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+    
+    const firstVisible = Array.from(modifyCards).find(c => {
+      const r = c.getBoundingClientRect();
+      return r.right > wrapRect.left + 1;
+    });
+    
+    if (!firstVisible) {
+      modifyLabel.style.display = 'none';
+      modifyNextLabel.style.display = 'none';
+      return;
+    }
+    
+    const day = firstVisible.dataset.day;
+    modifyLabel.textContent = `Day ${day}`;
+    const cr = firstVisible.getBoundingClientRect();
+    const relX = cr.left - wrapRect.left;
+    modifyLabel.style.left = `${relX > 0 ? relX : 0}px`;
+    modifyLabel.style.display = 'block';
+    
+    const nextDay = String(Number(day) + 1);
+    const nextCard = Array.from(modifyCards).find(c => c.dataset.day === nextDay);
+    
+    if (nextCard) {
+      const nr = nextCard.getBoundingClientRect();
+      const relNextX = nr.left - wrapRect.left;
+      if (relNextX < wrapRect.width) {
+        modifyNextLabel.textContent = `Day ${nextDay}`;
+        modifyNextLabel.style.left = `${relNextX > 0 ? relNextX : 0}px`;
+        modifyNextLabel.style.display = 'block';
+      } else {
+        modifyNextLabel.style.display = 'none';
+      }
+    } else {
+      modifyNextLabel.style.display = 'none';
+    }
+  }
+  
+  if (modifyCards.length > 0) {
+    modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
+    updateModifyDayLabels();
+  }
+}, 100);
+}
+// Day label logic for modify carousel
+const modifyLabel = document.getElementById('modifyDayLabel');
+const modifyNextLabel = document.getElementById('modifyDayNextLabel');
+const modifyCards = modifyCarousel.querySelectorAll('.place-card');
+
+function updateModifyDayLabels() {
+  const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+  
+  // Find the first visible card
+  const firstVisible = Array.from(modifyCards).find(c => {
+    const r = c.getBoundingClientRect();
+    return r.right > wrapRect.left + 1;
+  });
+  
+  if (!firstVisible) {
+    modifyLabel.style.display = 'none';
+    modifyNextLabel.style.display = 'none';
+    return;
+  }
+  
+  const day = firstVisible.dataset.day;
+  modifyLabel.textContent = `Day ${day}`;
+  
+  // Position current label over that card
+  const cr = firstVisible.getBoundingClientRect();
+  const relX = cr.left - wrapRect.left;
+  modifyLabel.style.left = `${relX > 0 ? relX : 0}px`;
+  modifyLabel.style.display = 'block';
+  
+  // Show next day label if its card is visible
+  const nextDay = String(Number(day) + 1);
+  const nextCard = Array.from(modifyCards).find(c => c.dataset.day === nextDay);
+  
+  if (nextCard) {
+    const nr = nextCard.getBoundingClientRect();
+    const relNextX = nr.left - wrapRect.left;
+    
+    if (relNextX < wrapRect.width) {
+      modifyNextLabel.textContent = `Day ${nextDay}`;
+      modifyNextLabel.style.left = `${relNextX > 0 ? relNextX : 0}px`;
+      modifyNextLabel.style.display = 'block';
+    } else {
+      modifyNextLabel.style.display = 'none';
+    }
+  } else {
+    modifyNextLabel.style.display = 'none';
+  }
+}
+
+// Bind scroll event and run initially
+if (modifyCards.length > 0) {
+  modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
+  updateModifyDayLabels();
+}
+
+</script>
 
 <!-- Markers + Carousel -->
 <script>
@@ -1935,8 +2205,19 @@ if (modifySelect.value) {
    </div>
       <div id="modifyItinCarousel" class="place-carousel" style="min-height:60px;"></div>
     </div>
-    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
-       <button type="button" id="cancelModifyItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Done</button>
-     </div>
+<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:14px;">
+   <button type="button" id="addNoteBtn" style="display:none; background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Add a Note</button>
+   <div style="margin-left:auto;">
+     <button type="button" id="cancelModifyItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Done</button>
+   </div>
+</div>
+<div id="noteTextModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10002; width: 300px; max-width: calc(100% - 32px); font-family: var(--menuFont), sans-serif;">
+  <div style="margin-bottom: 12px; font-size: 1em;">Add Note</div>
+  <textarea id="noteTextInput" rows="4" placeholder="Enter your note..." style="width: 94%; padding: 8px; border: 1px solid var(--borders); border-radius: 4px; background-color: var(--searchBG); font-family: var(--menuFont), sans-serif; resize: vertical;"></textarea>
+  <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 12px;">
+    <button type="button" id="noteTextBack" style="background: var(--menuButton); border: none; border-radius: 4px; padding: 6px 12px; font-family: var(--menuFont), cursive; cursor: pointer;">Back</button>
+    <button type="button" id="noteTextSubmit" style="background: var(--menuButton); border: none; border-radius: 4px; padding: 6px 12px; font-family: var(--menuFont), cursive; cursor: pointer;">Submit</button>
+  </div>
+</div>
    </div>
 </body>
