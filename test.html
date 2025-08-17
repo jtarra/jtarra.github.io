@@ -39,7 +39,7 @@
 		carouselFont:  'Dorgan'		// filter & itinerary carousels
 	  }
 	};
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby1DMeAMeIkEKyrynt66Kl111-UDVIvt1VvO9rLXetoYnSzmOCV84WZtKAfJ6-lUMzR/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbw_2nRDnQOoiPATafZbeCr7y5oZDVE9NYt-zN8bu6guQtnMKfd0zkb7tBRox7bUPBlt/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 </script>
 
@@ -526,10 +526,59 @@
 	#modifyItinCarousel .place-card h4 {
 	  padding-right: 32px;
 	}
+	#modifyItinCarousel .place-card p {
+	  padding-right: 32px;
+	}
 	.remove-item:hover {
 		background: var(--menuButton) !important;
 		border-color: #DB504A !important;
 }
+	#editItemModal {
+	  display: none;
+	  position: fixed;
+	  top: 50%; left: 50%;
+	  transform: translate(-50%, -50%);
+	  background: var(--menuBg);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 16px;
+	  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+	  z-index: 20003;
+	  width: 320px;
+	  max-width: calc(100% - 32px);
+	  font-family: var(--menuFont), sans-serif;
+	}
+
+	#editItemForm {
+	  display: flex;
+	  flex-direction: column;
+	  gap: 12px;
+	}
+
+	#editItemForm label {
+	  font-size: 1em;
+	}
+
+	#editItemForm input,
+	#editItemForm textarea {
+	  width: 92%;
+	  padding: 6px 8px;
+	  border: 1px solid var(--borders);
+	  border-radius: 4px;
+	  font-family: var(--menuFont), sans-serif;
+	  background-color: var(--searchBG);
+	  color: #333;
+	}
+
+	#editItemForm button {
+	  background: var(--menuButton);
+	  color: #333;
+	  border: none;
+	  border-radius: 4px;
+	  padding: 6px 12px;
+	  font-family: var(--menuFont), cursive;
+	  cursor: pointer;
+	}
 </style>
 
 
@@ -1246,7 +1295,7 @@ modifySelect.onchange = () => {
   
   // Reset note insertion mode if it was active
   window.noteInsertionMode = false;
-  document.getElementById('addNoteBtn').textContent = 'Add a Note';
+  document.getElementById('addNoteBtn').textContent = 'Add a Note 🗒️';
   document.getElementById('addNoteBtn').style.background = 'var(--menuButton)';
   
   renderModifyCarousel(id, false); // false = normal mode
@@ -1423,7 +1472,80 @@ if (modifySelect.value) {
 <!-- modify Itinerary -->
 <script>
 
+window.addEventListener('DOMContentLoaded', function() {
+  const editModal = document.getElementById('editItemModal');
+  const editForm = document.getElementById('editItemForm');
+  const editCancel = document.getElementById('editCancel');
+  
+  let currentEditItem = null;
 
+	window.openEditModal = function(itineraryId, day, sortOrder) {
+	  const item = window.itineraryItems.find(it => 
+		it.itineraryId === itineraryId && it.day === day && it.sortOrder === sortOrder
+	  );
+	  
+	  if (!item) return;
+	  
+	  currentEditItem = item;
+	  
+	  // Get the form fields
+	  const dateField = document.getElementById('editDate').parentElement;
+	  const timeField = document.getElementById('editTime').parentElement;
+	  const notesField = document.getElementById('editNotes').parentElement;
+	  
+	  // Check if this is a note-only item (no placeId)
+	  const isNoteOnly = !item.placeId || item.placeId.trim() === '';
+	  
+	  if (isNoteOnly) {
+		// Hide date and time fields for note-only items
+		dateField.style.display = 'none';
+		timeField.style.display = 'none';
+		// Only show notes
+		document.getElementById('editNotes').value = item.notes || '';
+	  } else {
+		// Show all fields for regular items
+		dateField.style.display = 'block';
+		timeField.style.display = 'block';
+		// Populate all fields
+		document.getElementById('editDate').value = item.date || '';
+		document.getElementById('editTime').value = item.time || '';
+		document.getElementById('editNotes').value = item.notes || '';
+	  }
+	  
+	  editModal.style.display = 'block';
+	};
+
+  editCancel.onclick = () => {
+    editModal.style.display = 'none';
+    currentEditItem = null;
+  };
+
+  editForm.onsubmit = (e) => {
+    e.preventDefault();
+    if (!currentEditItem) return;
+
+    currentEditItem.date = document.getElementById('editDate').value;
+    currentEditItem.time = document.getElementById('editTime').value;
+    currentEditItem.notes = document.getElementById('editNotes').value;
+
+    postToAPI({
+      secret: API_SECRET,
+      action: 'updateItem',
+      itineraryId: currentEditItem.itineraryId,
+      day: currentEditItem.day,
+      sortOrder: currentEditItem.sortOrder,
+      date: currentEditItem.date,
+      time: currentEditItem.time,
+      notes: currentEditItem.notes
+    });
+
+    editModal.style.display = 'none';
+    const modifySelect = document.getElementById('modifyItinSelect');
+    if (modifySelect.value) {
+      renderModifyCarousel(modifySelect.value, false);
+    }
+  };
+});
 
 // Add Note functionality for modify modal
 window.addEventListener('DOMContentLoaded', function() {
@@ -1446,7 +1568,7 @@ window.addEventListener('DOMContentLoaded', function() {
       addNoteBtn.style.background = '#DB504A';
       renderModifyCarousel(id, true); // true = note insertion mode
     } else {
-      addNoteBtn.textContent = 'Add a Note';
+      addNoteBtn.textContent = 'Add a Note 🗒️';
       addNoteBtn.style.background = 'var(--menuButton)';
       renderModifyCarousel(id, false); // false = normal mode
     }
@@ -1514,7 +1636,7 @@ window.addEventListener('DOMContentLoaded', function() {
     noteTextModal.style.display = 'none';
     noteTextInput.value = '';
     noteInsertionMode = false;
-    addNoteBtn.textContent = 'Add a Note';
+    addNoteBtn.textContent = 'Add a Note 🗒️';
     addNoteBtn.style.background = 'var(--menuButton)';
     
     // Refresh the carousel
@@ -1649,6 +1771,12 @@ if (!insertionMode) {
 		}
 	  }
 	};
+	
+		card.querySelector('.edit-item').onclick = e => {
+	  e.stopPropagation();
+	  openEditModal(it.itineraryId, it.day, it.sortOrder);
+	};
+	
 	} else {
 	  // Card for insertion mode (but with same info as normal mode)
 	  card.innerHTML = `
@@ -1674,9 +1802,12 @@ hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; jus
   }
 // Update the modifyCards reference for the day label function
 setTimeout(() => {
-  const modifyLabel = document.getElementById('modifyDayLabel');
-  const modifyNextLabel = document.getElementById('modifyDayNextLabel');
-  const modifyCards = modifyCarousel.querySelectorAll('.place-card');
+ const modifyLabel = document.getElementById('modifyDayLabel');                   // L7 :contentReference[oaicite:0]{index=0}
+ const modifyNextLabel = document.getElementById('modifyDayNextLabel');          // L8 :contentReference[oaicite:1]{index=1}
+ // Define modifyCarousel before querying its cards
+ const modifyCarousel = document.getElementById('modifyItinCarousel');           // ✚ added
+ const modifyCards = modifyCarousel.querySelectorAll('.place-card');             // L9 :contentReference[oaicite:2]{index=2}
+
   
   function updateModifyDayLabels() {
     const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
@@ -1723,60 +1854,23 @@ setTimeout(() => {
   }
 }, 100);
 }
-// Day label logic for modify carousel
-const modifyLabel = document.getElementById('modifyDayLabel');
-const modifyNextLabel = document.getElementById('modifyDayNextLabel');
-const modifyCards = modifyCarousel.querySelectorAll('.place-card');
+ // Day label logic for modify carousel
+ window.addEventListener('DOMContentLoaded', () => {
+   const modifyCarousel = document.getElementById('modifyItinCarousel');
+   const modifyLabel    = document.getElementById('modifyDayLabel');
+   const modifyNextLabel= document.getElementById('modifyDayNextLabel');
+   const modifyCards    = modifyCarousel.querySelectorAll('.place-card');
 
-function updateModifyDayLabels() {
-  const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
-  
-  // Find the first visible card
-  const firstVisible = Array.from(modifyCards).find(c => {
-    const r = c.getBoundingClientRect();
-    return r.right > wrapRect.left + 1;
-  });
-  
-  if (!firstVisible) {
-    modifyLabel.style.display = 'none';
-    modifyNextLabel.style.display = 'none';
-    return;
-  }
-  
-  const day = firstVisible.dataset.day;
-  modifyLabel.textContent = `Day ${day}`;
-  
-  // Position current label over that card
-  const cr = firstVisible.getBoundingClientRect();
-  const relX = cr.left - wrapRect.left;
-  modifyLabel.style.left = `${relX > 0 ? relX : 0}px`;
-  modifyLabel.style.display = 'block';
-  
-  // Show next day label if its card is visible
-  const nextDay = String(Number(day) + 1);
-  const nextCard = Array.from(modifyCards).find(c => c.dataset.day === nextDay);
-  
-  if (nextCard) {
-    const nr = nextCard.getBoundingClientRect();
-    const relNextX = nr.left - wrapRect.left;
-    
-    if (relNextX < wrapRect.width) {
-      modifyNextLabel.textContent = `Day ${nextDay}`;
-      modifyNextLabel.style.left = `${relNextX > 0 ? relNextX : 0}px`;
-      modifyNextLabel.style.display = 'block';
-    } else {
-      modifyNextLabel.style.display = 'none';
-    }
-  } else {
-    modifyNextLabel.style.display = 'none';
-  }
-}
+   function updateModifyDayLabels() {
+     const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+     // …rest of your existing updateModifyDayLabels body…
+   }
 
-// Bind scroll event and run initially
-if (modifyCards.length > 0) {
-  modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
-  updateModifyDayLabels();
-}
+   if (modifyCards.length > 0) {
+     modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
+     updateModifyDayLabels();
+   }
+ });
 
 </script>
 
@@ -2206,7 +2300,7 @@ if (modifyCards.length > 0) {
       <div id="modifyItinCarousel" class="place-carousel" style="min-height:60px;"></div>
     </div>
 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:14px;">
-   <button type="button" id="addNoteBtn" style="display:none; background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Add a Note</button>
+   <button type="button" id="addNoteBtn" style="display:none; background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Add a Note 🗒️</button>
    <div style="margin-left:auto;">
      <button type="button" id="cancelModifyItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Done</button>
    </div>
@@ -2220,4 +2314,29 @@ if (modifyCards.length > 0) {
   </div>
 </div>
    </div>
+<div id="editItemModal">
+  <div style="margin-bottom: 14px; font-size: 1.1em;">Edit Item</div>
+  
+  <form id="editItemForm">
+    <label>
+      Date
+      <input type="date" id="editDate">
+    </label>
+    
+    <label>
+      Time
+      <input type="text" id="editTime" placeholder="e.g. 15:00, after breakfast">
+    </label>
+    
+    <label>
+      Notes
+      <textarea id="editNotes" rows="3"></textarea>
+    </label>
+    
+    <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 12px;">
+      <button type="button" id="editCancel">Cancel</button>
+      <button type="submit" id="editSave">Save</button>
+    </div>
+  </form>
+</div>
 </body>
