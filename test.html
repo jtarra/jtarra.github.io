@@ -39,7 +39,7 @@
 		carouselFont:  'Dorgan'		// filter & itinerary carousels
 	  }
 	};
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbw_2nRDnQOoiPATafZbeCr7y5oZDVE9NYt-zN8bu6guQtnMKfd0zkb7tBRox7bUPBlt/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyB-At6gJCbeod2Hcy-6eYrk81nigJ5w9-6tM533oueHMFvkq5rjh6XrZ3Nzu06xJ0/exec';  // ← replace with your Web App URL
 	const API_SECRET      = 'Fart';
 </script>
 
@@ -578,6 +578,24 @@
 	  padding: 6px 12px;
 	  font-family: var(--menuFont), cursive;
 	  cursor: pointer;
+	}
+	@keyframes moveItemPulse {
+	  0%, 100% { 
+		box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+		transform: scale(1.02);
+	  }
+	  50% { 
+		box-shadow: 0 6px 20px rgba(255, 152, 0, 0.5);
+		transform: scale(1.04);
+	  }
+	}
+
+	.moving-item {
+	  background: linear-gradient(135deg, #FFE082, #FFF9C4) !important;
+	  border: 3px solid #FF9800 !important;
+	  animation: moveItemPulse 2s ease-in-out infinite !important;
+	  position: relative !important;
+	  z-index: 100 !important;
 	}
 </style>
 
@@ -1279,6 +1297,12 @@ window.addEventListener('DOMContentLoaded', function() {
    };
 
 	cancelModify.onclick = () => {
+	  // Check if we're in move mode
+	  if (window.moveMode) {
+	    window.exitMoveMode();
+	    return;
+	  }
+	  
 	  modifyModal.style.display = 'none';
 	  modifySelect.value = '';
 	  modifyCarousel.innerHTML = '';
@@ -1557,6 +1581,9 @@ window.addEventListener('DOMContentLoaded', function() {
   
   let noteInsertionMode = false;
   let pendingNotePosition = null;
+  window.moveMode = false;
+	window.itemToMove = null;
+	window.pendingMovePosition = null;
 
   // Toggle note insertion mode
   addNoteBtn.onclick = () => {
@@ -1649,10 +1676,190 @@ window.addEventListener('DOMContentLoaded', function() {
     noteTextModal.style.display = 'block';
     noteTextInput.focus();
   };
+
+ // Move mode functions
+  window.enterMoveMode = function(itineraryId, day, sortOrder) {
+    window.moveMode = true;
+    window.itemToMove = { itineraryId, day, sortOrder };
+    
+    // Update button states
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const cancelBtn = document.getElementById('cancelModifyItin');
+    
+    // Hide add note button and change cancel to show move controls
+    addNoteBtn.style.display = 'none';
+    cancelBtn.textContent = 'Cancel Move';
+    
+    // Add save button
+    const saveBtn = document.createElement('button');
+    saveBtn.id = 'saveMoveBtn';
+    saveBtn.textContent = 'Save Move';
+    saveBtn.style.cssText = 'background: var(--menuButton); border-radius: 4px; border: none; padding: 6px 14px; font-family: var(--menuFont), cursive; cursor: pointer; color: #333; margin-left: 8px;';
+    saveBtn.disabled = true;
+    cancelBtn.parentNode.appendChild(saveBtn);
+    
+    // Wire up save button
+    saveBtn.onclick = () => window.executeMoveItem();
+    
+    // Render carousel in move mode
+    renderModifyCarousel(itineraryId, false, true); // Third parameter = move mode
+  }
+
+  window.exitMoveMode = function() {
+    window.moveMode = false;
+    window.itemToMove = null;
+    window.pendingMovePosition = null;
+    
+    // Restore button states
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const cancelBtn = document.getElementById('cancelModifyItin');
+    const saveBtn = document.getElementById('saveMoveBtn');
+    
+    addNoteBtn.style.display = 'block';
+    cancelBtn.textContent = 'Done';
+    if (saveBtn) saveBtn.remove();
+    
+    // Re-render normal carousel
+    const modifySelect = document.getElementById('modifyItinSelect');
+    if (modifySelect.value) {
+      renderModifyCarousel(modifySelect.value, false, false);
+    }
+  }
+
+  window.executeMoveItem = function() {
+    if (!window.itemToMove || !window.pendingMovePosition) return;
+    
+    const { itineraryId, day: oldDay, sortOrder: oldSortOrder } = window.itemToMove;
+    const { day: newDay, sortOrder: newSortOrder } = window.pendingMovePosition;
+    
+    // Find the item to move
+    const item = window.itineraryItems.find(it => 
+      it.itineraryId === itineraryId && it.day === oldDay && it.sortOrder === oldSortOrder
+    );
+    
+    if (!item) return;
+    
+    // Send move request to backend
+	postToAPI({
+	  secret: API_SECRET,
+	  action: 'moveItem',
+	  itineraryId: itineraryId,
+	  oldDay: oldDay,
+	  oldSortOrder: oldSortOrder,
+	  newDay: newDay,
+	  newSortOrder: newSortOrder,
+	  placeId: item.placeId || '',
+	  date: item.date || '',
+	  time: item.time || '',
+	  notes: item.notes || ''
+	});
+    
+    // Update frontend data immediately
+    updateFrontendAfterMove(itineraryId, oldDay, oldSortOrder, newDay, newSortOrder);
+    
+    // Exit move mode
+    window.exitMoveMode();
+  }
+
+window.updateFrontendAfterMove = function(itineraryId, oldDay, oldSortOrder, newDay, newSortOrder) {
+  const movedItem = window.itineraryItems.find(it => 
+    it.itineraryId === itineraryId && it.day === oldDay && it.sortOrder === oldSortOrder
+  );
+  
+  if (!movedItem) return;
+  
+  // Calculate the final position based on the move type
+  let finalSortOrder = newSortOrder;
+  
+if (oldDay === newDay) {
+    // Same day move
+    if (oldSortOrder < newSortOrder) {
+      // Moving to a later position in the same day
+      
+      // Find the highest sortOrder for this day EXCLUDING the item being moved
+      const dayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === oldDay && item !== movedItem
+      );
+      const maxSortOrder = dayItems.length > 0 ? Math.max(...dayItems.map(item => item.sortOrder)) : 0;
+      
+if (newSortOrder > maxSortOrder) {
+  // Moving to the end - final position should be maxSortOrder (the last position)
+  finalSortOrder = maxSortOrder;
+} else {
+  // Moving to middle position - final position is one less than requested
+  finalSortOrder = newSortOrder - 1;
+}
+      
+      // Shift items between old position and final position down by 1
+      window.itineraryItems.forEach(item => {
+        if (item.itineraryId !== itineraryId || item === movedItem) return;
+        
+        if (item.day === oldDay && 
+            item.sortOrder > oldSortOrder && 
+            item.sortOrder <= finalSortOrder) {
+          item.sortOrder--;
+        }
+      });
+    } else {
+      // Moving to an earlier position: final position is as requested
+      finalSortOrder = newSortOrder;
+      
+      // Shift items between new and old positions up by 1
+      window.itineraryItems.forEach(item => {
+        if (item.itineraryId !== itineraryId || item === movedItem) return;
+        
+        if (item.day === oldDay && 
+            item.sortOrder >= newSortOrder && 
+            item.sortOrder < oldSortOrder) {
+          item.sortOrder++;
+        }
+      });
+    }
+  } else {
+    // Different day move: final position is as requested
+    finalSortOrder = newSortOrder;
+    
+    // Handle old day: shift down items that were after the moved item
+    window.itineraryItems.forEach(item => {
+      if (item.itineraryId !== itineraryId || item === movedItem) return;
+      
+      if (item.day === oldDay && item.sortOrder > oldSortOrder) {
+        item.sortOrder--;
+      }
+    });
+    
+    // Handle new day: shift up items that will be at or after the new position
+    window.itineraryItems.forEach(item => {
+      if (item.itineraryId !== itineraryId || item === movedItem) return;
+      
+      if (item.day === newDay && item.sortOrder >= newSortOrder) {
+        item.sortOrder++;
+      }
+    });
+  }
+  
+  // Update the moved item with the calculated final position
+  movedItem.day = newDay;
+  movedItem.sortOrder = finalSortOrder;
+}
+
+  // Function to handle move hotspot clicks
+  window.handleMoveHotspotClick = function(itineraryId, day, sortOrder) {
+    window.pendingMovePosition = { itineraryId, day, sortOrder };
+    
+    // Clear previous selections
+    document.querySelectorAll('.move-hotspot').forEach(h => h.classList.remove('selected'));
+    event.target.classList.add('selected');
+    event.target.style.background = 'rgba(76,175,80,0.3)';
+    
+    // Enable save button
+    const saveBtn = document.getElementById('saveMoveBtn');
+    if (saveBtn) saveBtn.disabled = false;
+  };
 });
 
 // Updated carousel rendering function
-function renderModifyCarousel(itineraryId, insertionMode = false) {
+function renderModifyCarousel(itineraryId, insertionMode = false, moveMode = false) {
   const modifyCarousel = document.getElementById('modifyItinCarousel');
   const items = window.itineraryItems
     .filter(it => it.itineraryId === itineraryId)
@@ -1707,76 +1914,165 @@ startOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: c
   }
 }
 
+if (moveMode) {
+  // Get the item being moved
+  const movingItem = window.itemToMove;
+  const isMovingItem = movingItem && 
+    it.itineraryId === movingItem.itineraryId && 
+    it.day === movingItem.day && 
+    it.sortOrder === movingItem.sortOrder;
+  
+  // Handle day transitions
+  if (it.day !== currentDay) {
+    const previousDay = currentDay;
+    
+    // Only show end-of-previous-day hotspot if it's not adjacent to moving item
+    if (previousDay > 0) {
+      const prevDayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === previousDay
+      );
+      const maxSortOrder = prevDayItems.length > 0 ? Math.max(...prevDayItems.map(item => item.sortOrder)) : 0;
+      
+      // Don't show if moving item is the last item of previous day
+      const showEndHotspot = !(movingItem && movingItem.day === previousDay && movingItem.sortOrder === maxSortOrder);
+      
+      if (showEndHotspot) {
+        const endOfDayHotspot = document.createElement('div');
+        endOfDayHotspot.className = 'move-hotspot';
+        endOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+        endOfDayHotspot.textContent = '+';
+        // FIXED: Send maxSortOrder + 1 to put item at end of previous day
+        endOfDayHotspot.onclick = () => handleMoveHotspotClick(itineraryId, previousDay, maxSortOrder + 1);
+        modifyCarousel.appendChild(endOfDayHotspot);
+      }
+    }
+    
+    // Only show start-of-new-day hotspot if moving item isn't first item of this day
+    const showStartHotspot = !(movingItem && movingItem.day === it.day && movingItem.sortOrder === 1);
+    
+    if (showStartHotspot) {
+      const startOfDayHotspot = document.createElement('div');
+      startOfDayHotspot.className = 'move-hotspot';
+      startOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+      startOfDayHotspot.textContent = '+';
+      startOfDayHotspot.onclick = () => handleMoveHotspotClick(itineraryId, it.day, 1);
+      modifyCarousel.appendChild(startOfDayHotspot);
+    }
+  } else {
+    // Only show hotspot if it's not the moving item and not immediately before it
+    const showHotspot = !isMovingItem && 
+      !(movingItem && movingItem.day === it.day && movingItem.sortOrder === it.sortOrder - 1);
+    
+    if (showHotspot) {
+      const hotspot = document.createElement('div');
+      hotspot.className = 'move-hotspot';
+      hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+      hotspot.textContent = '+';
+      hotspot.onclick = () => handleMoveHotspotClick(itineraryId, it.day, it.sortOrder);
+      modifyCarousel.appendChild(hotspot);
+    }
+  }
+}
+
 // ALWAYS update currentDay for day tracking (both insertion and normal mode)
 if (it.day !== currentDay) {
   currentDay = it.day;
 }
 
-    // Regular item card
-    const card = document.createElement('div');
-    card.className = 'place-card';
-    card.dataset.day = it.day;
+	// Regular item card
+	const card = document.createElement('div');
+	card.className = 'place-card';
+	card.dataset.day = it.day;
+
+	// Highlight the item being moved
+	const movingItem = window.itemToMove;
+	const isMovingItem = movingItem && 
+	  it.itineraryId === movingItem.itineraryId && 
+	  it.day === movingItem.day && 
+	  it.sortOrder === movingItem.sortOrder;
+
+	if (isMovingItem && moveMode) {
+	  card.classList.add('moving-item');
+	}
     
 if (!insertionMode) {
+  // Hide buttons for all items when in move mode, or just for the moving item
+  const showButtons = !moveMode;
+  
   card.innerHTML = `
-    <span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1em;color:#DB504A;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="remove-item" title="Remove">🗑️</span>
-    <span style="position:absolute;top:36px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="edit-item" title="Edit">✍️</span>
-    <span style="position:absolute;top:68px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="move-item" title="Move">↔️</span>
+    ${showButtons ? `<span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1em;color:#DB504A;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="remove-item" title="Remove">🗑️</span>` : ''}
+    ${showButtons ? `<span style="position:absolute;top:36px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="edit-item" title="Edit">✏️</span>` : ''}
+    ${showButtons ? `<span style="position:absolute;top:68px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="move-item" title="Move">↕️</span>` : ''}
     <h4>${place ? place.name : 'Note'}</h4>
     ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
     ${it.date ? `<p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>` : ''}
     ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
   `;
       
-	card.querySelector('.remove-item').onclick = e => {
-	  e.stopPropagation();
-	  if (confirm('Are you sure you want to remove this item?')) {
-		// Grey out the card to show it's being removed
-		card.style.opacity = 0.4;
-		card.style.pointerEvents = 'none'; // Disable further clicks
-		
-		// Use the same postToAPI that works for everything else
-		postToAPI({
-		  secret: API_SECRET,
-		  action: 'removeItem',
-		  itineraryId: it.itineraryId,
-		  day: it.day,
-		  sortOrder: it.sortOrder
-		});
-		
-		// Optionally add some visual indicator
-		const removeBtn = card.querySelector('.remove-item');
-		removeBtn.style.color = '#666';
-		removeBtn.title = 'Removed';
-		
-		// UPDATE: Remove the item from frontend data immediately
-		const indexToRemove = window.itineraryItems.findIndex(item => 
-		  item.itineraryId === it.itineraryId && 
-		  item.day === it.day && 
-		  item.sortOrder === it.sortOrder
-		);
-		
-		if (indexToRemove !== -1) {
-		  // Remove the item from the array
-		  window.itineraryItems.splice(indexToRemove, 1);
-		  
-		  // Update sortOrder for remaining items in the same itinerary/day
-		  window.itineraryItems.forEach(item => {
-			if (item.itineraryId === it.itineraryId && 
-				item.day === it.day && 
-				item.sortOrder > it.sortOrder) {
-			  item.sortOrder--;
+	// Only add event listeners if buttons exist
+	const removeBtn = card.querySelector('.remove-item');
+	const editBtn = card.querySelector('.edit-item');
+	const moveBtn = card.querySelector('.move-item');
+	
+	if (removeBtn) {
+		removeBtn.onclick = e => {
+		  e.stopPropagation();
+		  if (confirm('Are you sure you want to remove this item?')) {
+			// Grey out the card to show it's being removed
+			card.style.opacity = 0.4;
+			card.style.pointerEvents = 'none'; // Disable further clicks
+			
+			// Use the same postToAPI that works for everything else
+			postToAPI({
+			  secret: API_SECRET,
+			  action: 'removeItem',
+			  itineraryId: it.itineraryId,
+			  day: it.day,
+			  sortOrder: it.sortOrder
+			});
+			
+			// Optionally add some visual indicator
+			removeBtn.style.color = '#666';
+			removeBtn.title = 'Removed';
+			
+			// UPDATE: Remove the item from frontend data immediately
+			const indexToRemove = window.itineraryItems.findIndex(item => 
+			  item.itineraryId === it.itineraryId && 
+			  item.day === it.day && 
+			  item.sortOrder === it.sortOrder
+			);
+			
+			if (indexToRemove !== -1) {
+			  // Remove the item from the array
+			  window.itineraryItems.splice(indexToRemove, 1);
+			  
+			  // Update sortOrder for remaining items in the same itinerary/day
+			  window.itineraryItems.forEach(item => {
+				if (item.itineraryId === it.itineraryId && 
+					item.day === it.day && 
+					item.sortOrder > it.sortOrder) {
+				  item.sortOrder--;
+				}
+			  });
 			}
-		  });
-		}
-	  }
-	};
+		  }
+		};
+	}
 	
-		card.querySelector('.edit-item').onclick = e => {
-	  e.stopPropagation();
-	  openEditModal(it.itineraryId, it.day, it.sortOrder);
-	};
+	if (editBtn) {
+		editBtn.onclick = e => {
+		  e.stopPropagation();
+		  openEditModal(it.itineraryId, it.day, it.sortOrder);
+		};
+	}
 	
+	if (moveBtn) {
+		moveBtn.onclick = e => {
+		  e.stopPropagation();
+		  window.enterMoveMode(it.itineraryId, it.day, it.sortOrder);
+		};
+	}
+
 	} else {
 	  // Card for insertion mode (but with same info as normal mode)
 	  card.innerHTML = `
@@ -1800,6 +2096,31 @@ hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; jus
     hotspot.onclick = () => handleNoteHotspotClick(itineraryId, lastItem.day, lastItem.sortOrder + 1);
     modifyCarousel.appendChild(hotspot);
   }
+  
+if (moveMode && items.length > 0) {
+  const lastItem = items[items.length - 1];
+  const movingItem = window.itemToMove;
+  
+  // Only show final hotspot if moving item isn't the last item
+  const showFinalHotspot = !(movingItem && 
+    movingItem.day === lastItem.day && 
+    movingItem.sortOrder === lastItem.sortOrder);
+  
+  if (showFinalHotspot) {
+    const hotspot = document.createElement('div');
+    hotspot.className = 'move-hotspot';
+    hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+    hotspot.textContent = '+';
+    
+    // FIXED: Send lastItem.sortOrder + 1 to put item at end of final day
+    const targetSortOrder = lastItem.sortOrder + 1;
+    console.log('Creating final day hotspot with sortOrder:', targetSortOrder, 'from lastItem:', lastItem.sortOrder);
+    
+    hotspot.onclick = () => handleMoveHotspotClick(itineraryId, lastItem.day, targetSortOrder);
+    modifyCarousel.appendChild(hotspot);
+  }
+}
+  
 // Update the modifyCards reference for the day label function
 setTimeout(() => {
  const modifyLabel = document.getElementById('modifyDayLabel');                   // L7 :contentReference[oaicite:0]{index=0}
