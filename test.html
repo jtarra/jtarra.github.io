@@ -674,6 +674,99 @@ window.addEventListener('DOMContentLoaded', () => {
     // Preload Itineraries and Items so Modify works even before View
     ensureItinData().catch(err => console.error('Itinerary preload failed:', err));
   });
+  
+class PasswordProtection {
+    constructor() {
+        this.isAuthenticated = false;
+        this.currentAction = null;
+        this.currentParams = null;
+        this.setupEventListeners();
+    }
+
+setupEventListeners() {
+    // Check if elements exist, if not, wait for DOM to be ready
+    const input = document.getElementById('passwordInput');
+    const submitBtn = document.getElementById('passwordSubmit');
+    const cancelBtn = document.getElementById('passwordCancel');
+    const overlay = document.getElementById('passwordOverlay');
+
+    if (!input || !submitBtn || !cancelBtn || !overlay) {
+        // Elements don't exist yet, wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setupEventListeners());
+        } else {
+            // DOM is already loaded, try again in next tick
+            setTimeout(() => this.setupEventListeners(), 0);
+        }
+        return;
+    }
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') this.submitPassword();
+    });
+
+    submitBtn.addEventListener('click', () => this.submitPassword());
+    
+    const closeModal = () => this.hideModal();
+    cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+}
+
+    requireAuth(action, params = null) {
+        if (this.isAuthenticated) {
+            action(params);
+            return;
+        }
+
+        this.currentAction = action;
+        this.currentParams = params;
+        this.showModal();
+    }
+
+    showModal() {
+        document.getElementById('passwordOverlay').style.display = 'block';
+        document.getElementById('passwordModal').style.display = 'block';
+        document.getElementById('passwordInput').focus();
+        document.getElementById('passwordError').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+    }
+
+    hideModal() {
+        document.getElementById('passwordOverlay').style.display = 'none';
+        document.getElementById('passwordModal').style.display = 'none';
+        this.currentAction = null;
+        this.currentParams = null;
+    }
+
+    submitPassword() {
+        const password = document.getElementById('passwordInput').value;
+        const errorDiv = document.getElementById('passwordError');
+
+        // Check if password matches API_SECRET
+        if (password === API_SECRET) {
+            this.isAuthenticated = true;
+            this.hideModal();
+            
+            // Execute the pending action
+            if (this.currentAction) {
+                this.currentAction(this.currentParams);
+            }
+        } else {
+            errorDiv.textContent = 'Incorrect password. Please try again.';
+            errorDiv.style.display = 'block';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+
+    // Reset authentication on page refresh
+    resetAuth() {
+        this.isAuthenticated = false;
+    }
+}
+
+// Initialize password protection
+window.passwordProtection = new PasswordProtection();
 </script>
 </head>
 
@@ -966,6 +1059,9 @@ window.addEventListener('DOMContentLoaded', () => {
 			event.preventDefault(); 
 		}
 	}, { passive: false });
+
+
+
 </script>
 
 <!-- Add to itinerary -->
@@ -1237,10 +1333,12 @@ window.addEventListener('DOMContentLoaded', function() {
   const itinTitleInput = document.getElementById('itinTitle');
 
    createItinBtn.onclick = () => {
+   window.passwordProtection.requireAuth(() => {
      itinTitleInput.value = '';
      createItinModal.style.display = 'block';
      itinTitleInput.focus();
-   };
+});  
+  };
     cancelCreateItin.onclick = () => {
       createItinModal.style.display = 'none';
       itinTitleInput.value = '';
@@ -1289,11 +1387,13 @@ window.addEventListener('DOMContentLoaded', function() {
    const cancelModify = document.getElementById('cancelModifyItin');
 
    modifyBtn.onclick = () => {
+   window.passwordProtection.requireAuth(() => {
      // populate dropdown
      modifySelect.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
        window.itineraries.map(it => `<option value="${it.itineraryId}">${it.name}</option>`).join('');
      modifyCarousel.innerHTML = '';
      modifyModal.style.display = 'block';
+	 });
    };
 
 	cancelModify.onclick = () => {
@@ -1587,6 +1687,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
   // Toggle note insertion mode
   addNoteBtn.onclick = () => {
+  window.passwordProtection.requireAuth(() => {
     noteInsertionMode = !noteInsertionMode;
     const id = document.getElementById('modifyItinSelect').value;
     
@@ -1599,6 +1700,7 @@ window.addEventListener('DOMContentLoaded', function() {
       addNoteBtn.style.background = 'var(--menuButton)';
       renderModifyCarousel(id, false); // false = normal mode
     }
+	});
   };
 
   // Note text modal handlers
@@ -2017,6 +2119,7 @@ if (!insertionMode) {
 	if (removeBtn) {
 		removeBtn.onclick = e => {
 		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
 		  if (confirm('Are you sure you want to remove this item?')) {
 			// Grey out the card to show it's being removed
 			card.style.opacity = 0.4;
@@ -2056,20 +2159,25 @@ if (!insertionMode) {
 			  });
 			}
 		  }
+		  });
 		};
 	}
 	
 	if (editBtn) {
 		editBtn.onclick = e => {
 		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
 		  openEditModal(it.itineraryId, it.day, it.sortOrder);
+		  });
 		};
 	}
 	
 	if (moveBtn) {
 		moveBtn.onclick = e => {
 		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
 		  window.enterMoveMode(it.itineraryId, it.day, it.sortOrder);
+		});
 		};
 	}
 
@@ -2277,8 +2385,10 @@ setTimeout(() => {
         if (!btn) return;
         e.preventDefault();
         e.stopPropagation();
+		window.passwordProtection.requireAuth(() => {
         openAddModal(btn.dataset.placeId);
       });
+	  });
 
       marker.placeId = p.id;
       el.addEventListener('click', e => {
@@ -2595,8 +2705,8 @@ setTimeout(() => {
     background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20000; width:320px; max-width:96%; font-family: var(--menuFont), sans-serif;">
     <form id="createItinForm" style="display:flex; flex-direction:column; gap:14px;">
       <label for="itinTitle" style="font-size:1em;">Create New Itinerary
-        <input type="text" id="itinTitle" required maxlength="60" autocomplete="off"
-          style="width: 98%; box-sizing: border-box; padding:7px 8px; border:1px solid var(--borders); border-radius:4px; font-size:1em; background: var(--searchBG); color:#333;">
+	<input type="text" id="itinTitle" required maxlength="60" autocomplete="off" placeholder="Itinerary Name"
+	  style="width: 98%; box-sizing: border-box; padding:7px 8px; border:1px solid var(--borders); border-radius:4px; font-size:1em; background: var(--searchBG); color:#333;">
       </label>
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button type="button" id="cancelCreateItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;">Cancel</button>
@@ -2659,5 +2769,15 @@ setTimeout(() => {
       <button type="submit" id="editSave">Save</button>
     </div>
   </form>
+</div>
+<div id="passwordOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:29999;"></div>
+<div id="passwordModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--menuBg); border:1px solid var(--borders); border-radius:8px; padding:20px; box-shadow:0 4px 16px rgba(0,0,0,0.3); z-index:30000; width:300px; max-width:calc(100% - 40px); font-family:var(--menuFont), sans-serif;">
+    <h3 style="margin:0 0 16px 0; font-size:1.2em; color:#333; text-align:center;">🔒 Enter Password</h3>
+    <div id="passwordError" style="display:none; color:#d32f2f; font-size:0.9em; margin-bottom:8px; text-align:center;"></div>
+    <input type="password" id="passwordInput" placeholder="Enter modification password" maxlength="50" style="width:calc(100% - 16px); padding:8px; border:1px solid var(--borders); border-radius:4px; background:var(--searchBG); font-family:var(--menuFont), sans-serif; font-size:1em; margin-bottom:16px;">
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="passwordCancel" style="background:var(--menuButton); border:none; border-radius:4px; padding:8px 16px; font-family:var(--menuFont), cursive; cursor:pointer; color:#333;">Cancel</button>
+        <button type="button" id="passwordSubmit" style="background:var(--menuButton); border:none; border-radius:4px; padding:8px 16px; font-family:var(--menuFont), cursive; cursor:pointer; color:#333;">Submit</button>
+    </div>
 </div>
 </body>
