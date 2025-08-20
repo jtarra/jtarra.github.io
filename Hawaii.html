@@ -1,0 +1,2783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6/dist/fuse.min.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+  <meta charset="utf-8" />
+  <title>Hawaii</title>
+
+
+<!-- MAIN USER CONFIG -->
+<script>
+    const CONFIG = {
+      sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+      apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
+      ranges: ['Places!A:L','Reviews!A:E'],
+      mapCenter: [21.4559, -157.9519],
+      mapZoom: 10,
+      tileUrl: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      attribution: '<a href="https://www.youtube.com/watch?v=rzLIUgnKY40">Home</a>',
+      baseColors: ['#FF6347','#D62828','#00A693','#4D7D5C','#528ED1','#DEFF8D','#32CD32','#FF69B4'],
+      emojiList: ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐋','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️'],
+      userIconUrls: ['MapResources/UserIcons/Hawaii/Hula1.png','MapResources/UserIcons/Hawaii/Hula2.png','MapResources/UserIcons/Hawaii/Hula3.png','MapResources/UserIcons/Hawaii/Hula4.png','MapResources/UserIcons/Hawaii/Hula5.png'],
+      colors: {
+        menuBg:        '#FFF9E6',	// menu background color
+        menuButton:    '#E7D8C4',	// menu buttons
+        catText:  	   '#E3B505',	// category text color
+        catShadow:     '#DB504A',	// category text shadow color
+        searchBG:  	   '#F5F1EC',	// Search bar background color
+        caroCardBg:    '#FAF1D2',	// Carousel Cards BG color
+        borders: 	   '#D0B59A',	// thin border lines
+		subcatBG:	   '#F8E9D5',	// background behind subcategories
+		},
+	  fonts: {
+	  	catFont: 	   'Bardy',		// category labels on filter page
+	  	subcatFont:    'Dorgan',	// subcategories under the category dropdowns
+	  	popupFont:     'Dorgan',	// map popups
+		menuFont:      'Dorgan',	// menu UI and buttons (select all, itinerary mode, menu)
+		carouselFont:  'Dorgan'		// filter & itinerary carousels
+	  }
+	};
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyB-At6gJCbeod2Hcy-6eYrk81nigJ5w9-6tM533oueHMFvkq5rjh6XrZ3Nzu06xJ0/exec';  // ← replace with your Web App URL
+	const API_SECRET      = 'Fart';
+</script>
+
+<!-- Fonts -->
+<style>
+    @font-face { font-family: 'Bardy'; src: url('MapResources/Fonts/Bardy.woff') format('woff'); }
+    @font-face { font-family: 'Dorgan'; src: url('MapResources/Fonts/Dorgan.woff') format('woff'); }
+</style>
+
+<!-- Core CSS -->
+<style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: sans-serif;
+    }
+	#map { width: 100%; height: 100%; }
+</style>
+
+<!-- Maplibre -->
+<style>
+	.maplibregl-popup-content-wrapper,
+	.maplibregl-popup-content {
+		border-radius: 8px !important;
+		font-family: var(--popupFont), sans-serif;					/* Popup Cards' Font */
+		font-size: 14px !important;							/* Popup Cards' Text size */
+		color: #333 !important;
+		}
+	.maplibregl-popup-content-wrapper a,
+	.maplibregl-popup-content a {
+	  color: #0078A8 !important;
+		}
+	.maplibregl-popup-content strong {
+	  font-weight: normal !important;
+	  font-size: 1.25em !important;
+	  font-family: var(--carouselFont), sans-serif !important;
+	  margin: 6px 0 4px 0;
+	}
+    .maplibregl-popup-content h4,
+    .maplibregl-popup-content-wrapper h4 {
+      font-weight: normal !important;
+      font-size: 1.25em !important;
+      font-family: var(--carouselFont), sans-serif !important;
+      margin: 6px 0 4px 0;
+    }
+</style>
+
+<!-- Filters -->
+<style>
+    .filters {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: var(--menuBg); border-radius: 8px;									
+      overflow: hidden; max-height: 40px; width: 120px;
+      transition: max-height 0.3s, width 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+    .filters.expanded {
+      max-height: calc(var(--realVh, 1vh) * 100 - 20px);
+      width: 280px;
+    }
+  .panel-container {
+    flex: 1;
+    overflow-y: auto;
+  }
+   .filters:not(.expanded) .panel-container {
+	  display: none !important;
+	}
+   .filters:not(.expanded) .panel-container {
+	overflow-y: hidden !important;
+	}
+    .filters:not(.expanded) .panel-container::-webkit-scrollbar {
+	display: none !important;
+	}
+   .filters:not(.expanded) .panel-container {
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
+	}
+   .place-carousel {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid var(--borders);
+
+    flex: none;
+    position: sticky;
+    bottom: 0;
+    background: rgba(255,249,230,0.95);
+    z-index: 10;
+  }
+	.filters:not(.expanded) .place-carousel {
+	  display: none !important;
+	  overflow-x: hidden !important;
+		}
+	.filters:not(.expanded) .place-carousel::-webkit-scrollbar {
+	  display: none !important;
+	}
+	.filters:not(.expanded) .place-carousel {
+	  scrollbar-width: none !important;
+	  -ms-overflow-style: none !important;
+	}
+	#filters:not(.expanded) #placeCarousel {
+		display: none !important;
+		overflow-x: hidden !important;
+	}
+    /* Toggle Button */
+    #toggleFilters {
+      display: block; width: 100%; padding: 8px;
+      background: var(--menuButton); border: none; border-bottom: 1px solid #ddd;			
+      font-family: var(--menuFont), cursive; cursor: pointer;							/* Show/Hide Filters button font */
+      color: #000;
+    }
+
+    /* Panel Headers */
+    .panel { margin: 8px; }
+    .panel-header {
+      display: flex; align-items: center; padding: 6px 8px;
+      background: var(--menuButton); border-radius: 6px; cursor: pointer;
+      font-family: var(--catFont), cursive; font-size: 1.6em;						/* Category Tabs font */
+      color: var(--catText); text-shadow: 2px 2px 0 var(--catShadow);	
+    }
+    .panel-header input[type="checkbox"],
+    .panel-body input[type="checkbox"] {
+      appearance: none; width: 18px; height: 18px;
+      margin-right: 12px; border: 2px solid var(--borders);
+      border-radius: 3px; position: relative; cursor: pointer;
+    }
+    input[type="checkbox"]:checked { border: none; }
+    input[type="checkbox"]:checked::after {
+      content: attr(data-emoji);
+      position: absolute; top: -2px; left: -2px;
+      font-size: 22px; line-height: 18px;
+      pointer-events: none;
+    }
+    .panel-header .color-swatch {
+      margin-left: auto; width: 14px; height: 14px;
+      border-radius: 50%; border: 1px solid #999;					
+    }
+	.panel-header .arrow {
+	     display: inline-block;
+	     width: 0;
+	     height: 0;
+	     margin-left: 8px;
+	     border-left: 8px solid transparent;
+	     border-right: 8px solid transparent;
+	     border-top: 12px solid var(--catText);
+	     transition: transform 0.2s ease;
+	     filter: drop-shadow(2px 2px 0 var(--catShadow));
+	   }
+	   .panel-header .arrow.expanded {
+	     transform: rotate(-90deg);
+	   }
+    /* Panel Bodies */
+    .panel-body { display: none; padding: 8px 12px;
+      background: var(--subcatBG); border-radius: 6px;							/* Expanded Categories BG color */
+    }
+    .panel-body.active { display: block; }
+    .panel-body label {
+      display: block; margin-bottom: 6px;
+      font-family: var(--subcatFont), sans-serif; font-size: 1.1em;				/* Subcategory Font */
+      position: relative;
+    }
+
+    .review-carousel {
+      display: flex; overflow-x: auto; gap: 8px; padding: 6px 0;
+    }
+    .review-item {
+      flex: 0 0 180px; background: #fff;
+      border: 1px solid #ccc; padding: 6px;
+      border-radius: 4px; box-sizing: border-box;
+    }
+    .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
+    .review-item strong { display: block; margin-bottom: 4px; }
+    .review-item p { margin: 0 0 4px; }
+    .place-card {
+    flex: 0 0 200px;
+    background: var(--caroCardBg);
+    border: 1px solid var(--borders);
+    border-radius: 6px;
+    padding: 6px;
+    box-sizing: border-box;
+    cursor: pointer;
+	font-family: var(--carouselFont), sans-serif; 						/* Carousel Cards' Font */
+    position: relative;
+	}
+	.place-card h4 {
+	  font-weight: normal !important;
+	  font-size: 1.25em;
+	  margin: 4px 0 0 0;
+	  font-family: var(--carouselFont), sans-serif;
+	}
+    #placeCarousel .place-card p {
+      margin: 2px 0 0 0;
+    }
+    #placeSearch {
+      width: calc(100% - 16px);
+      margin: 8px;
+      padding: 10px 10px 6px;
+      border: 1px solid var(--borders);
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+      background-color: var(--searchBG);
+      font-family: var(--menuFont), sans-serif;					/* Search Box Font */
+      font-size: 1em;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #placeSearch::placeholder {
+      color: #999;											/* Search Placeholder Text Color */
+    }
+	.search-toggle-container {
+	  display: flex;
+	}
+	.search-toggle-container input#placeSearch {
+	  flex: 2;
+	  width: auto;
+	  border-radius: 8px;
+	}
+	.search-toggle-container button#toggleSubcats {
+	  flex: 1;
+	  margin: 0;	
+	  background: var(--menuButton);
+	  padding-top: 6px;
+	  border-radius: 8px;
+	  color: #000;
+	  border: none;
+	  border-bottom: 1px solid #ddd;
+	  font-family: var(--menuFont), cursive;						/* Filter select/unselect all button font */
+	  cursor: pointer;
+	}
+	#filters.itineraryActive:not(.expanded) {
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	box-shadow: none !important;
+	height: auto !important;
+	}
+	#filters.itineraryActive:not(.expanded) > *:not(#toggleFilters) {
+	display: none !important;
+	}
+	/* When itinerary mode is on, never show search or deselect */
+	#filters.itineraryActive #placeSearch,
+	#filters.itineraryActive #toggleSubcats,
+	#filters.itineraryActive .search-toggle-container {
+	display: none !important;
+	}
+</style>
+
+<!-- Itinerary: View -->
+<style>
+	#itinerarySelect {
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;
+	  background-color: var(--searchBG);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 8px 8px 8px 8px;
+	  font-family: var(--menuFont), sans-serif;
+	  font-size: 1em;
+	  color: #333;
+	  background-image: url('data:image/svg+xml;utf8,\
+		<svg xmlns="http://www.w3.org/2000/svg"\
+			 width="12" height="12" viewBox="0 0 12 12">\
+		  <path d="M2 4l4 4 4-4"\
+				stroke="%23666" fill="none" stroke-width="2"/>\
+		</svg>');
+	  background-repeat: no-repeat;
+	  background-position: right 8px center;
+	  background-size: 12px;
+	}
+	#itinerarySelect:focus {
+	  outline: 2px solid var(--borders);
+	  outline-offset: 2px;
+	}
+	#itinerarySelect,
+	#itinerarySelect option {
+	  font-family: var(--menuFont), sans-serif;
+	}
+	#itinDayCurrent,
+	#itinDayNext {
+		font-family: var(--menuFont), cursive;
+		font-size: 1.4em;
+		text-decoration: underline;
+	}
+</style>
+
+<!-- Itinerary: Create -->
+<style>
+	#createItinModal {
+ 		background: var(--menuBg);
+ 		border: 1px solid var(--borders);
+ 		border-radius: 8px;
+ 		box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm input, #createItinForm button {
+ 		border: 1px solid var(--borders);
+ 		background: var(--searchBG);
+ 		color: #333;
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm button {
+ 		background: var(--menuButton);
+ 		cursor: pointer;
+ 	}
+</style>
+
+<!-- Itinerary: Add -->
+<style>
+	#itinAddModal {
+		/* hide by default, center on screen */
+		display: none;
+		position: fixed;
+		top: 50%; left: 50%;
+		transform: translate(-50%, -50%);
+		/* match menu panel style */
+		background: var(--menuBg);
+		border: 1px solid var(--borders);
+		border-radius: 8px;
+		padding: 16px;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+		z-index: 10000;
+		/* fixed width with padding */
+		width: 320px;
+		max-width: calc(100% - 32px);
+		font-family: var(--menuFont), sans-serif;
+	}
+	#addItinForm {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	#addItinForm label {
+		font-size: 1em;
+	}
+  #addItinForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* make sure children can shrink inside flex */
+    min-width: 0;
+  }
+  /* shrink fields so they don't touch the modal edges */
+  #addItinForm select,
+  #addItinForm input,
+  #addItinForm textarea {
+    width: 92%;
+    max-width: 92%;
+    box-sizing: border-box;
+    margin: 0 auto;
+    padding: 6px 8px;
+    border: 1px solid var(--borders);
+    border-radius: 4px;
+    font-family: var(--menuFont), sans-serif;
+    background-color: var(--searchBG);
+    color: #333;
+    -webkit-appearance: none;
+       -moz-appearance: none;
+            appearance: none;
+  }
+	
+	/* Options need their own bg in some browsers */
+	#addItinForm select option {
+		background-color: var(--searchBG);
+		color: #333;
+	}
+	#addItinForm button {
+		align-self: flex-end;
+		background: var(--menuButton);
+		color: #333;
+		border: none;
+		border-radius: 4px;
+		padding: 6px 12px;
+		font-family: var(--menuFont), cursive;
+		cursor: pointer;
+	}
+	#modalNext[disabled] {
+		opacity: .45;
+		cursor: default;
+		pointer-events: none;
+	}
+	#insertConfirm[disabled]{
+	opacity:.45;
+	pointer-events:none;
+	cursor:default;
+	}
+	/* Step‑2 insertion carousel container */
+	#insertStepContainer {
+		margin-top: 16px;
+		display: none;
+	}
+	/* Step‑2 buttons */
+	#insertStepContainer button {
+		background: var(--menuButton);
+		color: #333;
+		border: none;
+		border-radius: 4px;
+		padding: 6px 12px;
+		font-family: var(--menuFont), cursive;
+		cursor: pointer;
+	}
+	/* Back button aligned left */
+	#insertBack {
+		margin-right: auto;
+	}
+	
+	/* Insert hotspots styling */
+	.insert-hotspot {
+		flex: 0 0 15%;
+		max-width: 15%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		opacity: 0.5;
+		border: 1px dashed var(--borders);
+		border-radius: 4px;
+		background: rgba(0,0,0,0.05);
+		margin: 4px;
+	}
+	.insert-hotspot.selected {
+		background: var(--menuButton);
+		opacity: 1;
+	}
+	/* ── Constrain the insertion carousel inside the modal ── */
+	#insertStepContainer {
+	margin-top: 16px;
+	display: none;
+	/* stack carousel above buttons instead of side‑by‑side */
+	flex-direction: column;
+	}
+  /* ── Insertion carousel: disable sticky so Back/Add remain visible ── */
+  #insertCarousel.place-carousel {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 8px;
+    /* override the default sticky positioning of .place-carousel */
+    position: static !important;
+    bottom: auto    !important;
+    z-index: auto   !important;
+  }
+  .insert-day-label {
+    font-family: var(--menuFont), cursive;
+    font-size: 1.1em;
+    margin: 4px 8px 0 8px;
+    text-align: left;
+    color: #000;
+  }
+</style>
+
+<!-- Itinerary: Modify -->
+<style>
+	#modifyItinSelect {
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;
+	  background-color: var(--searchBG);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 8px 8px 8px 8px;
+	  font-family: var(--menuFont), sans-serif;
+	  font-size: 1em;
+	  color: #333;
+	  background-repeat: no-repeat;
+	  background-position: right 8px center;
+	  background-size: 12px;
+	}
+	#modifyItinSelect:focus {
+	  outline: 2px solid var(--borders);
+	  outline-offset: 2px;
+	}
+	#modifyItinSelect, #modifyItinSelect option {
+	  font-family: var(--menuFont), sans-serif;
+	}
+    body.menu-open {
+      overflow: hidden;
+    }
+	#modifyItinCarousel .place-card h4 {
+	  padding-right: 32px;
+	}
+	#modifyItinCarousel .place-card p {
+	  padding-right: 32px;
+	}
+	.remove-item:hover {
+		background: var(--menuButton) !important;
+		border-color: #DB504A !important;
+}
+	#editItemModal {
+	  display: none;
+	  position: fixed;
+	  top: 50%; left: 50%;
+	  transform: translate(-50%, -50%);
+	  background: var(--menuBg);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 16px;
+	  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+	  z-index: 20003;
+	  width: 320px;
+	  max-width: calc(100% - 32px);
+	  font-family: var(--menuFont), sans-serif;
+	}
+
+	#editItemForm {
+	  display: flex;
+	  flex-direction: column;
+	  gap: 12px;
+	}
+
+	#editItemForm label {
+	  font-size: 1em;
+	}
+
+	#editItemForm input,
+	#editItemForm textarea {
+	  width: 92%;
+	  padding: 6px 8px;
+	  border: 1px solid var(--borders);
+	  border-radius: 4px;
+	  font-family: var(--menuFont), sans-serif;
+	  background-color: var(--searchBG);
+	  color: #333;
+	}
+
+	#editItemForm button {
+	  background: var(--menuButton);
+	  color: #333;
+	  border: none;
+	  border-radius: 4px;
+	  padding: 6px 12px;
+	  font-family: var(--menuFont), cursive;
+	  cursor: pointer;
+	}
+	@keyframes moveItemPulse {
+	  0%, 100% { 
+		box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+		transform: scale(1.02);
+	  }
+	  50% { 
+		box-shadow: 0 6px 20px rgba(255, 152, 0, 0.5);
+		transform: scale(1.04);
+	  }
+	}
+
+	.moving-item {
+	  background: linear-gradient(135deg, #FFE082, #FFF9C4) !important;
+	  border: 3px solid #FF9800 !important;
+	  animation: moveItemPulse 2s ease-in-out infinite !important;
+	  position: relative !important;
+	  z-index: 100 !important;
+	}
+</style>
+
+
+
+<!-- Layout Helpers -->
+<script>
+    function setRealVh() {
+      let vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--realVh', `${vh}px`);
+    }
+    window.addEventListener('resize', setRealVh);
+    window.addEventListener('orientationchange', setRealVh);
+    window.addEventListener('DOMContentLoaded', setRealVh);
+</script>
+
+<!-- Itinerary -->
+<script>
+	window.itineraries     = [];
+	window.itineraryItems  = [];
+	window._itinDataPromise = null;
+	
+	function _fetchItineraries() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraries = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			name:        r[1],
+			createdDate: r[2]
+		}));
+		});
+	}
+	
+	function _fetchItineraryItems() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraryItems = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			day:         Number(r[1]),
+			sortOrder:   Number(r[2]),
+			placeId:     r[3],
+			date:        r[4],
+			time:        r[5],
+			notes:       r[6]
+		}));
+		});
+	}
+	
+	function ensureItinData(force = false) {
+	if (!force && window._itinDataPromise) return window._itinDataPromise;
+	window._itinDataPromise = Promise.all([
+		_fetchItineraries(),
+		_fetchItineraryItems()
+	]).catch(err => {
+		console.error('Itinerary load failed:', err);
+		window._itinDataPromise = null; // allow retry
+		throw err;
+	});
+	return window._itinDataPromise;
+	}
+	function refreshItinData() {
+	return ensureItinData(true);
+	}
+window.addEventListener('DOMContentLoaded', () => {
+	Object.entries(CONFIG.colors).forEach(([k, v]) =>
+		document.documentElement.style.setProperty(`--${k}`, v)
+	);
+	Object.entries(CONFIG.fonts || {}).forEach(([k, v]) =>
+		document.documentElement.style.setProperty(`--${k}`, v)
+	);
+
+    // Preload Itineraries and Items so Modify works even before View
+    ensureItinData().catch(err => console.error('Itinerary preload failed:', err));
+  });
+  
+class PasswordProtection {
+    constructor() {
+        this.isAuthenticated = false;
+        this.currentAction = null;
+        this.currentParams = null;
+        this.setupEventListeners();
+    }
+
+setupEventListeners() {
+    // Check if elements exist, if not, wait for DOM to be ready
+    const input = document.getElementById('passwordInput');
+    const submitBtn = document.getElementById('passwordSubmit');
+    const cancelBtn = document.getElementById('passwordCancel');
+    const overlay = document.getElementById('passwordOverlay');
+
+    if (!input || !submitBtn || !cancelBtn || !overlay) {
+        // Elements don't exist yet, wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setupEventListeners());
+        } else {
+            // DOM is already loaded, try again in next tick
+            setTimeout(() => this.setupEventListeners(), 0);
+        }
+        return;
+    }
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') this.submitPassword();
+    });
+
+    submitBtn.addEventListener('click', () => this.submitPassword());
+    
+    const closeModal = () => this.hideModal();
+    cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+}
+
+    requireAuth(action, params = null) {
+        if (this.isAuthenticated) {
+            action(params);
+            return;
+        }
+
+        this.currentAction = action;
+        this.currentParams = params;
+        this.showModal();
+    }
+
+    showModal() {
+        document.getElementById('passwordOverlay').style.display = 'block';
+        document.getElementById('passwordModal').style.display = 'block';
+        document.getElementById('passwordInput').focus();
+        document.getElementById('passwordError').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+    }
+
+    hideModal() {
+        document.getElementById('passwordOverlay').style.display = 'none';
+        document.getElementById('passwordModal').style.display = 'none';
+        this.currentAction = null;
+        this.currentParams = null;
+    }
+
+    submitPassword() {
+        const password = document.getElementById('passwordInput').value;
+        const errorDiv = document.getElementById('passwordError');
+
+        // Check if password matches API_SECRET
+        if (password === API_SECRET) {
+            this.isAuthenticated = true;
+            this.hideModal();
+            
+            // Execute the pending action
+            if (this.currentAction) {
+                this.currentAction(this.currentParams);
+            }
+        } else {
+            errorDiv.textContent = 'Incorrect password. Please try again.';
+            errorDiv.style.display = 'block';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+
+    // Reset authentication on page refresh
+    resetAuth() {
+        this.isAuthenticated = false;
+    }
+}
+
+// Initialize password protection
+window.passwordProtection = new PasswordProtection();
+</script>
+</head>
+
+<body>
+<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+
+<!-- Boot -->
+<script>
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
+                + `/values:batchGet?key=${CONFIG.apiKey}`
+                + CONFIG.ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
+
+      fetch(url)
+        .then(r=>r.ok?r.json():Promise.reject(r.statusText))
+        .then(data=>{
+          const [hdrP,...rowsP] = data.valueRanges[0].values;
+          const places = rowsP.map(r=>{ 
+		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
+	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
+		  return { 
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });
+          const [hdrR,...rowsR] = data.valueRanges[1].values;
+          const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
+          window.places = places;
+		  window.reviewsBy = reviewsBy;
+        }).catch(console.error);
+  window.initMap = function(places, reviewsBy){
+    const fuse = new Fuse(places, {
+      getFn: (obj, path) => {
+        const value = obj[path];
+        if (typeof value === 'string') {
+          return value.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+        }
+        if (Array.isArray(value)) {
+          return value.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
+        }
+        return value;
+      },
+      keys: ['name','notes','tags'],
+      threshold: 0.15,
+      distance: 20,
+      ignoreLocation: true,
+      tokenize: true,
+      tokenSeparator: /[\s\-\/\.,;:!?\"'“”‘’]+/,
+      minMatchCharLength: 3,
+      includeScore: true
+    });
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          'raster-tiles': {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            ],
+            tileSize: 256,
+            attribution: CONFIG.attribution
+          }
+        },
+        layers: [{
+          id: 'osm-tiles',
+          type: 'raster',
+          source: 'raster-tiles'
+        }]
+      },
+      center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
+      zoom: CONFIG.mapZoom,
+      dragRotate:      false,
+      touchZoomRotate: true,
+      pitchWithRotate: false
+    });
+    window.map = map;
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.on('load', () => map.resize());
+    map.touchPitch.disable();
+    map.setMaxPitch(0);
+	map.dragRotate.disable();
+	map.keyboard.disableRotation();
+
+    // scope sync so markers/carousel (which use window.currentPopup) stay in lockstep
+    window.currentPopup = null;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude, longitude } = pos.coords;
+        const urls = CONFIG.userIconUrls;
+        const chosenUrl = urls[Math.floor(Math.random() * urls.length)];
+        const img = new Image();
+        img.src = chosenUrl;
+
+        img.onload = () => {
+          const maxWidth = 32;
+          const ratio    = img.height / img.width;
+          const w        = maxWidth;
+          const h        = Math.round(maxWidth * ratio);
+
+          const el = document.createElement('img');
+          el.src = chosenUrl;
+          el.style.width  = `${w}px`;
+          el.style.height = `${h}px`;
+
+          const popup = new maplibregl.Popup({
+            offset: { bottom: [0, -h] },
+            focusAfterOpen: false
+          }).setText('You are here.');
+
+          new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([longitude, latitude])
+            .setPopup(popup)
+            .addTo(map);
+
+          popup.on('open', () => {
+            if (window.currentPopup && window.currentPopup !== popup) {
+              window.currentPopup.remove();
+            }
+            window.currentPopup = popup;
+          });
+          popup.addTo(map);
+          window.currentPopup = popup;
+
+          map.flyTo({
+            center: [longitude, latitude],
+            zoom:   map.getZoom() + 1,
+            essential: true,
+          });
+        };
+      }, err => {
+        console.warn('Geolocation failed:', err.message);
+      });
+    }
+
+    // build category maps & selected sets (globals so drawMarkers/setupFilters can see them)
+    const catMap = {}, regSet = new Set();
+    places.forEach(p => {
+      const set = catMap[p.category] || (catMap[p.category] = new Set());
+      p.subcategories.forEach(sc => set.add(sc));
+      if (p.regions) p.regions.forEach(r => regSet.add(r));
+    });
+
+    window.selSub = new Set();
+    places.forEach(p => p.subcategories.forEach(sc => window.selSub.add(`${p.category} - ${sc}`)));
+    window.selReg = new Set(regSet);
+    window.selVis = new Set(['Been there','Not yet']);
+
+    const basePool = CONFIG.baseColors.slice(); shuffle(basePool);
+    window.categoryColors = {};
+    Object.keys(catMap).forEach(cat => {
+      window.categoryColors[cat] = basePool.length ? basePool.pop() : randomColor();
+    });
+
+    // build filter UI & draw pins
+    setupFilters(Object.keys(catMap), regSet, catMap);
+    drawMarkers();
+
+    // global “Select/Deselect All” for subcategories
+    let allOn = true;
+    const toggleSubcats = document.getElementById('toggleSubcats');
+    toggleSubcats.onclick = () => {
+      allOn = !allOn;
+      document.querySelectorAll('#panelContainer .panel').forEach(panel => {
+        const hdr = panel.querySelector('.panel-header');
+        const title = hdr.textContent.trim();
+        if (title !== 'Region' && title !== 'Visited?') {
+          const master = hdr.querySelector('input[type="checkbox"]');
+          master.checked = allOn;
+          master.dispatchEvent(new Event('change'));
+        }
+      });
+      toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
+    };
+
+    // search box → Fuse
+    const placeSearch = document.getElementById('placeSearch');
+    placeSearch.addEventListener('input', () => {
+      const raw = placeSearch.value.trim();
+      const q   = raw.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+      const results = q ? fuse.search(q).map(r => r.item) : places;
+      renderCarousel(results);
+    });
+  };
+(function() {
+  let markers = (window.markers = []);
+  let currentPopup = null;
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
+            + `/values:batchGet?key=${CONFIG.apiKey}`
+            + CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
+
+  fetch(url)
+    .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+    .then(data => {
+      // ----- Places -----
+      const [hdrP, ...rowsP] = data.valueRanges[0].values;
+      const places = rowsP.map(r => {
+        const o = Object.fromEntries(hdrP.map((h, i) => [h, r[i] || '']));
+        const [lat, lng] = o.Coordinates.split(',').map(Number);
+        return {
+          id: o.PlaceID,
+          name: o.Name,
+          category: o.Category,
+          subcategories: (o.Subcategory || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
+          regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
+          notes: o.Notes,
+          tags: (o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),
+          visited: o.Visited.trim().toUpperCase() === 'Y',
+          latlng: [lat, lng],
+          mapsLink: o.MapsLink,
+          appleLink: o.AppleMapsLink,
+          extraLink: o.ExtraLink
+        };
+      });
+
+      // ----- Reviews -----
+      const [hdrR, ...rowsR] = data.valueRanges[1].values;
+      const reviewsBy = {};
+      rowsR.forEach(r => {
+        const o = Object.fromEntries(hdrR.map((h, i) => [h, r[i] || '']));
+        const photos = (o.PhotoURL || '').trim().split(/\s*,\s*/).filter(Boolean);
+        (reviewsBy[o.PlaceID] || []).push({
+          date: o.VisitDate,
+          rating: +o.Rating || 0,
+          text: o.Review,
+          photos
+        });
+      });
+
+      // Store globals
+      window.places = places;
+      window.reviewsBy = reviewsBy;
+
+      // Initialize map/UI
+      initMap(places, reviewsBy);
+    })
+    .catch(console.error);
+})();
+</script>
+
+
+<!-- Misc Utilities -->
+<script>
+	function postToAPI(payload) {
+	const form = document.createElement('form');
+	form.method = 'POST';
+	form.action = SHEETS_ENDPOINT;
+	form.target = 'hidden_iframe';
+	Object.entries(payload).forEach(([key, val]) => {
+		const inp = document.createElement('input');
+		inp.type  = 'hidden';
+		inp.name  = key;
+		inp.value = val;
+		form.appendChild(inp);
+	});
+	document.body.appendChild(form);
+	form.submit();
+	form.remove();
+	}
+	function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
+    function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
+	// Prevent all zoom methods on iOS Safari
+	document.addEventListener('gesturestart', function (e) {
+		e.preventDefault();
+	});
+
+	document.addEventListener('gesturechange', function (e) {
+		e.preventDefault();
+	});
+
+	document.addEventListener('gestureend', function (e) {
+		e.preventDefault();
+	});
+
+	// Prevent double-tap zoom
+	let lastTouchEnd = 0;
+	document.addEventListener('touchend', function (event) {
+		const now = (new Date()).getTime();
+		if (now - lastTouchEnd <= 300) {
+			event.preventDefault();
+		}
+		lastTouchEnd = now;
+	}, false);
+
+	// Prevent pinch zoom
+	document.addEventListener('touchmove', function (event) {
+		if (event.scale !== 1) { 
+			event.preventDefault(); 
+		}
+	}, { passive: false });
+
+
+
+</script>
+
+<!-- Add to itinerary -->
+<script>
+	function openAddModal(placeId) {
+	// Ensure both sheets are loaded once
+	if (!window.itineraries.length || !window.itineraryItems.length) {
+		ensureItinData()
+		.then(() => openAddModal(placeId))
+		.catch(err => {
+			console.error('Failed to load itinerary data:', err);
+			alert('Could not load itinerary data. Try again shortly.');
+		});
+		return;
+	}
+	
+	const sel = document.getElementById('modalItinSelect');
+	sel.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+	window.itineraries
+		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
+		.join('');
+	
+	// reset form fields
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	document.getElementById('addItinForm').style.display = 'flex';
+	document.getElementById('modalNext').style.display   = 'block';
+	document.getElementById('insertStepContainer').style.display = 'none';
+	document.getElementById('insertCarousel').innerHTML = '';
+	window.insertPositionIndex = undefined;
+	window.pendingNewItem = undefined;
+	document.getElementById('modalDay').value       = 1;
+	document.getElementById('modalDate').value      = new Date().toISOString().slice(0,10);
+	document.getElementById('modalTime').value      = '';
+	document.getElementById('modalNotes').value     = '';
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	// stash placeId on the form
+	document.getElementById('addItinForm').dataset.placeId = placeId;
+	// show the modal
+	const nextBtn = document.getElementById('modalNext');
+	nextBtn.disabled = true;
+	sel.onchange = () => { nextBtn.disabled = !sel.value; };
+	
+	// show the modal
+	document.getElementById('itinAddModal').style.display = 'block';
+	}
+</script>
+
+<!-- View itinerary -->
+<script>
+	// ── Itineraries: fetch from Sheets and render ──
+	window.addEventListener('DOMContentLoaded', () => {
+	const viewBtn  = document.getElementById('viewItineraries');
+	const selectEl = document.getElementById('itinerarySelect');
+	if (!viewBtn || !selectEl) return;
+	viewBtn.onclick = () => {
+    if (selectEl.style.display === 'block') {
+      // hide dropdown, carousel, and restore all pins
+      selectEl.style.display = 'none';
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'none';
+      nxtLbl.style.display = 'none';
+      document.getElementById('itineraryCarousel').style.display = 'none';
+      showAllMarkers();
+      viewBtn.textContent = 'View Itineraries';
+      return;
+    }
+
+    // show instantly (data already loaded at startup)
+    viewBtn.textContent    = 'Hide Itineraries';
+    selectEl.style.display = 'block';
+
+    // if for some reason arrays are empty (first load failed), load once now
+    if (!window.itineraries.length || !window.itineraryItems.length) {
+      ensureItinData().then(buildItinSelect).catch(err => {
+        console.error('Error loading itineraries:', err);
+        selectEl.innerHTML = '<option style="color:red;">Failed to load</option>';
+      });
+    } else {
+      buildItinSelect();
+    }
+   };
+ });
+
+  // helper to populate dropdown & bind onchange
+	function buildItinSelect() {
+		const selectEl = document.getElementById('itinerarySelect');
+		selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
+		window.itineraries.forEach(it => {
+		  const opt = document.createElement('option');
+		  opt.value = it.itineraryId;
+		  opt.textContent = it.name;
+		  selectEl.appendChild(opt);
+		});
+
+    selectEl.onchange = e => {
+      selectedItinId = e.target.value;
+
+      // show/init labels
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'block';
+      nxtLbl.style.display = 'block';
+      curLbl.textContent   = 'Day 1';
+      nxtLbl.textContent   = '';
+
+      renderItineraryItems();
+      filterMarkersForItinerary(selectedItinId);
+    };
+  }
+	
+	function renderItineraryItems() {
+  const carousel = document.getElementById('itineraryCarousel');
+  // clear out any old cards
+  carousel.innerHTML = '';
+
+  // grab just the items for this trip
+	const items = (window.itineraryItems || [])
+	.filter(it => it.itineraryId === selectedItinId)
+	.sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+
+  if (!items.length) {
+    // no items → hide the carousel
+    carousel.style.display = 'none';
+    return;
+  }
+
+  // otherwise build one card per stop
+  items.forEach(it => {
+    // look up the place info
+    // look up the place (may be undefined)
+    const place = (window.places || []).find(p => p.id === it.placeId);
+
+    // create the card container
+    const card = document.createElement('div');
+    card.className       = 'place-card';
+    card.dataset.day     = it.day;
+
+    if (!it.placeId || !place) {
+      // ── NOTES-ONLY card ──
+      card.innerHTML = `
+        <h4>Note:</h4>
+        <p>${it.notes || ''}</p>
+      `;
+    } else {
+   const timeText = (it.time && it.time.trim()) ? ` • ${it.time}` : '';
+   card.innerHTML = `
+       <h4>${place.name}</h4>
+       ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+       <p>🗓️ ${it.date}${timeText}</p>
+       ${place.regions.length
+         ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
+         : ''}
+     `;
+
+      // flying to the map on click
+      card.onclick = () => {
+		const m = window.markers.find(mk => mk.placeId === it.placeId);
+        if (!m) return;
+        if (currentPopup && currentPopup !== m.getPopup()) currentPopup.remove();
+        const popup = m.getPopup();
+        popup.addTo(window.map);
+        currentPopup = popup;
+        const [lng, lat] = m.getLngLat().toArray();
+        window.map.flyTo({
+          center: [lng, lat],
+          zoom:   14,
+          speed:  1.0,
+          curve:  1.6,
+          essential: true
+        });
+      };
+    }
+
+    // finally, add the card to the carousel
+    carousel.appendChild(card);
+  });
+
+	  const firstCard = carousel.querySelector('.place-card');
+	  const cardW     = firstCard
+		? firstCard.getBoundingClientRect().width + 8
+		: 168;
+	  const step = cardW;
+
+	  const dayPositions = [];
+	  items.forEach((it, idx) => {
+		if (idx === 0 || it.day !== items[idx - 1].day) {
+		  dayPositions.push({ day: it.day, offset: idx * cardW });
+		}
+	  });
+
+
+	carousel.style.display = 'flex';
+	
+	// ── BOUNDING‐RECT based day labels ──
+  const curLbl     = document.getElementById('itinDayCurrent');
+  const nxtLbl     = document.getElementById('itinDayNext');
+  const wrapperEl  = document.getElementById('itineraryCarouselWrapper');
+  const cards      = Array.from(carousel.querySelectorAll('.place-card'));
+
+  function updateDayLabels() {
+    const wrapRect = wrapperEl.getBoundingClientRect();
+
+    // 1) find the very first card that is at least partially visible
+    const firstVisible = cards.find(c => {
+      const r = c.getBoundingClientRect();
+      // r.right > wrap left means some of it is on screen
+      return r.right > wrapRect.left + 1;
+    });
+    if (!firstVisible) return;
+
+    const day = firstVisible.dataset.day;
+    curLbl.textContent = `Day ${day}`;
+    // position curLbl over that card
+    const cr = firstVisible.getBoundingClientRect();
+    const relX = cr.left - wrapRect.left;
+    curLbl.style.left = `${relX > 0 ? relX : 0}px`;
+    curLbl.style.display = 'block';
+
+    // 2) peek the next day if its first card exists
+    const nextDay = String(Number(day) + 1);
+    const nextCard = cards.find(c => c.dataset.day === nextDay);
+    if (nextCard) {
+      const nr = nextCard.getBoundingClientRect();
+      const relNextX = nr.left - wrapRect.left;
+      // only show if its card is entering the wrapper
+      if (relNextX < wrapRect.width) {
+        nxtLbl.textContent   = `Day ${nextDay}`;
+        nxtLbl.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
+        nxtLbl.style.display = 'block';
+      } else {
+        nxtLbl.style.display = 'none';
+      }
+    } else {
+      nxtLbl.style.display = 'none';
+    }
+  }
+
+  // bind & fire
+  carousel.addEventListener('scroll', updateDayLabels);
+  updateDayLabels();
+
+}
+	function filterMarkersForItinerary(itinId) {
+	  window.markers.forEach(mk => {
+		const keep = window.itineraryItems.some(
+		  it => it.itineraryId === itinId && it.placeId === mk.placeId
+		);
+		mk.getElement().style.display = keep ? '' : 'none';
+	  });
+	}
+
+	/** Show all markers again */
+	function showAllMarkers() {
+	  window.markers.forEach(mk => {
+		mk.getElement().style.display = '';
+	  });
+	}
+</script>
+
+<!-- View itinerary -->
+<script>
+// ENSURE "CREATE NEW ITINERARY" MODAL HANDLERS ARE WIRED AFTER DOM IS LOADED
+window.addEventListener('DOMContentLoaded', function() {
+  const createItinBtn = document.getElementById('createItinerary');
+  const createItinModal = document.getElementById('createItinModal');
+  const createItinForm = document.getElementById('createItinForm');
+  const cancelCreateItin = document.getElementById('cancelCreateItin');
+  const itinTitleInput = document.getElementById('itinTitle');
+
+   createItinBtn.onclick = () => {
+   window.passwordProtection.requireAuth(() => {
+     itinTitleInput.value = '';
+     createItinModal.style.display = 'block';
+     itinTitleInput.focus();
+});  
+  };
+    cancelCreateItin.onclick = () => {
+      createItinModal.style.display = 'none';
+      itinTitleInput.value = '';
+    };
+
+ 	createItinForm.onsubmit = (e) => {
+ 		e.preventDefault();
+ 		const title = itinTitleInput.value.trim();
+ 		if (!title) {
+ 			itinTitleInput.focus();
+ 			return;
+ 		}
+ 		// Compute a new unique itineraryId: find max existing + 1 (fallback to 1 if none)
+ 		let newId = 1;
+ 		if (window.itineraries && window.itineraries.length > 0) {
+ 			const ids = window.itineraries.map(it => Number(it.itineraryId)).filter(n => !isNaN(n));
+ 			newId = Math.max(...ids, 0) + 1;
+ 		}
+ 		const nowDate = new Date().toISOString().slice(0, 10);
+ 		const newItin = {
+ 			itineraryId: String(newId),
+ 			name: title,
+ 			createdDate: nowDate
+ 		};
+ 		// Optimistically update frontend
+ 		window.itineraries.push(newItin);
+ 		// Post to backend sheet
+ 		postToAPI({
+ 			secret: API_SECRET,
+ 			action: 'addItinerary',
+ 			itineraryId: newItin.itineraryId,
+ 			name: newItin.name,
+ 			createdDate: newItin.createdDate
+ 		});
+ 		createItinModal.style.display = 'none';
+ 		itinTitleInput.value = '';
+ 		// Optionally, update UI dropdowns/etc here if desired
+ 	};
+});
+
+ window.addEventListener('DOMContentLoaded', function() {
+   const modifyBtn = document.getElementById('modifyItineraries');
+   const modifyModal = document.getElementById('modifyItinModal');
+   const modifySelect = document.getElementById('modifyItinSelect');
+   const modifyCarousel = document.getElementById('modifyItinCarousel');
+   const cancelModify = document.getElementById('cancelModifyItin');
+
+   modifyBtn.onclick = () => {
+   window.passwordProtection.requireAuth(() => {
+     // populate dropdown
+     modifySelect.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+       window.itineraries.map(it => `<option value="${it.itineraryId}">${it.name}</option>`).join('');
+     modifyCarousel.innerHTML = '';
+     modifyModal.style.display = 'block';
+	 });
+   };
+
+	cancelModify.onclick = () => {
+	  // Check if we're in move mode
+	  if (window.moveMode) {
+	    window.exitMoveMode();
+	    return;
+	  }
+	  
+	  modifyModal.style.display = 'none';
+	  modifySelect.value = '';
+	  modifyCarousel.innerHTML = '';
+	  document.getElementById('modifyDayLabel').style.display = 'none';
+	  document.getElementById('modifyDayNextLabel').style.display = 'none';
+	  document.getElementById('addNoteBtn').style.display = 'none'; // Hide the button when closing
+	};
+
+modifySelect.onchange = () => {
+  const id = modifySelect.value;
+  
+  // Show/hide Add Note button
+  document.getElementById('addNoteBtn').style.display = id ? 'block' : 'none';
+  
+  // Reset note insertion mode if it was active
+  window.noteInsertionMode = false;
+  document.getElementById('addNoteBtn').textContent = 'Add a Note 🗒️';
+  document.getElementById('addNoteBtn').style.background = 'var(--menuButton)';
+  
+  renderModifyCarousel(id, false); // false = normal mode
+};
+
+ });
+</script>
+
+<!-- Add itinerary -->
+<script>
+	function renderInsertCarousel(day) {
+	  const c = document.getElementById('insertCarousel');
+	  const dl = document.getElementById('insertDayLabel');
+	  if (dl) dl.textContent = `Day ${day}`;
+	  c.innerHTML = '';
+	  // 1) gather & sort cards for that day
+	  const cards = window.itineraryItems
+		.filter(it => it.itineraryId===window.pendingNewItem.itineraryId && it.day===day)
+		.sort((a,b)=>a.sortOrder - b.sortOrder);
+
+	  // helper to create a place‐card (reuse your render logic or simplify)
+	  const makeCard = it => {
+		const place = window.places.find(p=>p.id===it.placeId) || {};
+		return `<div class="place-card" style="opacity:0.7;">
+		  <h4>${place.name||'Note'}</h4>
+		  <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
+		</div>`;
+	  };
+
+	  // Insert hotspot at position 1…n+1
+	  cards.forEach((it, i) => {
+		// hotspot before this card (index = i+1)
+		c.insertAdjacentHTML('beforeend',
+		  `<div class="insert-hotspot" data-index="${i+1}"
+			 style="flex:0 0 200px; display:flex;align-items:center;
+					justify-content:center;cursor:pointer;opacity:0.5;">
+			 +  
+		   </div>`
+		);
+		c.insertAdjacentHTML('beforeend', makeCard(it));
+	  });
+	  // final hotspot at end: index = cards.length+1
+	  c.insertAdjacentHTML('beforeend',
+		`<div class="insert-hotspot" data-index="${cards.length+1}"
+		   style="flex:0 0 200px; display:flex;align-items:center;
+				  justify-content:center;cursor:pointer;opacity:0.5;">
+		   +  
+		 </div>`
+	  );
+
+	  // wire up selection
+		const confirmBtn = document.getElementById('insertConfirm');
+		c.querySelectorAll('.insert-hotspot').forEach(el => {
+			el.onclick = () => {
+			// clear previous highlight
+			c.querySelectorAll('.insert-hotspot').forEach(h => h.classList.remove('selected'));
+			el.classList.add('selected');
+			window.insertPositionIndex = Number(el.dataset.index);
+			// now it's valid to add
+			confirmBtn.disabled = false;
+			};
+		});
+	}
+window.addEventListener('DOMContentLoaded', () => {
+  const modalCancel         = document.getElementById('modalCancel');
+  const addItinForm         = document.getElementById('addItinForm');
+  const insertBack          = document.getElementById('insertBack');
+  const insertConfirm       = document.getElementById('insertConfirm');
+  const insertStepContainer = document.getElementById('insertStepContainer');
+
+  // Bail out if any required elements aren’t present yet
+  if (!modalCancel || !addItinForm || !insertBack || !insertConfirm || !insertStepContainer) return;
+
+  // Cancel → hide modal
+  modalCancel.onclick = () => {
+    document.getElementById('itinAddModal').style.display = 'none';
+  };
+
+  // Step 1: Next → stash data, show insertion carousel
+  addItinForm.onsubmit = ev => {
+    ev.preventDefault();
+
+    const itinVal = document.getElementById('modalItinSelect').value;
+    if (!itinVal) return;
+
+    window.pendingNewItem = {
+      itineraryId: itinVal,
+      placeId:     addItinForm.dataset.placeId,
+      day:         Number(document.getElementById('modalDay').value),
+      date:        document.getElementById('modalDate').value,
+      time:        document.getElementById('modalTime').value,
+      notes:       document.getElementById('modalNotes').value
+    };
+
+    addItinForm.style.display = 'none';
+    document.getElementById('modalNext').style.display = 'none';
+    insertStepContainer.style.display = 'flex';          // ← uses the bound element
+    document.getElementById('insertConfirm').disabled = true;
+
+    renderInsertCarousel(window.pendingNewItem.day);
+  };
+
+  // Step 2: Back → return to metadata
+  insertBack.onclick = () => {
+    insertStepContainer.style.display = 'none';
+    addItinForm.style.display         = 'flex';
+    document.getElementById('modalNext').style.display = 'block';
+    document.getElementById('insertCarousel').innerHTML = '';
+    window.insertPositionIndex = undefined;
+    document.getElementById('insertConfirm').disabled = true;
+  };
+
+  // Step 2: Confirm → insert & persist
+  insertConfirm.onclick = () => {
+    const { itineraryId, placeId, day, date, time, notes } = window.pendingNewItem || {};
+    const idx = window.insertPositionIndex;
+
+    if (!itineraryId || !day || !idx) return; // guard
+
+    // Shift existing items at or after idx
+    const dayItems = (window.itineraryItems || []).filter(it => it.itineraryId === itineraryId && it.day === day);
+    dayItems.sort((a,b) => b.sortOrder - a.sortOrder).forEach(it => {
+      it.sortOrder++;
+      postToAPI({
+        secret:      API_SECRET,
+        action:      'updateItem',
+        itineraryId: it.itineraryId,
+        placeId:     it.placeId,
+        day:         it.day,
+        date:        it.date,
+        time:        it.time,
+        notes:       it.notes,
+        sortOrder:   it.sortOrder
+      });
+    });
+
+    // Add the new item at idx
+    const newItem = { itineraryId, placeId, day, date, time, notes, sortOrder: idx };
+    window.itineraryItems.push(newItem);
+    postToAPI({
+      secret:      API_SECRET,
+      action:      'addItem',
+      itineraryId: newItem.itineraryId,
+      placeId:     newItem.placeId,
+      day:         newItem.day,
+      date:        newItem.date,
+      time:        newItem.time,
+      notes:       newItem.notes,
+      sortOrder:   newItem.sortOrder
+    });
+
+// Close modal
+document.getElementById('itinAddModal').style.display = 'none';
+
+// Force refresh any open views - exactly like the remove function does
+const selectEl = document.getElementById('itinerarySelect');
+if (selectEl.style.display === 'block' && selectEl.value) {
+    // Set the global variable to match what's selected
+    window.selectedItinId = selectEl.value;
+    renderItineraryItems();
+    filterMarkersForItinerary(selectEl.value);
+}
+
+const modifySelect = document.getElementById('modifyItinSelect');
+if (modifySelect.value) {
+    // Just trigger the change event to rebuild the modify carousel
+    const event = new Event('change');
+    modifySelect.dispatchEvent(event);
+}
+  };
+});
+</script>
+
+<!-- modify Itinerary -->
+<script>
+
+window.addEventListener('DOMContentLoaded', function() {
+  const editModal = document.getElementById('editItemModal');
+  const editForm = document.getElementById('editItemForm');
+  const editCancel = document.getElementById('editCancel');
+  
+  let currentEditItem = null;
+
+	window.openEditModal = function(itineraryId, day, sortOrder) {
+	  const item = window.itineraryItems.find(it => 
+		it.itineraryId === itineraryId && it.day === day && it.sortOrder === sortOrder
+	  );
+	  
+	  if (!item) return;
+	  
+	  currentEditItem = item;
+	  
+	  // Get the form fields
+	  const dateField = document.getElementById('editDate').parentElement;
+	  const timeField = document.getElementById('editTime').parentElement;
+	  const notesField = document.getElementById('editNotes').parentElement;
+	  
+	  // Check if this is a note-only item (no placeId)
+	  const isNoteOnly = !item.placeId || item.placeId.trim() === '';
+	  
+	  if (isNoteOnly) {
+		// Hide date and time fields for note-only items
+		dateField.style.display = 'none';
+		timeField.style.display = 'none';
+		// Only show notes
+		document.getElementById('editNotes').value = item.notes || '';
+	  } else {
+		// Show all fields for regular items
+		dateField.style.display = 'block';
+		timeField.style.display = 'block';
+		// Populate all fields
+		document.getElementById('editDate').value = item.date || '';
+		document.getElementById('editTime').value = item.time || '';
+		document.getElementById('editNotes').value = item.notes || '';
+	  }
+	  
+	  editModal.style.display = 'block';
+	};
+
+  editCancel.onclick = () => {
+    editModal.style.display = 'none';
+    currentEditItem = null;
+  };
+
+  editForm.onsubmit = (e) => {
+    e.preventDefault();
+    if (!currentEditItem) return;
+
+    currentEditItem.date = document.getElementById('editDate').value;
+    currentEditItem.time = document.getElementById('editTime').value;
+    currentEditItem.notes = document.getElementById('editNotes').value;
+
+    postToAPI({
+      secret: API_SECRET,
+      action: 'updateItem',
+      itineraryId: currentEditItem.itineraryId,
+      day: currentEditItem.day,
+      sortOrder: currentEditItem.sortOrder,
+      date: currentEditItem.date,
+      time: currentEditItem.time,
+      notes: currentEditItem.notes
+    });
+
+    editModal.style.display = 'none';
+    const modifySelect = document.getElementById('modifyItinSelect');
+    if (modifySelect.value) {
+      renderModifyCarousel(modifySelect.value, false);
+    }
+  };
+});
+
+// Add Note functionality for modify modal
+window.addEventListener('DOMContentLoaded', function() {
+  const addNoteBtn = document.getElementById('addNoteBtn');
+  const noteTextModal = document.getElementById('noteTextModal');
+  const noteTextInput = document.getElementById('noteTextInput');
+  const noteTextBack = document.getElementById('noteTextBack');
+  const noteTextSubmit = document.getElementById('noteTextSubmit');
+  
+  let noteInsertionMode = false;
+  let pendingNotePosition = null;
+  window.moveMode = false;
+	window.itemToMove = null;
+	window.pendingMovePosition = null;
+
+  // Toggle note insertion mode
+  addNoteBtn.onclick = () => {
+  window.passwordProtection.requireAuth(() => {
+    noteInsertionMode = !noteInsertionMode;
+    const id = document.getElementById('modifyItinSelect').value;
+    
+    if (noteInsertionMode) {
+      addNoteBtn.textContent = 'Cancel Note';
+      addNoteBtn.style.background = '#DB504A';
+      renderModifyCarousel(id, true); // true = note insertion mode
+    } else {
+      addNoteBtn.textContent = 'Add a Note 🗒️';
+      addNoteBtn.style.background = 'var(--menuButton)';
+      renderModifyCarousel(id, false); // false = normal mode
+    }
+	});
+  };
+
+  // Note text modal handlers
+  noteTextBack.onclick = () => {
+    noteTextModal.style.display = 'none';
+    noteTextInput.value = '';
+  };
+
+  noteTextSubmit.onclick = () => {
+    const noteText = noteTextInput.value.trim();
+    if (!noteText) {
+      alert('Please enter a note');
+      return;
+    }
+
+    if (!pendingNotePosition) return;
+
+    const { itineraryId, day, sortOrder } = pendingNotePosition;
+
+    // Shift existing items at or after this position
+    const dayItems = window.itineraryItems.filter(it => 
+      it.itineraryId === itineraryId && it.day === day && it.sortOrder >= sortOrder
+    );
+    dayItems.forEach(it => {
+      it.sortOrder++;
+      postToAPI({
+        secret: API_SECRET,
+        action: 'updateItem',
+        itineraryId: it.itineraryId,
+        placeId: it.placeId,
+        day: it.day,
+        date: it.date,
+        time: it.time,
+        notes: it.notes,
+        sortOrder: it.sortOrder
+      });
+    });
+
+    // Add the note
+    const noteItem = {
+      itineraryId,
+      placeId: '',
+      day,
+      sortOrder,
+      date: '',
+      time: '',
+      notes: noteText
+    };
+
+    window.itineraryItems.push(noteItem);
+    
+    postToAPI({
+      secret: API_SECRET,
+      action: 'addNote',
+      itineraryId: noteItem.itineraryId,
+      day: noteItem.day,
+      sortOrder: noteItem.sortOrder,
+      notes: noteItem.notes
+    });
+
+    // Close modal and exit note mode
+    noteTextModal.style.display = 'none';
+    noteTextInput.value = '';
+    noteInsertionMode = false;
+    addNoteBtn.textContent = 'Add a Note 🗒️';
+    addNoteBtn.style.background = 'var(--menuButton)';
+    
+    // Refresh the carousel
+    renderModifyCarousel(itineraryId, false);
+  };
+
+  // Function to handle hotspot clicks
+  window.handleNoteHotspotClick = function(itineraryId, day, sortOrder) {
+    pendingNotePosition = { itineraryId, day, sortOrder };
+    noteTextModal.style.display = 'block';
+    noteTextInput.focus();
+  };
+
+ // Move mode functions
+  window.enterMoveMode = function(itineraryId, day, sortOrder) {
+    window.moveMode = true;
+    window.itemToMove = { itineraryId, day, sortOrder };
+    
+    // Update button states
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const cancelBtn = document.getElementById('cancelModifyItin');
+    
+    // Hide add note button and change cancel to show move controls
+    addNoteBtn.style.display = 'none';
+    cancelBtn.textContent = 'Cancel Move';
+    
+    // Add save button
+    const saveBtn = document.createElement('button');
+    saveBtn.id = 'saveMoveBtn';
+    saveBtn.textContent = 'Save Move';
+    saveBtn.style.cssText = 'background: var(--menuButton); border-radius: 4px; border: none; padding: 6px 14px; font-family: var(--menuFont), cursive; cursor: pointer; color: #333; margin-left: 8px;';
+    saveBtn.disabled = true;
+    cancelBtn.parentNode.appendChild(saveBtn);
+    
+    // Wire up save button
+    saveBtn.onclick = () => window.executeMoveItem();
+    
+    // Render carousel in move mode
+    renderModifyCarousel(itineraryId, false, true); // Third parameter = move mode
+  }
+
+  window.exitMoveMode = function() {
+    window.moveMode = false;
+    window.itemToMove = null;
+    window.pendingMovePosition = null;
+    
+    // Restore button states
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const cancelBtn = document.getElementById('cancelModifyItin');
+    const saveBtn = document.getElementById('saveMoveBtn');
+    
+    addNoteBtn.style.display = 'block';
+    cancelBtn.textContent = 'Done';
+    if (saveBtn) saveBtn.remove();
+    
+    // Re-render normal carousel
+    const modifySelect = document.getElementById('modifyItinSelect');
+    if (modifySelect.value) {
+      renderModifyCarousel(modifySelect.value, false, false);
+    }
+  }
+
+  window.executeMoveItem = function() {
+    if (!window.itemToMove || !window.pendingMovePosition) return;
+    
+    const { itineraryId, day: oldDay, sortOrder: oldSortOrder } = window.itemToMove;
+    const { day: newDay, sortOrder: newSortOrder } = window.pendingMovePosition;
+    
+    // Find the item to move
+    const item = window.itineraryItems.find(it => 
+      it.itineraryId === itineraryId && it.day === oldDay && it.sortOrder === oldSortOrder
+    );
+    
+    if (!item) return;
+    
+    // Send move request to backend
+	postToAPI({
+	  secret: API_SECRET,
+	  action: 'moveItem',
+	  itineraryId: itineraryId,
+	  oldDay: oldDay,
+	  oldSortOrder: oldSortOrder,
+	  newDay: newDay,
+	  newSortOrder: newSortOrder,
+	  placeId: item.placeId || '',
+	  date: item.date || '',
+	  time: item.time || '',
+	  notes: item.notes || ''
+	});
+    
+    // Update frontend data immediately
+    updateFrontendAfterMove(itineraryId, oldDay, oldSortOrder, newDay, newSortOrder);
+    
+    // Exit move mode
+    window.exitMoveMode();
+  }
+
+window.updateFrontendAfterMove = function(itineraryId, oldDay, oldSortOrder, newDay, newSortOrder) {
+  const movedItem = window.itineraryItems.find(it => 
+    it.itineraryId === itineraryId && it.day === oldDay && it.sortOrder === oldSortOrder
+  );
+  
+  if (!movedItem) return;
+  
+  // Calculate the final position based on the move type
+  let finalSortOrder = newSortOrder;
+  
+if (oldDay === newDay) {
+    // Same day move
+    if (oldSortOrder < newSortOrder) {
+      // Moving to a later position in the same day
+      
+      // Find the highest sortOrder for this day EXCLUDING the item being moved
+      const dayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === oldDay && item !== movedItem
+      );
+      const maxSortOrder = dayItems.length > 0 ? Math.max(...dayItems.map(item => item.sortOrder)) : 0;
+      
+if (newSortOrder > maxSortOrder) {
+  // Moving to the end - final position should be maxSortOrder (the last position)
+  finalSortOrder = maxSortOrder;
+} else {
+  // Moving to middle position - final position is one less than requested
+  finalSortOrder = newSortOrder - 1;
+}
+      
+      // Shift items between old position and final position down by 1
+      window.itineraryItems.forEach(item => {
+        if (item.itineraryId !== itineraryId || item === movedItem) return;
+        
+        if (item.day === oldDay && 
+            item.sortOrder > oldSortOrder && 
+            item.sortOrder <= finalSortOrder) {
+          item.sortOrder--;
+        }
+      });
+    } else {
+      // Moving to an earlier position: final position is as requested
+      finalSortOrder = newSortOrder;
+      
+      // Shift items between new and old positions up by 1
+      window.itineraryItems.forEach(item => {
+        if (item.itineraryId !== itineraryId || item === movedItem) return;
+        
+        if (item.day === oldDay && 
+            item.sortOrder >= newSortOrder && 
+            item.sortOrder < oldSortOrder) {
+          item.sortOrder++;
+        }
+      });
+    }
+  } else {
+    // Different day move: final position is as requested
+    finalSortOrder = newSortOrder;
+    
+    // Handle old day: shift down items that were after the moved item
+    window.itineraryItems.forEach(item => {
+      if (item.itineraryId !== itineraryId || item === movedItem) return;
+      
+      if (item.day === oldDay && item.sortOrder > oldSortOrder) {
+        item.sortOrder--;
+      }
+    });
+    
+    // Handle new day: shift up items that will be at or after the new position
+    window.itineraryItems.forEach(item => {
+      if (item.itineraryId !== itineraryId || item === movedItem) return;
+      
+      if (item.day === newDay && item.sortOrder >= newSortOrder) {
+        item.sortOrder++;
+      }
+    });
+  }
+  
+  // Update the moved item with the calculated final position
+  movedItem.day = newDay;
+  movedItem.sortOrder = finalSortOrder;
+}
+
+  // Function to handle move hotspot clicks
+  window.handleMoveHotspotClick = function(itineraryId, day, sortOrder) {
+    window.pendingMovePosition = { itineraryId, day, sortOrder };
+    
+    // Clear previous selections
+    document.querySelectorAll('.move-hotspot').forEach(h => h.classList.remove('selected'));
+    event.target.classList.add('selected');
+    event.target.style.background = 'rgba(76,175,80,0.3)';
+    
+    // Enable save button
+    const saveBtn = document.getElementById('saveMoveBtn');
+    if (saveBtn) saveBtn.disabled = false;
+  };
+});
+
+// Updated carousel rendering function
+function renderModifyCarousel(itineraryId, insertionMode = false, moveMode = false) {
+  const modifyCarousel = document.getElementById('modifyItinCarousel');
+  const items = window.itineraryItems
+    .filter(it => it.itineraryId === itineraryId)
+    .sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+  
+  modifyCarousel.innerHTML = '';
+
+  let currentDay = 0;
+  items.forEach((it, index) => {
+    const place = window.places.find(p => p.id === it.placeId);
+    
+// Add hotspot before this item if in insertion mode
+if (insertionMode) {
+  // Handle day transitions
+  if (it.day !== currentDay) {
+    // Store the actual previous day value before we update currentDay
+    const previousDay = currentDay;
+    
+    // First hotspot: "End of previous day" (if there was a previous day)
+    if (previousDay > 0) {
+      // Find the highest sortOrder for the ACTUAL previous day
+      const prevDayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === previousDay
+      );
+      const maxSortOrder = prevDayItems.length > 0 ? Math.max(...prevDayItems.map(item => item.sortOrder)) : 0;
+      
+      const endOfDayHotspot = document.createElement('div');
+      endOfDayHotspot.className = 'insert-hotspot';
+      endOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+      endOfDayHotspot.textContent = '+';
+      // Use the explicit previousDay variable (Day 1)
+      endOfDayHotspot.onclick = () => handleNoteHotspotClick(itineraryId, previousDay, maxSortOrder + 1);
+      modifyCarousel.appendChild(endOfDayHotspot);
+    }
+    
+    // Second hotspot: "Beginning of new day"
+    const startOfDayHotspot = document.createElement('div');
+    startOfDayHotspot.className = 'insert-hotspot';
+startOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    startOfDayHotspot.textContent = '+';
+    // Use it.day (Day 2)
+    startOfDayHotspot.onclick = () => handleNoteHotspotClick(itineraryId, it.day, 1);
+    modifyCarousel.appendChild(startOfDayHotspot);
+  } else {
+    // Regular hotspot within the same day (before this specific item)
+    const hotspot = document.createElement('div');
+    hotspot.className = 'insert-hotspot';
+	hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    hotspot.textContent = '+';
+    hotspot.onclick = () => handleNoteHotspotClick(itineraryId, it.day, it.sortOrder);
+    modifyCarousel.appendChild(hotspot);
+  }
+}
+
+if (moveMode) {
+  // Get the item being moved
+  const movingItem = window.itemToMove;
+  const isMovingItem = movingItem && 
+    it.itineraryId === movingItem.itineraryId && 
+    it.day === movingItem.day && 
+    it.sortOrder === movingItem.sortOrder;
+  
+  // Handle day transitions
+  if (it.day !== currentDay) {
+    const previousDay = currentDay;
+    
+    // Only show end-of-previous-day hotspot if it's not adjacent to moving item
+    if (previousDay > 0) {
+      const prevDayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === previousDay
+      );
+      const maxSortOrder = prevDayItems.length > 0 ? Math.max(...prevDayItems.map(item => item.sortOrder)) : 0;
+      
+      // Don't show if moving item is the last item of previous day
+      const showEndHotspot = !(movingItem && movingItem.day === previousDay && movingItem.sortOrder === maxSortOrder);
+      
+      if (showEndHotspot) {
+        const endOfDayHotspot = document.createElement('div');
+        endOfDayHotspot.className = 'move-hotspot';
+        endOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+        endOfDayHotspot.textContent = '+';
+        // FIXED: Send maxSortOrder + 1 to put item at end of previous day
+        endOfDayHotspot.onclick = () => handleMoveHotspotClick(itineraryId, previousDay, maxSortOrder + 1);
+        modifyCarousel.appendChild(endOfDayHotspot);
+      }
+    }
+    
+    // Only show start-of-new-day hotspot if moving item isn't first item of this day
+    const showStartHotspot = !(movingItem && movingItem.day === it.day && movingItem.sortOrder === 1);
+    
+    if (showStartHotspot) {
+      const startOfDayHotspot = document.createElement('div');
+      startOfDayHotspot.className = 'move-hotspot';
+      startOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+      startOfDayHotspot.textContent = '+';
+      startOfDayHotspot.onclick = () => handleMoveHotspotClick(itineraryId, it.day, 1);
+      modifyCarousel.appendChild(startOfDayHotspot);
+    }
+  } else {
+    // Only show hotspot if it's not the moving item and not immediately before it
+    const showHotspot = !isMovingItem && 
+      !(movingItem && movingItem.day === it.day && movingItem.sortOrder === it.sortOrder - 1);
+    
+    if (showHotspot) {
+      const hotspot = document.createElement('div');
+      hotspot.className = 'move-hotspot';
+      hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+      hotspot.textContent = '+';
+      hotspot.onclick = () => handleMoveHotspotClick(itineraryId, it.day, it.sortOrder);
+      modifyCarousel.appendChild(hotspot);
+    }
+  }
+}
+
+// ALWAYS update currentDay for day tracking (both insertion and normal mode)
+if (it.day !== currentDay) {
+  currentDay = it.day;
+}
+
+	// Regular item card
+	const card = document.createElement('div');
+	card.className = 'place-card';
+	card.dataset.day = it.day;
+
+	// Highlight the item being moved
+	const movingItem = window.itemToMove;
+	const isMovingItem = movingItem && 
+	  it.itineraryId === movingItem.itineraryId && 
+	  it.day === movingItem.day && 
+	  it.sortOrder === movingItem.sortOrder;
+
+	if (isMovingItem && moveMode) {
+	  card.classList.add('moving-item');
+	}
+    
+if (!insertionMode) {
+  // Hide buttons for all items when in move mode, or just for the moving item
+  const showButtons = !moveMode;
+  
+  card.innerHTML = `
+    ${showButtons ? `<span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1em;color:#DB504A;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="remove-item" title="Remove">🗑️</span>` : ''}
+    ${showButtons ? `<span style="position:absolute;top:36px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="edit-item" title="Edit">✏️</span>` : ''}
+    ${showButtons ? `<span style="position:absolute;top:68px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="move-item" title="Move">↕️</span>` : ''}
+    <h4>${place ? place.name : 'Note'}</h4>
+    ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+    ${it.date ? `<p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>` : ''}
+    ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+  `;
+      
+	// Only add event listeners if buttons exist
+	const removeBtn = card.querySelector('.remove-item');
+	const editBtn = card.querySelector('.edit-item');
+	const moveBtn = card.querySelector('.move-item');
+	
+	if (removeBtn) {
+		removeBtn.onclick = e => {
+		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
+		  if (confirm('Are you sure you want to remove this item?')) {
+			// Grey out the card to show it's being removed
+			card.style.opacity = 0.4;
+			card.style.pointerEvents = 'none'; // Disable further clicks
+			
+			// Use the same postToAPI that works for everything else
+			postToAPI({
+			  secret: API_SECRET,
+			  action: 'removeItem',
+			  itineraryId: it.itineraryId,
+			  day: it.day,
+			  sortOrder: it.sortOrder
+			});
+			
+			// Optionally add some visual indicator
+			removeBtn.style.color = '#666';
+			removeBtn.title = 'Removed';
+			
+			// UPDATE: Remove the item from frontend data immediately
+			const indexToRemove = window.itineraryItems.findIndex(item => 
+			  item.itineraryId === it.itineraryId && 
+			  item.day === it.day && 
+			  item.sortOrder === it.sortOrder
+			);
+			
+			if (indexToRemove !== -1) {
+			  // Remove the item from the array
+			  window.itineraryItems.splice(indexToRemove, 1);
+			  
+			  // Update sortOrder for remaining items in the same itinerary/day
+			  window.itineraryItems.forEach(item => {
+				if (item.itineraryId === it.itineraryId && 
+					item.day === it.day && 
+					item.sortOrder > it.sortOrder) {
+				  item.sortOrder--;
+				}
+			  });
+			}
+		  }
+		  });
+		};
+	}
+	
+	if (editBtn) {
+		editBtn.onclick = e => {
+		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
+		  openEditModal(it.itineraryId, it.day, it.sortOrder);
+		  });
+		};
+	}
+	
+	if (moveBtn) {
+		moveBtn.onclick = e => {
+		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
+		  window.enterMoveMode(it.itineraryId, it.day, it.sortOrder);
+		});
+		};
+	}
+
+	} else {
+	  // Card for insertion mode (but with same info as normal mode)
+	  card.innerHTML = `
+		<h4>${place ? place.name : 'Note'}</h4>
+		${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+		${it.date ? `<p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>` : ''}
+		${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+	  `;
+	}
+    
+    modifyCarousel.appendChild(card);
+  });
+
+  // Add final hotspot at the end if in insertion mode
+  if (insertionMode && items.length > 0) {
+    const lastItem = items[items.length - 1];
+    const hotspot = document.createElement('div');
+    hotspot.className = 'insert-hotspot';
+hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    hotspot.textContent = '+';
+    hotspot.onclick = () => handleNoteHotspotClick(itineraryId, lastItem.day, lastItem.sortOrder + 1);
+    modifyCarousel.appendChild(hotspot);
+  }
+  
+if (moveMode && items.length > 0) {
+  const lastItem = items[items.length - 1];
+  const movingItem = window.itemToMove;
+  
+  // Only show final hotspot if moving item isn't the last item
+  const showFinalHotspot = !(movingItem && 
+    movingItem.day === lastItem.day && 
+    movingItem.sortOrder === lastItem.sortOrder);
+  
+  if (showFinalHotspot) {
+    const hotspot = document.createElement('div');
+    hotspot.className = 'move-hotspot';
+    hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+    hotspot.textContent = '+';
+    
+    // FIXED: Send lastItem.sortOrder + 1 to put item at end of final day
+    const targetSortOrder = lastItem.sortOrder + 1;
+    console.log('Creating final day hotspot with sortOrder:', targetSortOrder, 'from lastItem:', lastItem.sortOrder);
+    
+    hotspot.onclick = () => handleMoveHotspotClick(itineraryId, lastItem.day, targetSortOrder);
+    modifyCarousel.appendChild(hotspot);
+  }
+}
+  
+// Update the modifyCards reference for the day label function
+setTimeout(() => {
+ const modifyLabel = document.getElementById('modifyDayLabel');                   // L7 :contentReference[oaicite:0]{index=0}
+ const modifyNextLabel = document.getElementById('modifyDayNextLabel');          // L8 :contentReference[oaicite:1]{index=1}
+ // Define modifyCarousel before querying its cards
+ const modifyCarousel = document.getElementById('modifyItinCarousel');           // ✚ added
+ const modifyCards = modifyCarousel.querySelectorAll('.place-card');             // L9 :contentReference[oaicite:2]{index=2}
+
+  
+  function updateModifyDayLabels() {
+    const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+    
+    const firstVisible = Array.from(modifyCards).find(c => {
+      const r = c.getBoundingClientRect();
+      return r.right > wrapRect.left + 1;
+    });
+    
+    if (!firstVisible) {
+      modifyLabel.style.display = 'none';
+      modifyNextLabel.style.display = 'none';
+      return;
+    }
+    
+    const day = firstVisible.dataset.day;
+    modifyLabel.textContent = `Day ${day}`;
+    const cr = firstVisible.getBoundingClientRect();
+    const relX = cr.left - wrapRect.left;
+    modifyLabel.style.left = `${relX > 0 ? relX : 0}px`;
+    modifyLabel.style.display = 'block';
+    
+    const nextDay = String(Number(day) + 1);
+    const nextCard = Array.from(modifyCards).find(c => c.dataset.day === nextDay);
+    
+    if (nextCard) {
+      const nr = nextCard.getBoundingClientRect();
+      const relNextX = nr.left - wrapRect.left;
+      if (relNextX < wrapRect.width) {
+        modifyNextLabel.textContent = `Day ${nextDay}`;
+        modifyNextLabel.style.left = `${relNextX > 0 ? relNextX : 0}px`;
+        modifyNextLabel.style.display = 'block';
+      } else {
+        modifyNextLabel.style.display = 'none';
+      }
+    } else {
+      modifyNextLabel.style.display = 'none';
+    }
+  }
+  
+  if (modifyCards.length > 0) {
+    modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
+    updateModifyDayLabels();
+  }
+}, 100);
+}
+ // Day label logic for modify carousel
+ window.addEventListener('DOMContentLoaded', () => {
+   const modifyCarousel = document.getElementById('modifyItinCarousel');
+   const modifyLabel    = document.getElementById('modifyDayLabel');
+   const modifyNextLabel= document.getElementById('modifyDayNextLabel');
+   const modifyCards    = modifyCarousel.querySelectorAll('.place-card');
+
+   function updateModifyDayLabels() {
+     const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+     // …rest of your existing updateModifyDayLabels body…
+   }
+
+   if (modifyCards.length > 0) {
+     modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
+     updateModifyDayLabels();
+   }
+ });
+
+</script>
+
+<!-- Markers + Carousel -->
+<script>
+  // Exported so map and filters can call them
+  window.renderCarousel = function renderCarousel(v){
+    const c = document.getElementById('placeCarousel');
+    c.innerHTML = '';
+    v.forEach(p => {
+      c.insertAdjacentHTML('beforeend',
+        `<div class="place-card">
+            <h4>${p.name}</h4>
+            ${/* p.notes ? `<p>${p.notes}</p>` : '' */ ''}
+            <p><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em></p>
+        ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
+            </div>`
+      );
+      const cardEl = c.lastElementChild;
+      cardEl.onclick = () => {
+        const m = window.markers.find(mk => {
+          const [lng, lat] = mk.getLngLat().toArray();
+          return lat === p.latlng[0] && lng === p.latlng[1];
+        });
+        if (m) {
+          if (window.currentPopup) window.currentPopup.remove();
+          const popup = m.getPopup();
+          popup.addTo(window.map);
+          window.currentPopup = popup;
+          window.map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, speed: 1.0, curve: 1.6, essential: true });
+        }
+      };
+    });
+  };
+
+  window.drawMarkers = function drawMarkers(){
+    window.markers.forEach(m => m.remove()); window.markers = [];
+    const visible = [];
+    places.forEach(p=>{
+      if(!selVis.has(p.visited?'Been there':'Not yet')) return;
+      if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return;
+      if (p.regions && !p.regions.some(r => selReg.has(r))) return;
+      visible.push(p);
+      let popup = `<strong>${p.name}</strong>`
+        + `${p.notes ? `<br>🗒️ ${p.notes}` : ''}`
+        + `<br><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em>`
+        + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;
+      const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
+      if(revs.length){
+        popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">';
+        revs.forEach(r=>{
+          popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
+          r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`);
+          popup+='</div>';
+        });
+        popup+='</div></details>';
+      }
+      if(p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+      if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+      if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
+      popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add to itinerary</button>`;
+
+      const strokeColor=p.visited?'#DAA520':'#555';
+      const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
+      const el = document.createElement('div');
+      el.innerHTML = svgIcon;
+      el.className = 'place-marker';
+
+      const pop = new maplibregl.Popup({
+        offset: 25,
+        closeOnClick: false,
+        focusAfterOpen: false
+      }).setHTML(popup);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([ p.latlng[1], p.latlng[0] ])
+        .setPopup(pop)
+        .addTo(window.map);
+
+      // delegate “+ Add to itinerary”
+      document.body.addEventListener('click', e => {
+        const btn = e.target.closest('.add-to-itin');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+		window.passwordProtection.requireAuth(() => {
+        openAddModal(btn.dataset.placeId);
+      });
+	  });
+
+      marker.placeId = p.id;
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const currentZoom = window.map.getZoom();
+        const targetZoom  = 12;
+		
+        window.map.flyTo({
+          center: [ p.latlng[1], p.latlng[0] ],
+          zoom: Math.max(currentZoom, targetZoom),
+          speed: 1.0, curve: 1.6, essential: true
+        });
+        if (window.currentPopup && window.currentPopup !== marker.getPopup()) {
+          window.currentPopup.remove();
+        }
+        const popup = marker.getPopup();
+        popup.addTo(window.map);
+        window.currentPopup = popup;
+      });
+
+      window.markers.push(marker);
+    });
+
+    renderCarousel(visible);
+  };
+</script>
+
+<!-- Filters Logic -->
+<script>
+  window.setupFilters = function(categories,regions,catMap){
+    const fd=document.getElementById('filters');
+    const wrapper=document.getElementById('panelContainer');
+
+    document.getElementById('toggleFilters').onclick = () => {
+      const ex = fd.classList.toggle('expanded');
+      document.body.classList.toggle('menu-open', ex);
+      document.getElementById('toggleFilters').textContent = ex ? 'Close Menu' : 'Menu';
+      document.getElementById('placeSearch').style.display   = ex ? 'block' : 'none';
+      document.getElementById('toggleSubcats').style.display = ex ? 'block' : 'none';
+      document.getElementById('itineraryMode').style.display = ex ? 'block' : 'none';
+    };
+
+    document.getElementById('itineraryMode').onclick = () => {
+      // flip flag
+      const fd     = document.getElementById('filters');
+      const inItin = fd.classList.toggle('itineraryActive');
+
+      const searchEl   = document.getElementById('placeSearch');
+      const deselectEl = document.getElementById('toggleSubcats');
+      if (inItin) {
+        searchEl.style.display   = 'none';
+        deselectEl.style.display = 'none';
+
+        // reset filters
+        selSub.clear();
+        places.forEach(p => p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`)));
+        selReg.clear(); regions.forEach(r => selReg.add(r));
+        selVis.clear(); selVis.add('Been there'); selVis.add('Not yet');
+
+        document.querySelectorAll('#panelContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
+        allOn = true;
+        document.getElementById('toggleSubcats').textContent = 'Deselect All';
+
+        document.getElementById('placeSearch').value = '';
+        renderCarousel(places);
+        drawMarkers();
+      } else {
+        const expanded = fd.classList.contains('expanded');
+        searchEl.style.display   = expanded ? 'block' : 'none';
+        deselectEl.style.display = expanded ? 'block' : 'none';
+      }
+
+      document.getElementById('panelContainer').style.display   = inItin ? 'none'  : 'block';
+      document.getElementById('placeCarousel').style.display    = inItin ? 'none'  : 'flex';
+      document.getElementById('itineraryContainer').style.display = inItin ? 'block' : 'none';
+
+      const btn = document.getElementById('itineraryMode');
+      btn.textContent = inItin ? 'Exit Itinerary Mode' : 'Enter Itinerary Mode';
+
+      if (!inItin) {
+        showAllMarkers();
+        const selectEl = document.getElementById('itinerarySelect');
+        selectEl.style.display = 'none';
+        selectEl.selectedIndex  = 0;
+        document.getElementById('itineraryCarousel').style.display = 'none';
+        const viewBtn = document.getElementById('viewItineraries');
+        viewBtn.textContent = 'View Itineraries';
+        document.getElementById('itinDayCurrent').style.display = 'none';
+        document.getElementById('itinDayNext').style.display    = 'none';
+      }
+    };
+
+    function makeCB(val,setRef,label){
+      const lbl=document.createElement('label');
+      const cb=document.createElement('input');
+      cb.type='checkbox'; cb.value=val; cb.checked=true;
+      cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+      cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); };
+      lbl.append(cb,' ',label); return lbl;
+    }
+
+    function addPanel(title,items,isRegion=false,masterOnly=false){
+      const p=document.createElement('div'); p.className='panel';
+      const h=document.createElement('div'); h.className='panel-header';
+      if(!masterOnly){
+        const m=document.createElement('input'); m.type='checkbox'; m.checked=true;
+        m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+        m.onclick=e=>e.stopPropagation();
+        m.onchange=()=>{
+          p.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+            if(cb!==m){
+              cb.checked=m.checked; const k=cb.value;
+              isRegion? (m.checked?selReg.add(k):selReg.delete(k))
+                      : (m.checked?selSub.add(k):selSub.delete(k));
+            }
+          });
+          drawMarkers();
+        };
+        h.append(m);
+      }
+      h.append(document.createTextNode(title));
+      if(!isRegion&&title!=='Visited?'){
+        const sw=document.createElement('div'); sw.className='color-swatch';
+        sw.style.background=categoryColors[title]; h.append(sw);
+      }
+      const arr=document.createElement('span'); arr.className='arrow'; h.append(arr);
+      const b=document.createElement('div'); b.className='panel-body';
+      if (title === 'Visited?') {
+        items.forEach(it => b.append(makeCB(it,selVis,it)));
+      } else {
+        items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));
+      }
+      h.onclick = () => {
+        const o = b.classList.toggle('active');
+        arr.classList.toggle('expanded', o);
+      };
+      p.append(h,b); wrapper.append(p);
+    }
+
+    if(regions.size) addPanel('Region',[...regions].sort(),true);
+    addPanel('Visited?',['Been there','Not yet'],false,true);
+    if(categories.includes('Food'))          addPanel('Food',[...catMap['Food']].sort(),false);
+    if(categories.includes('Sweet Treats'))  addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
+    categories
+      .filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous')
+      .sort()
+      .forEach(c=>addPanel(c,[...catMap[c]].sort()));
+    if (categories.includes('Miscellaneous')) {
+      addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
+    }
+  };
+</script>
+
+
+  <div class="filters" id="filters">
+    <button id="toggleFilters">Menu</button>	
+	<!-- Itinerary Mode button moved up, right under Menu -->
+	<button
+		id="itineraryMode"
+		style="
+		display: none;
+		width: calc(100% - 16px);
+		margin: 8px 8px 8px;
+		padding: 6px 8px;
+		background: var(--menuButton);
+		border-bottom: 1px solid #ddd;
+		border-radius: 4px;
+		border: none;
+		font-family: var(--menuFont), cursive;
+		font-size: 1em;
+		color: #333;
+		text-align: center;
+		cursor: pointer;
+		">
+		Enter Itinerary Mode
+	</button>
+	
+	<div class="search-toggle-container">
+  <input type="search" id="placeSearch"
+    placeholder="Search…"
+    style="display:none; flex:2; margin:8px;" />
+  <button id="toggleSubcats"
+    style="display:none; flex:1; margin:8px;
+           background:var(--menuButton); border:none;
+           border-bottom:1px solid #ddd;
+           font-family:var(--menuFont), cursive;
+           cursor:pointer;">
+    Deselect All
+  </button>
+</div>
+	<div id="panelContainer" class="panel-container"></div>
+
+	<div
+	   id="itineraryContainer"
+	   style="
+		display: none;
+		overflow-y: auto;
+		padding: 8px 8px 0 8px;
+		margin: 8px 8px 0 8px;
+		font-family: sans-serif;
+		">
+	   <button
+		  id="createItinerary"
+		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
+		  Create New Itinerary
+		</button>
+		<button
+		  id="modifyItineraries"
+		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
+		  Modify Itineraries
+		</button>
+		<button
+		  id="viewItineraries"
+		  style="width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;">
+		  View Itineraries
+		</button>
+	<select id="itinerarySelect" style="display:none;">
+	  <option value="" disabled selected>Select an itinerary</option>
+	</select>
+
+	<div id="itineraryCarouselWrapper"
+		 style="position:relative;
+				margin-top:8px;
+				overflow:visible;
+				padding-top:24px;">        <!-- added more top-padding -->
+
+	  <!-- current-day label, pinned until next arrives -->
+	  <div id="itinDayCurrent"
+		   style="display:none;
+				  position:absolute;
+				  top:4px;              <!-- lift above cards -->
+				  left:0;
+				  white-space:nowrap;
+				  pointer-events:none;
+				  z-index:1000;">
+	  </div>
+
+	  <!-- next-day label, will slide in from the right -->
+	  <div id="itinDayNext"
+		   style="display:none;
+				  position:absolute;
+				  top:4px;
+				  left:0;
+				  white-space:nowrap;
+				  opacity:0.5;            <!-- slightly faded -->
+				  pointer-events:none;
+				  z-index:1000;">
+	  </div>
+
+	  <div id="itineraryCarousel" class="place-carousel"
+		   style="display:none;
+				  overflow-x:auto;
+				  gap:8px;
+				  padding:8px;
+				  border-top:none;">
+	  </div>
+	</div>
+</div>
+	  
+    <div id="placeCarousel" class="place-carousel"></div>
+  </div>
+  <div id="map"></div>
+  <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+	<div id="itinAddModal">
+	  <form id="addItinForm">
+		<label>
+		  Itinerary  
+		  <select id="modalItinSelect"></select>
+		</label>
+		<label>
+		  Day #  
+		  <input type="number" id="modalDay" min="1" required>
+		</label>
+		<label>
+		  Date  
+		  <input type="date" id="modalDate" required>
+		</label>
+		<label>
+		Time  
+		<input
+			type="text"
+			id="modalTime"
+			placeholder="e.g. 15:00, after breakfast"
+			style="width:80%;box-sizing:border-box;"
+		>
+		</label>
+		<label>
+		  Notes  
+		  <textarea id="modalNotes" rows="2"></textarea>
+		</label>
+	  <div style="display:flex;justify-content:flex-end;gap:8px;">
+		<button type="button" id="modalCancel">Cancel</button>
+		<button type="submit" id="modalNext">Next</button>
+	  </div>
+	  </form>
+		<div id="insertStepContainer">
+		<div id="insertDayLabel" class="insert-day-label"></div>
+		<div id="insertCarousel" class="place-carousel"></div>
+		<div style="
+		  display: flex;
+		  justify-content: flex-end;
+		  gap: 8px;
+		  margin-top: 8px;
+		  /* ensures these sit on top of the carousel */
+		  position: relative;
+		  z-index: 1001;
+		">
+		 <button type="button" id="insertBack">Back</button>
+		 <button type="button" id="insertConfirm">Add</button>
+		</div>
+		</div>
+	</div>
+  <div id="createItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20000; width:320px; max-width:96%; font-family: var(--menuFont), sans-serif;">
+    <form id="createItinForm" style="display:flex; flex-direction:column; gap:14px;">
+      <label for="itinTitle" style="font-size:1em;">Create New Itinerary
+	<input type="text" id="itinTitle" required maxlength="60" autocomplete="off" placeholder="Itinerary Name"
+	  style="width: 98%; box-sizing: border-box; padding:7px 8px; border:1px solid var(--borders); border-radius:4px; font-size:1em; background: var(--searchBG); color:#333;">
+      </label>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="cancelCreateItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;">Cancel</button>
+        <button type="submit" id="submitCreateItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;">Create</button>
+      </div>
+    </form>
+  </div>
+  <div id="modifyItinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20001; width:340px; max-width:98%; font-family: var(--menuFont), sans-serif;">
+    <div style="margin-bottom:14px;">
+	<div style="margin-bottom:8px; font-size:1em;">Modify Itinerary</div>
+	<select id="modifyItinSelect">
+      </select>
+    </div>
+    <div id="modifyCarouselWrapper" style="position:relative; padding-top:24px;">
+      <div id="modifyDayLabel"
+        style="display:none; position:absolute; top:4px; left:0; white-space:nowrap; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.4em; text-decoration:underline;">
+      </div>
+   <div id="modifyDayNextLabel"
+     style="display:none; position:absolute; top:4px; left:0; white-space:nowrap; opacity:0.5; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.4em; text-decoration:underline;">
+   </div>
+      <div id="modifyItinCarousel" class="place-carousel" style="min-height:60px;"></div>
+    </div>
+<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:14px;">
+   <button type="button" id="addNoteBtn" style="display:none; background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Add a Note 🗒️</button>
+   <div style="margin-left:auto;">
+     <button type="button" id="cancelModifyItin" style="background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;">Done</button>
+   </div>
+</div>
+<div id="noteTextModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10002; width: 300px; max-width: calc(100% - 32px); font-family: var(--menuFont), sans-serif;">
+  <div style="margin-bottom: 12px; font-size: 1em;">Add Note</div>
+  <textarea id="noteTextInput" rows="4" placeholder="Enter your note..." style="width: 94%; padding: 8px; border: 1px solid var(--borders); border-radius: 4px; background-color: var(--searchBG); font-family: var(--menuFont), sans-serif; resize: vertical;"></textarea>
+  <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 12px;">
+    <button type="button" id="noteTextBack" style="background: var(--menuButton); border: none; border-radius: 4px; padding: 6px 12px; font-family: var(--menuFont), cursive; cursor: pointer;">Back</button>
+    <button type="button" id="noteTextSubmit" style="background: var(--menuButton); border: none; border-radius: 4px; padding: 6px 12px; font-family: var(--menuFont), cursive; cursor: pointer;">Submit</button>
+  </div>
+</div>
+   </div>
+<div id="editItemModal">
+  <div style="margin-bottom: 14px; font-size: 1.1em;">Edit Item</div>
+  
+  <form id="editItemForm">
+    <label>
+      Date
+      <input type="date" id="editDate">
+    </label>
+    
+    <label>
+      Time
+      <input type="text" id="editTime" placeholder="e.g. 15:00, after breakfast">
+    </label>
+    
+    <label>
+      Notes
+      <textarea id="editNotes" rows="3"></textarea>
+    </label>
+    
+    <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 12px;">
+      <button type="button" id="editCancel">Cancel</button>
+      <button type="submit" id="editSave">Save</button>
+    </div>
+  </form>
+</div>
+<div id="passwordOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:29999;"></div>
+<div id="passwordModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--menuBg); border:1px solid var(--borders); border-radius:8px; padding:20px; box-shadow:0 4px 16px rgba(0,0,0,0.3); z-index:30000; width:300px; max-width:calc(100% - 40px); font-family:var(--menuFont), sans-serif;">
+    <h3 style="margin:0 0 16px 0; font-size:1.2em; color:#333; text-align:center;">🔒 Enter Password</h3>
+    <div id="passwordError" style="display:none; color:#d32f2f; font-size:0.9em; margin-bottom:8px; text-align:center;"></div>
+    <input type="password" id="passwordInput" placeholder="Enter modification password" maxlength="50" style="width:calc(100% - 16px); padding:8px; border:1px solid var(--borders); border-radius:4px; background:var(--searchBG); font-family:var(--menuFont), sans-serif; font-size:1em; margin-bottom:16px;">
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="passwordCancel" style="background:var(--menuButton); border:none; border-radius:4px; padding:8px 16px; font-family:var(--menuFont), cursive; cursor:pointer; color:#333;">Cancel</button>
+        <button type="button" id="passwordSubmit" style="background:var(--menuButton); border:none; border-radius:4px; padding:8px 16px; font-family:var(--menuFont), cursive; cursor:pointer; color:#333;">Submit</button>
+    </div>
+</div>
+</body>
