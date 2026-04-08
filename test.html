@@ -5,7 +5,7 @@
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
   <meta charset="utf-8" />
-  <title>Hawaii</title>
+  <title>Hawaii 2</title>
 
 
 <!-- MAIN USER CONFIG -->
@@ -38,7 +38,7 @@
 		carouselFont:  'Dorgan'		// filter & itinerary carousels
 	  }
 	};
-	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyB-At6gJCbeod2Hcy-6eYrk81nigJ5w9-6tM533oueHMFvkq5rjh6XrZ3Nzu06xJ0/exec';  // ← replace with your Web App URL
+	const SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyB-At6gJCbeod2Hcy-6eYrk81nigJ5w9-6tM533oueHMFvkq5rjh6XrZ3Nzu06xJ0/exec';
 	const API_SECRET      = 'Fart';
 </script>
 
@@ -341,19 +341,16 @@
 <!-- Itinerary: Add -->
 <style>
 	#itinAddModal {
-		/* hide by default, center on screen */
 		display: none;
 		position: fixed;
 		top: 50%; left: 50%;
 		transform: translate(-50%, -50%);
-		/* match menu panel style */
 		background: var(--menuBg);
 		border: 1px solid var(--borders);
 		border-radius: 8px;
 		padding: 16px;
 		box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 		z-index: 10000;
-		/* fixed width with padding */
 		width: 320px;
 		max-width: calc(100% - 32px);
 		font-family: var(--menuFont), sans-serif;
@@ -362,18 +359,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+		min-width: 0;
 	}
 	#addItinForm label {
 		font-size: 1em;
 	}
-  #addItinForm {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    /* make sure children can shrink inside flex */
-    min-width: 0;
-  }
-  /* shrink fields so they don't touch the modal edges */
   #addItinForm select,
   #addItinForm input,
   #addItinForm textarea {
@@ -2217,7 +2207,6 @@ if (moveMode && items.length > 0) {
   }
 }
   
-// Update the modifyCards reference for the day label function
 setTimeout(() => {
  const modifyLabel = document.getElementById('modifyDayLabel');
  const modifyNextLabel = document.getElementById('modifyDayNextLabel');
@@ -2552,19 +2541,14 @@ setTimeout(() => {
 		Enter Itinerary Mode
 	</button>
 	
-	<div class="search-toggle-container">
-  <input type="search" id="placeSearch"
-    placeholder="Search…"
-    style="display:none; flex:2; margin:8px;" />
-  <button id="toggleSubcats"
-    style="display:none; flex:1; margin:8px;
-           background:var(--menuButton); border:none;
-           border-bottom:1px solid #ddd;
-           font-family:var(--menuFont), cursive;
-           cursor:pointer;">
-    Deselect All
-  </button>
-</div>
+		<div class="search-toggle-container">
+	  <input type="search" id="placeSearch"
+	    placeholder="Search…"
+	    style="display:none;" />
+	  <button id="toggleSubcats" style="display:none;">
+	    Deselect All
+	  </button>
+	</div>
 	<div id="panelContainer" class="panel-container"></div>
 
 	<div
