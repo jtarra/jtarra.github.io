@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+  <title>Map</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6/dist/fuse.min.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
+  <link href="shared/base.css" rel="stylesheet">
+</head>
+<body>
+<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+<script src="shared/map-registry.js"></script>
+<script src="shared/map-loader.js"></script>
+
+<noscript>This map requires JavaScript.</noscript>
+
+<div class="filters" id="filters">
+<button id="toggleFilters">Menu</button>
+<!-- Itinerary Mode button moved up, right under Menu -->
+<button id="itineraryMode">
+		Enter Itinerary Mode
+	</button>
+<div class="search-toggle-container">
+<input id="placeSearch" placeholder="Search…" type="search"/>
+<button id="toggleSubcats">
+	    Deselect All
+	  </button>
+</div>
+<div class="panel-container" id="panelContainer"></div>
+<div id="itineraryContainer">
+<button id="createItinerary">
+		  Create New Itinerary
+		</button>
+<button id="modifyItineraries">
+		  Modify Itineraries
+		</button>
+<button id="viewItineraries">
+		  View Itineraries
+		</button>
+<select id="itinerarySelect">
+<option disabled="" selected="" value="">Select an itinerary</option>
+</select>
+<div id="itineraryCarouselWrapper"> <!-- added more top-padding -->
+<!-- current-day label, pinned until next arrives -->
+<div id="itinDayCurrent">
+</div>
+<!-- next-day label, will slide in from the right -->
+<div id="itinDayNext">
+</div>
+<div class="place-carousel" id="itineraryCarousel">
+</div>
+</div>
+</div>
+<div class="place-carousel" id="placeCarousel"></div>
+</div>
+<div id="map"></div>
+<iframe id="hidden_iframe" name="hidden_iframe"></iframe>
+<div id="itinAddModal">
+<form id="addItinForm">
+<label>
+		  Itinerary  
+		  <select id="modalItinSelect"></select>
+</label>
+<label>
+		  Day #  
+		  <input id="modalDay" min="1" required="" type="number"/>
+</label>
+<label>
+		  Date  
+		  <input id="modalDate" required="" type="date"/>
+</label>
+<label>
+		Time  
+		<input id="modalTime" placeholder="e.g. 15:00, after breakfast" type="text"/>
+</label>
+<label>
+		  Notes  
+		  <textarea id="modalNotes" rows="2"></textarea>
+</label>
+<div class="add-itin-actions">
+<button id="modalCancel" type="button">Cancel</button>
+<button id="modalNext" type="submit">Next</button>
+</div>
+</form>
+<div id="insertStepContainer">
+<div class="insert-day-label" id="insertDayLabel"></div>
+<div class="place-carousel" id="insertCarousel"></div>
+<div class="insert-actions">
+<button id="insertBack" type="button">Back</button>
+<button id="insertConfirm" type="button">Add</button>
+</div>
+</div>
+</div>
+<div id="createItinModal">
+<form id="createItinForm">
+<label class="create-itin-label" for="itinTitle">Create New Itinerary
+	<input autocomplete="off" id="itinTitle" maxlength="60" placeholder="Itinerary Name" required="" type="text"/>
+</label>
+<div class="create-itin-actions">
+<button id="cancelCreateItin" type="button">Cancel</button>
+<button id="submitCreateItin" type="submit">Create</button>
+</div>
+</form>
+</div>
+<div id="modifyItinModal">
+<div class="modify-itin-field">
+<div class="modal-section-title">Modify Itinerary</div>
+<select id="modifyItinSelect">
+</select>
+</div>
+<div id="modifyCarouselWrapper">
+<div id="modifyDayLabel">
+</div>
+<div id="modifyDayNextLabel">
+</div>
+<div class="place-carousel" id="modifyItinCarousel"></div>
+</div>
+<div class="modify-itin-actions">
+<button id="addNoteBtn" type="button">Add a Note 🗒️</button>
+<div class="modify-itin-actions-spacer">
+<button id="cancelModifyItin" type="button">Done</button>
+</div>
+</div>
+<div id="noteTextModal">
+<div class="note-text-title">Add Note</div>
+<textarea id="noteTextInput" placeholder="Enter your note..." rows="4"></textarea>
+<div class="note-text-actions">
+<button id="noteTextBack" type="button">Back</button>
+<button id="noteTextSubmit" type="button">Submit</button>
+</div>
+</div>
+</div>
+<div id="editItemModal">
+<div class="edit-item-title">Edit Item</div>
+<form id="editItemForm">
+<label>
+      Date
+      <input id="editDate" type="date"/>
+</label>
+<label>
+      Time
+      <input id="editTime" placeholder="e.g. 15:00, after breakfast" type="text"/>
+</label>
+<label>
+      Notes
+      <textarea id="editNotes" rows="3"></textarea>
+</label>
+<div class="edit-item-actions">
+<button id="editCancel" type="button">Cancel</button>
+<button id="editSave" type="submit">Save</button>
+</div>
+</form>
+</div>
+<div id="passwordOverlay"></div>
+<div id="passwordModal">
+<h3 class="password-title">🔒 Enter Password</h3>
+<div id="passwordError"></div>
+<input id="passwordInput" maxlength="50" placeholder="Enter modification password" type="password"/>
+<div class="password-actions">
+<button id="passwordCancel" type="button">Cancel</button>
+<button id="passwordSubmit" type="button">Submit</button>
+</div>
+</div>
+</body>
+</html>
