@@ -1,0 +1,23 @@
+/* Hawaii map theme CSS extracted from map.html. */
+
+/* Hawaii theme variables */
+:root {
+  --menuBg: #FFF9E6;
+  --menuButton: #E7D8C4;
+  --catText: #E3B505;
+  --catShadow: #DB504A;
+  --searchBG: #F5F1EC;
+  --caroCardBg: #FAF1D2;
+  --borders: #D0B59A;
+  --subcatBG: #F8E9D5;
+
+  --catFont: 'Bardy';
+  --subcatFont: 'Dorgan';
+  --popupFont: 'Dorgan';
+  --menuFont: 'Dorgan';
+  --carouselFont: 'Dorgan';
+}
+
+/* Fonts */
+@font-face { font-family: 'Bardy'; src: url('MapResources/Fonts/Bardy.woff') format('woff'); }
+    @font-face { font-family: 'Dorgan'; src: url('MapResources/Fonts/Dorgan.woff') format('woff'); }
