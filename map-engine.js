@@ -1,0 +1,1900 @@
+// Shared map behavior extracted from map.html.
+// CONFIG, SHEETS_ENDPOINT, and API_SECRET are loaded from hawaii-config.js before this file.
+// Third-party libraries are still loaded from map.html before this file.
+
+    function setRealVh() {
+      let vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--realVh', `${vh}px`);
+    }
+    window.addEventListener('resize', setRealVh);
+    window.addEventListener('orientationchange', setRealVh);
+    window.addEventListener('DOMContentLoaded', setRealVh);
+
+
+	window.itineraries     = [];
+	window.itineraryItems  = [];
+	window._itinDataPromise = null;
+	
+	function _fetchItineraries() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/Itineraries!A:C?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraries = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			name:        r[1],
+			createdDate: r[2]
+		}));
+		});
+	}
+	
+	function _fetchItineraryItems() {
+	const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/ItineraryItems!A:G?key=${CONFIG.apiKey}`;
+	return fetch(url)
+		.then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+		.then(json => {
+		window.itineraryItems = (json.values || []).slice(1).map(r => ({
+			itineraryId: r[0],
+			day:         Number(r[1]),
+			sortOrder:   Number(r[2]),
+			placeId:     r[3],
+			date:        r[4],
+			time:        r[5],
+			notes:       r[6]
+		}));
+		});
+	}
+	
+	function ensureItinData(force = false) {
+	if (!force && window._itinDataPromise) return window._itinDataPromise;
+	window._itinDataPromise = Promise.all([
+		_fetchItineraries(),
+		_fetchItineraryItems()
+	]).catch(err => {
+		console.error('Itinerary load failed:', err);
+		window._itinDataPromise = null; // allow retry
+		throw err;
+	});
+	return window._itinDataPromise;
+	}
+	function refreshItinData() {
+	return ensureItinData(true);
+	}
+window.addEventListener('DOMContentLoaded', () => {
+    // Preload Itineraries and Items so Modify works even before View
+    ensureItinData().catch(err => console.error('Itinerary preload failed:', err));
+  });
+  
+class PasswordProtection {
+    constructor() {
+        this.isAuthenticated = false;
+        this.currentAction = null;
+        this.currentParams = null;
+        this.setupEventListeners();
+    }
+
+setupEventListeners() {
+    // Check if elements exist, if not, wait for DOM to be ready
+    const input = document.getElementById('passwordInput');
+    const submitBtn = document.getElementById('passwordSubmit');
+    const cancelBtn = document.getElementById('passwordCancel');
+    const overlay = document.getElementById('passwordOverlay');
+
+    if (!input || !submitBtn || !cancelBtn || !overlay) {
+        // Elements don't exist yet, wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setupEventListeners());
+        } else {
+            // DOM is already loaded, try again in next tick
+            setTimeout(() => this.setupEventListeners(), 0);
+        }
+        return;
+    }
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') this.submitPassword();
+    });
+
+    submitBtn.addEventListener('click', () => this.submitPassword());
+    
+    const closeModal = () => this.hideModal();
+    cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+}
+
+    requireAuth(action, params = null) {
+        if (this.isAuthenticated) {
+            action(params);
+            return;
+        }
+
+        this.currentAction = action;
+        this.currentParams = params;
+        this.showModal();
+    }
+
+    showModal() {
+        document.getElementById('passwordOverlay').style.display = 'block';
+        document.getElementById('passwordModal').style.display = 'block';
+        document.getElementById('passwordInput').focus();
+        document.getElementById('passwordError').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+    }
+
+    hideModal() {
+        document.getElementById('passwordOverlay').style.display = 'none';
+        document.getElementById('passwordModal').style.display = 'none';
+        this.currentAction = null;
+        this.currentParams = null;
+    }
+
+    submitPassword() {
+        const password = document.getElementById('passwordInput').value;
+        const errorDiv = document.getElementById('passwordError');
+
+        // Check if password matches API_SECRET
+        if (password === API_SECRET) {
+            this.isAuthenticated = true;
+            this.hideModal();
+            
+            // Execute the pending action
+            if (this.currentAction) {
+                this.currentAction(this.currentParams);
+            }
+        } else {
+            errorDiv.textContent = 'Incorrect password. Please try again.';
+            errorDiv.style.display = 'block';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+
+    // Reset authentication on page refresh
+    resetAuth() {
+        this.isAuthenticated = false;
+    }
+}
+
+// Initialize password protection
+window.passwordProtection = new PasswordProtection();
+
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
+                + `/values:batchGet?key=${CONFIG.apiKey}`
+                + CONFIG.ranges.map(r=>`&ranges=${encodeURIComponent(r)}`).join('');
+
+      fetch(url)
+        .then(r=>r.ok?r.json():Promise.reject(r.statusText))
+        .then(data=>{
+          const [hdrP,...rowsP] = data.valueRanges[0].values;
+          const places = rowsP.map(r=>{ 
+		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
+	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
+		  return { 
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });
+          const [hdrR,...rowsR] = data.valueRanges[1].values;
+          const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
+          window.places = places;
+		  window.reviewsBy = reviewsBy;
+        }).catch(console.error);
+  window.initMap = function(places, reviewsBy){
+    const fuse = new Fuse(places, {
+      getFn: (obj, path) => {
+        const value = obj[path];
+        if (typeof value === 'string') {
+          return value.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+        }
+        if (Array.isArray(value)) {
+          return value.map(s => s.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, ''));
+        }
+        return value;
+      },
+      keys: ['name','notes','tags'],
+      threshold: 0.15,
+      distance: 20,
+      ignoreLocation: true,
+      tokenize: true,
+      tokenSeparator: /[\s\-\/\.,;:!?\"'“”‘’]+/,
+      minMatchCharLength: 3,
+      includeScore: true
+    });
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          'raster-tiles': {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            ],
+            tileSize: 256,
+            attribution: CONFIG.attribution
+          }
+        },
+        layers: [{
+          id: 'osm-tiles',
+          type: 'raster',
+          source: 'raster-tiles'
+        }]
+      },
+      center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
+      zoom: CONFIG.mapZoom,
+      dragRotate:      false,
+      touchZoomRotate: true,
+      pitchWithRotate: false
+    });
+    window.map = map;
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.on('load', () => map.resize());
+    map.touchPitch.disable();
+    map.setMaxPitch(0);
+	map.dragRotate.disable();
+	map.keyboard.disableRotation();
+
+    // scope sync so markers/carousel (which use window.currentPopup) stay in lockstep
+    window.currentPopup = null;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude, longitude } = pos.coords;
+        const urls = CONFIG.userIconUrls;
+        const chosenUrl = urls[Math.floor(Math.random() * urls.length)];
+        const img = new Image();
+        img.src = chosenUrl;
+
+        img.onload = () => {
+          const maxWidth = 32;
+          const ratio    = img.height / img.width;
+          const w        = maxWidth;
+          const h        = Math.round(maxWidth * ratio);
+
+          const el = document.createElement('img');
+          el.src = chosenUrl;
+          el.style.width  = `${w}px`;
+          el.style.height = `${h}px`;
+
+          const popup = new maplibregl.Popup({
+            offset: { bottom: [0, -h] },
+            focusAfterOpen: false
+          }).setText('You are here.');
+
+          new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([longitude, latitude])
+            .setPopup(popup)
+            .addTo(map);
+
+          popup.on('open', () => {
+            if (window.currentPopup && window.currentPopup !== popup) {
+              window.currentPopup.remove();
+            }
+            window.currentPopup = popup;
+          });
+          popup.addTo(map);
+          window.currentPopup = popup;
+
+          map.flyTo({
+            center: [longitude, latitude],
+            zoom:   map.getZoom() + 1,
+            essential: true,
+          });
+        };
+      }, err => {
+        console.warn('Geolocation failed:', err.message);
+      });
+    }
+
+    // build category maps & selected sets (globals so drawMarkers/setupFilters can see them)
+    const catMap = {}, regSet = new Set();
+    places.forEach(p => {
+      const set = catMap[p.category] || (catMap[p.category] = new Set());
+      p.subcategories.forEach(sc => set.add(sc));
+      if (p.regions) p.regions.forEach(r => regSet.add(r));
+    });
+
+    window.selSub = new Set();
+    places.forEach(p => p.subcategories.forEach(sc => window.selSub.add(`${p.category} - ${sc}`)));
+    window.selReg = new Set(regSet);
+    window.selVis = new Set(['Been there','Not yet']);
+
+    const basePool = CONFIG.baseColors.slice(); shuffle(basePool);
+    window.categoryColors = {};
+    Object.keys(catMap).forEach(cat => {
+      window.categoryColors[cat] = basePool.length ? basePool.pop() : randomColor();
+    });
+
+    // build filter UI & draw pins
+    setupFilters(Object.keys(catMap), regSet, catMap);
+    drawMarkers();
+
+    // global “Select/Deselect All” for subcategories
+    let allOn = true;
+    const toggleSubcats = document.getElementById('toggleSubcats');
+    toggleSubcats.onclick = () => {
+      allOn = !allOn;
+      document.querySelectorAll('#panelContainer .panel').forEach(panel => {
+        const hdr = panel.querySelector('.panel-header');
+        const title = hdr.textContent.trim();
+        if (title !== 'Region' && title !== 'Visited?') {
+          const master = hdr.querySelector('input[type="checkbox"]');
+          master.checked = allOn;
+          master.dispatchEvent(new Event('change'));
+        }
+      });
+      toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
+    };
+
+    // search box → Fuse
+    const placeSearch = document.getElementById('placeSearch');
+    placeSearch.addEventListener('input', () => {
+      const raw = placeSearch.value.trim();
+      const q   = raw.normalize('NFKC').replace(/[\p{P}\p{S}]/gu, '');
+      const results = q ? fuse.search(q).map(r => r.item) : places;
+      renderCarousel(results);
+    });
+  };
+(function() {
+  let markers = (window.markers = []);
+  let currentPopup = null;
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}`
+            + `/values:batchGet?key=${CONFIG.apiKey}`
+            + CONFIG.ranges.map(r => `&ranges=${encodeURIComponent(r)}`).join('');
+
+  fetch(url)
+    .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+    .then(data => {
+      // ----- Places -----
+      const [hdrP, ...rowsP] = data.valueRanges[0].values;
+      const places = rowsP.map(r => {
+        const o = Object.fromEntries(hdrP.map((h, i) => [h, r[i] || '']));
+        const [lat, lng] = o.Coordinates.split(',').map(Number);
+        return {
+          id: o.PlaceID,
+          name: o.Name,
+          category: o.Category,
+          subcategories: (o.Subcategory || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
+          regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
+          notes: o.Notes,
+          tags: (o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),
+          visited: o.Visited.trim().toUpperCase() === 'Y',
+          latlng: [lat, lng],
+          mapsLink: o.MapsLink,
+          appleLink: o.AppleMapsLink,
+          extraLink: o.ExtraLink
+        };
+      });
+
+      // ----- Reviews -----
+      const [hdrR, ...rowsR] = data.valueRanges[1].values;
+      const reviewsBy = {};
+      rowsR.forEach(r => {
+        const o = Object.fromEntries(hdrR.map((h, i) => [h, r[i] || '']));
+        const photos = (o.PhotoURL || '').trim().split(/\s*,\s*/).filter(Boolean);
+        (reviewsBy[o.PlaceID] || []).push({
+          date: o.VisitDate,
+          rating: +o.Rating || 0,
+          text: o.Review,
+          photos
+        });
+      });
+
+      // Store globals
+      window.places = places;
+      window.reviewsBy = reviewsBy;
+
+      // Initialize map/UI
+      initMap(places, reviewsBy);
+    })
+    .catch(console.error);
+})();
+
+
+	function postToAPI(payload) {
+	const form = document.createElement('form');
+	form.method = 'POST';
+	form.action = SHEETS_ENDPOINT;
+	form.target = 'hidden_iframe';
+	Object.entries(payload).forEach(([key, val]) => {
+		const inp = document.createElement('input');
+		inp.type  = 'hidden';
+		inp.name  = key;
+		inp.value = val;
+		form.appendChild(inp);
+	});
+	document.body.appendChild(form);
+	form.submit();
+	form.remove();
+	}
+	function shuffle(a){ let m=a.length; while(m){ const i=Math.floor(Math.random()*m--); [a[m],a[i]]=[a[i],a[m]];} return a; }
+    function randomColor(){ const h=Math.floor(Math.random()*360); return `hsl(${h},60%,50%)`; }
+	// Prevent all zoom methods on iOS Safari
+	document.addEventListener('gesturestart', function (e) {
+		e.preventDefault();
+	});
+
+	document.addEventListener('gesturechange', function (e) {
+		e.preventDefault();
+	});
+
+	document.addEventListener('gestureend', function (e) {
+		e.preventDefault();
+	});
+
+	// Prevent double-tap zoom
+	let lastTouchEnd = 0;
+	document.addEventListener('touchend', function (event) {
+		const now = (new Date()).getTime();
+		if (now - lastTouchEnd <= 300) {
+			event.preventDefault();
+		}
+		lastTouchEnd = now;
+	}, false);
+
+	// Prevent pinch zoom
+	document.addEventListener('touchmove', function (event) {
+		if (event.scale !== 1) { 
+			event.preventDefault(); 
+		}
+	}, { passive: false });
+
+
+	function openAddModal(placeId) {
+	// Ensure both sheets are loaded once
+	if (!window.itineraries.length || !window.itineraryItems.length) {
+		ensureItinData()
+		.then(() => openAddModal(placeId))
+		.catch(err => {
+			console.error('Failed to load itinerary data:', err);
+			alert('Could not load itinerary data. Try again shortly.');
+		});
+		return;
+	}
+	
+	const sel = document.getElementById('modalItinSelect');
+	sel.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+	window.itineraries
+		.map(it => `<option value="${it.itineraryId}">${it.name}</option>`)
+		.join('');
+	
+	// reset form fields
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	document.getElementById('addItinForm').style.display = 'flex';
+	document.getElementById('modalNext').style.display   = 'block';
+	document.getElementById('insertStepContainer').style.display = 'none';
+	document.getElementById('insertCarousel').innerHTML = '';
+	window.insertPositionIndex = undefined;
+	window.pendingNewItem = undefined;
+	document.getElementById('modalDay').value       = 1;
+	document.getElementById('modalDate').value      = new Date().toISOString().slice(0,10);
+	document.getElementById('modalTime').value      = '';
+	document.getElementById('modalNotes').value     = '';
+	// Always reset the modal to step 1 (add fields) and hide step 2 (carousel)
+	// stash placeId on the form
+	document.getElementById('addItinForm').dataset.placeId = placeId;
+	// show the modal
+	const nextBtn = document.getElementById('modalNext');
+	nextBtn.disabled = true;
+	sel.onchange = () => { nextBtn.disabled = !sel.value; };
+	
+	// show the modal
+	document.getElementById('itinAddModal').style.display = 'block';
+	}
+
+
+	// ── Itineraries: fetch from Sheets and render ──
+	window.addEventListener('DOMContentLoaded', () => {
+	const viewBtn  = document.getElementById('viewItineraries');
+	const selectEl = document.getElementById('itinerarySelect');
+	if (!viewBtn || !selectEl) return;
+	viewBtn.onclick = () => {
+    if (selectEl.style.display === 'block') {
+      // hide dropdown, carousel, and restore all pins
+      selectEl.style.display = 'none';
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'none';
+      nxtLbl.style.display = 'none';
+      document.getElementById('itineraryCarousel').style.display = 'none';
+      showAllMarkers();
+      viewBtn.textContent = 'View Itineraries';
+      return;
+    }
+
+    // show instantly (data already loaded at startup)
+    viewBtn.textContent    = 'Hide Itineraries';
+    selectEl.style.display = 'block';
+
+    // if for some reason arrays are empty (first load failed), load once now
+    if (!window.itineraries.length || !window.itineraryItems.length) {
+      ensureItinData().then(buildItinSelect).catch(err => {
+        console.error('Error loading itineraries:', err);
+        selectEl.innerHTML = '<option style="color:red;">Failed to load</option>';
+      });
+    } else {
+      buildItinSelect();
+    }
+   };
+ });
+
+  // helper to populate dropdown & bind onchange
+	function buildItinSelect() {
+		const selectEl = document.getElementById('itinerarySelect');
+		selectEl.innerHTML = '<option value="" disabled selected>Select an itinerary</option>';
+		window.itineraries.forEach(it => {
+		  const opt = document.createElement('option');
+		  opt.value = it.itineraryId;
+		  opt.textContent = it.name;
+		  selectEl.appendChild(opt);
+		});
+
+    selectEl.onchange = e => {
+      selectedItinId = e.target.value;
+
+      // show/init labels
+      const curLbl = document.getElementById('itinDayCurrent');
+      const nxtLbl = document.getElementById('itinDayNext');
+      curLbl.style.display = 'block';
+      nxtLbl.style.display = 'block';
+      curLbl.textContent   = 'Day 1';
+      nxtLbl.textContent   = '';
+
+      renderItineraryItems();
+      filterMarkersForItinerary(selectedItinId);
+    };
+  }
+	
+	function renderItineraryItems() {
+  const carousel = document.getElementById('itineraryCarousel');
+  // clear out any old cards
+  carousel.innerHTML = '';
+
+  // grab just the items for this trip
+	const items = (window.itineraryItems || [])
+	.filter(it => it.itineraryId === selectedItinId)
+	.sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+
+  if (!items.length) {
+    // no items → hide the carousel
+    carousel.style.display = 'none';
+    return;
+  }
+
+  // otherwise build one card per stop
+  items.forEach(it => {
+    // look up the place info
+    // look up the place (may be undefined)
+    const place = (window.places || []).find(p => p.id === it.placeId);
+
+    // create the card container
+    const card = document.createElement('div');
+    card.className       = 'place-card';
+    card.dataset.day     = it.day;
+
+    if (!it.placeId || !place) {
+      // ── NOTES-ONLY card ──
+      card.innerHTML = `
+        <h4>Note:</h4>
+        <p>${it.notes || ''}</p>
+      `;
+    } else {
+   const timeText = (it.time && it.time.trim()) ? ` • ${it.time}` : '';
+   card.innerHTML = `
+       <h4>${place.name}</h4>
+       ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+       <p>🗓️ ${it.date}${timeText}</p>
+       ${place.regions.length
+         ? `<p><em>📍 ${place.regions.join(', ')}</em></p>`
+         : ''}
+     `;
+
+      // flying to the map on click
+      card.onclick = () => {
+		const m = window.markers.find(mk => mk.placeId === it.placeId);
+        if (!m) return;
+        if (currentPopup && currentPopup !== m.getPopup()) currentPopup.remove();
+        const popup = m.getPopup();
+        popup.addTo(window.map);
+        currentPopup = popup;
+        const [lng, lat] = m.getLngLat().toArray();
+        window.map.flyTo({
+          center: [lng, lat],
+          zoom:   14,
+          speed:  1.0,
+          curve:  1.6,
+          essential: true
+        });
+      };
+    }
+
+    // finally, add the card to the carousel
+    carousel.appendChild(card);
+  });
+
+	  const firstCard = carousel.querySelector('.place-card');
+	  const cardW     = firstCard
+		? firstCard.getBoundingClientRect().width + 8
+		: 168;
+	  const step = cardW;
+
+	  const dayPositions = [];
+	  items.forEach((it, idx) => {
+		if (idx === 0 || it.day !== items[idx - 1].day) {
+		  dayPositions.push({ day: it.day, offset: idx * cardW });
+		}
+	  });
+
+
+	carousel.style.display = 'flex';
+	
+	// ── BOUNDING‐RECT based day labels ──
+  const curLbl     = document.getElementById('itinDayCurrent');
+  const nxtLbl     = document.getElementById('itinDayNext');
+  const wrapperEl  = document.getElementById('itineraryCarouselWrapper');
+  const cards      = Array.from(carousel.querySelectorAll('.place-card'));
+
+  function updateDayLabels() {
+    const wrapRect = wrapperEl.getBoundingClientRect();
+
+    // 1) find the very first card that is at least partially visible
+    const firstVisible = cards.find(c => {
+      const r = c.getBoundingClientRect();
+      // r.right > wrap left means some of it is on screen
+      return r.right > wrapRect.left + 1;
+    });
+    if (!firstVisible) return;
+
+    const day = firstVisible.dataset.day;
+    curLbl.textContent = `Day ${day}`;
+    // position curLbl over that card
+    const cr = firstVisible.getBoundingClientRect();
+    const relX = cr.left - wrapRect.left;
+    curLbl.style.left = `${relX > 0 ? relX : 0}px`;
+    curLbl.style.display = 'block';
+
+    // 2) peek the next day if its first card exists
+    const nextDay = String(Number(day) + 1);
+    const nextCard = cards.find(c => c.dataset.day === nextDay);
+    if (nextCard) {
+      const nr = nextCard.getBoundingClientRect();
+      const relNextX = nr.left - wrapRect.left;
+      // only show if its card is entering the wrapper
+      if (relNextX < wrapRect.width) {
+        nxtLbl.textContent   = `Day ${nextDay}`;
+        nxtLbl.style.left    = `${relNextX > 0 ? relNextX : 0}px`;
+        nxtLbl.style.display = 'block';
+      } else {
+        nxtLbl.style.display = 'none';
+      }
+    } else {
+      nxtLbl.style.display = 'none';
+    }
+  }
+
+  // bind & fire
+  carousel.addEventListener('scroll', updateDayLabels);
+  updateDayLabels();
+
+}
+	function filterMarkersForItinerary(itinId) {
+	  window.markers.forEach(mk => {
+		const keep = window.itineraryItems.some(
+		  it => it.itineraryId === itinId && it.placeId === mk.placeId
+		);
+		mk.getElement().style.display = keep ? '' : 'none';
+	  });
+	}
+
+	/** Show all markers again */
+	function showAllMarkers() {
+	  window.markers.forEach(mk => {
+		mk.getElement().style.display = '';
+	  });
+	}
+
+
+// ENSURE "CREATE NEW ITINERARY" MODAL HANDLERS ARE WIRED AFTER DOM IS LOADED
+window.addEventListener('DOMContentLoaded', function() {
+  const createItinBtn = document.getElementById('createItinerary');
+  const createItinModal = document.getElementById('createItinModal');
+  const createItinForm = document.getElementById('createItinForm');
+  const cancelCreateItin = document.getElementById('cancelCreateItin');
+  const itinTitleInput = document.getElementById('itinTitle');
+
+   createItinBtn.onclick = () => {
+   window.passwordProtection.requireAuth(() => {
+     itinTitleInput.value = '';
+     createItinModal.style.display = 'block';
+     itinTitleInput.focus();
+});  
+  };
+    cancelCreateItin.onclick = () => {
+      createItinModal.style.display = 'none';
+      itinTitleInput.value = '';
+    };
+
+ 	createItinForm.onsubmit = (e) => {
+ 		e.preventDefault();
+ 		const title = itinTitleInput.value.trim();
+ 		if (!title) {
+ 			itinTitleInput.focus();
+ 			return;
+ 		}
+ 		// Compute a new unique itineraryId: find max existing + 1 (fallback to 1 if none)
+ 		let newId = 1;
+ 		if (window.itineraries && window.itineraries.length > 0) {
+ 			const ids = window.itineraries.map(it => Number(it.itineraryId)).filter(n => !isNaN(n));
+ 			newId = Math.max(...ids, 0) + 1;
+ 		}
+ 		const nowDate = new Date().toISOString().slice(0, 10);
+ 		const newItin = {
+ 			itineraryId: String(newId),
+ 			name: title,
+ 			createdDate: nowDate
+ 		};
+ 		// Optimistically update frontend
+ 		window.itineraries.push(newItin);
+ 		// Post to backend sheet
+ 		postToAPI({
+ 			secret: API_SECRET,
+ 			action: 'addItinerary',
+ 			itineraryId: newItin.itineraryId,
+ 			name: newItin.name,
+ 			createdDate: newItin.createdDate
+ 		});
+ 		createItinModal.style.display = 'none';
+ 		itinTitleInput.value = '';
+ 		// Optionally, update UI dropdowns/etc here if desired
+ 	};
+});
+
+ window.addEventListener('DOMContentLoaded', function() {
+   const modifyBtn = document.getElementById('modifyItineraries');
+   const modifyModal = document.getElementById('modifyItinModal');
+   const modifySelect = document.getElementById('modifyItinSelect');
+   const modifyCarousel = document.getElementById('modifyItinCarousel');
+   const cancelModify = document.getElementById('cancelModifyItin');
+
+   modifyBtn.onclick = () => {
+   window.passwordProtection.requireAuth(() => {
+     // populate dropdown
+     modifySelect.innerHTML = '<option value="" disabled selected>Select an itinerary</option>' +
+       window.itineraries.map(it => `<option value="${it.itineraryId}">${it.name}</option>`).join('');
+     modifyCarousel.innerHTML = '';
+     modifyModal.style.display = 'block';
+	 });
+   };
+
+	cancelModify.onclick = () => {
+	  // Check if we're in move mode
+	  if (window.moveMode) {
+	    window.exitMoveMode();
+	    return;
+	  }
+	  
+	  modifyModal.style.display = 'none';
+	  modifySelect.value = '';
+	  modifyCarousel.innerHTML = '';
+	  document.getElementById('modifyDayLabel').style.display = 'none';
+	  document.getElementById('modifyDayNextLabel').style.display = 'none';
+	  document.getElementById('addNoteBtn').style.display = 'none'; // Hide the button when closing
+	};
+
+modifySelect.onchange = () => {
+  const id = modifySelect.value;
+  
+  // Show/hide Add Note button
+  document.getElementById('addNoteBtn').style.display = id ? 'block' : 'none';
+  
+  // Reset note insertion mode if it was active
+  window.noteInsertionMode = false;
+  document.getElementById('addNoteBtn').textContent = 'Add a Note 🗒️';
+  document.getElementById('addNoteBtn').style.background = 'var(--menuButton)';
+  
+  renderModifyCarousel(id, false); // false = normal mode
+};
+
+ });
+
+
+	function renderInsertCarousel(day) {
+	  const c = document.getElementById('insertCarousel');
+	  const dl = document.getElementById('insertDayLabel');
+	  if (dl) dl.textContent = `Day ${day}`;
+	  c.innerHTML = '';
+	  // 1) gather & sort cards for that day
+	  const cards = window.itineraryItems
+		.filter(it => it.itineraryId===window.pendingNewItem.itineraryId && it.day===day)
+		.sort((a,b)=>a.sortOrder - b.sortOrder);
+
+	  // helper to create a place‐card (reuse your render logic or simplify)
+	  const makeCard = it => {
+		const place = window.places.find(p=>p.id===it.placeId) || {};
+		return `<div class="place-card" style="opacity:0.7;">
+		  <h4>${place.name||'Note'}</h4>
+		  <p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>
+		</div>`;
+	  };
+
+	  // Insert hotspot at position 1…n+1
+	  cards.forEach((it, i) => {
+		// hotspot before this card (index = i+1)
+		c.insertAdjacentHTML('beforeend',
+		  `<div class="insert-hotspot" data-index="${i+1}"
+			 style="flex:0 0 200px; display:flex;align-items:center;
+					justify-content:center;cursor:pointer;opacity:0.5;">
+			 +  
+		   </div>`
+		);
+		c.insertAdjacentHTML('beforeend', makeCard(it));
+	  });
+	  // final hotspot at end: index = cards.length+1
+	  c.insertAdjacentHTML('beforeend',
+		`<div class="insert-hotspot" data-index="${cards.length+1}"
+		   style="flex:0 0 200px; display:flex;align-items:center;
+				  justify-content:center;cursor:pointer;opacity:0.5;">
+		   +  
+		 </div>`
+	  );
+
+	  // wire up selection
+		const confirmBtn = document.getElementById('insertConfirm');
+		c.querySelectorAll('.insert-hotspot').forEach(el => {
+			el.onclick = () => {
+			// clear previous highlight
+			c.querySelectorAll('.insert-hotspot').forEach(h => h.classList.remove('selected'));
+			el.classList.add('selected');
+			window.insertPositionIndex = Number(el.dataset.index);
+			// now it's valid to add
+			confirmBtn.disabled = false;
+			};
+		});
+	}
+window.addEventListener('DOMContentLoaded', () => {
+  const modalCancel         = document.getElementById('modalCancel');
+  const addItinForm         = document.getElementById('addItinForm');
+  const insertBack          = document.getElementById('insertBack');
+  const insertConfirm       = document.getElementById('insertConfirm');
+  const insertStepContainer = document.getElementById('insertStepContainer');
+
+  // Bail out if any required elements aren’t present yet
+  if (!modalCancel || !addItinForm || !insertBack || !insertConfirm || !insertStepContainer) return;
+
+  // Cancel → hide modal
+  modalCancel.onclick = () => {
+    document.getElementById('itinAddModal').style.display = 'none';
+  };
+
+  // Step 1: Next → stash data, show insertion carousel
+  addItinForm.onsubmit = ev => {
+    ev.preventDefault();
+
+    const itinVal = document.getElementById('modalItinSelect').value;
+    if (!itinVal) return;
+
+    window.pendingNewItem = {
+      itineraryId: itinVal,
+      placeId:     addItinForm.dataset.placeId,
+      day:         Number(document.getElementById('modalDay').value),
+      date:        document.getElementById('modalDate').value,
+      time:        document.getElementById('modalTime').value,
+      notes:       document.getElementById('modalNotes').value
+    };
+
+    addItinForm.style.display = 'none';
+    document.getElementById('modalNext').style.display = 'none';
+    insertStepContainer.style.display = 'flex';          // ← uses the bound element
+    document.getElementById('insertConfirm').disabled = true;
+
+    renderInsertCarousel(window.pendingNewItem.day);
+  };
+
+  // Step 2: Back → return to metadata
+  insertBack.onclick = () => {
+    insertStepContainer.style.display = 'none';
+    addItinForm.style.display         = 'flex';
+    document.getElementById('modalNext').style.display = 'block';
+    document.getElementById('insertCarousel').innerHTML = '';
+    window.insertPositionIndex = undefined;
+    document.getElementById('insertConfirm').disabled = true;
+  };
+
+  // Step 2: Confirm → insert & persist
+  insertConfirm.onclick = () => {
+    const { itineraryId, placeId, day, date, time, notes } = window.pendingNewItem || {};
+    const idx = window.insertPositionIndex;
+
+    if (!itineraryId || !day || !idx) return; // guard
+
+    // Shift existing items at or after idx
+    const dayItems = (window.itineraryItems || []).filter(it => it.itineraryId === itineraryId && it.day === day);
+    dayItems.sort((a,b) => b.sortOrder - a.sortOrder).forEach(it => {
+      it.sortOrder++;
+      postToAPI({
+        secret:      API_SECRET,
+        action:      'updateItem',
+        itineraryId: it.itineraryId,
+        placeId:     it.placeId,
+        day:         it.day,
+        date:        it.date,
+        time:        it.time,
+        notes:       it.notes,
+        sortOrder:   it.sortOrder
+      });
+    });
+
+    // Add the new item at idx
+    const newItem = { itineraryId, placeId, day, date, time, notes, sortOrder: idx };
+    window.itineraryItems.push(newItem);
+    postToAPI({
+      secret:      API_SECRET,
+      action:      'addItem',
+      itineraryId: newItem.itineraryId,
+      placeId:     newItem.placeId,
+      day:         newItem.day,
+      date:        newItem.date,
+      time:        newItem.time,
+      notes:       newItem.notes,
+      sortOrder:   newItem.sortOrder
+    });
+
+// Close modal
+document.getElementById('itinAddModal').style.display = 'none';
+
+// Force refresh any open views - exactly like the remove function does
+const selectEl = document.getElementById('itinerarySelect');
+if (selectEl.style.display === 'block' && selectEl.value) {
+    // Set the global variable to match what's selected
+    window.selectedItinId = selectEl.value;
+    renderItineraryItems();
+    filterMarkersForItinerary(selectEl.value);
+}
+
+const modifySelect = document.getElementById('modifyItinSelect');
+if (modifySelect.value) {
+    // Just trigger the change event to rebuild the modify carousel
+    const event = new Event('change');
+    modifySelect.dispatchEvent(event);
+}
+  };
+});
+
+
+window.addEventListener('DOMContentLoaded', function() {
+  const editModal = document.getElementById('editItemModal');
+  const editForm = document.getElementById('editItemForm');
+  const editCancel = document.getElementById('editCancel');
+  
+  let currentEditItem = null;
+
+	window.openEditModal = function(itineraryId, day, sortOrder) {
+	  const item = window.itineraryItems.find(it => 
+		it.itineraryId === itineraryId && it.day === day && it.sortOrder === sortOrder
+	  );
+	  
+	  if (!item) return;
+	  
+	  currentEditItem = item;
+	  
+	  // Get the form fields
+	  const dateField = document.getElementById('editDate').parentElement;
+	  const timeField = document.getElementById('editTime').parentElement;
+	  const notesField = document.getElementById('editNotes').parentElement;
+	  
+	  // Check if this is a note-only item (no placeId)
+	  const isNoteOnly = !item.placeId || item.placeId.trim() === '';
+	  
+	  if (isNoteOnly) {
+		// Hide date and time fields for note-only items
+		dateField.style.display = 'none';
+		timeField.style.display = 'none';
+		// Only show notes
+		document.getElementById('editNotes').value = item.notes || '';
+	  } else {
+		// Show all fields for regular items
+		dateField.style.display = 'block';
+		timeField.style.display = 'block';
+		// Populate all fields
+		document.getElementById('editDate').value = item.date || '';
+		document.getElementById('editTime').value = item.time || '';
+		document.getElementById('editNotes').value = item.notes || '';
+	  }
+	  
+	  editModal.style.display = 'block';
+	};
+
+  editCancel.onclick = () => {
+    editModal.style.display = 'none';
+    currentEditItem = null;
+  };
+
+  editForm.onsubmit = (e) => {
+    e.preventDefault();
+    if (!currentEditItem) return;
+
+    currentEditItem.date = document.getElementById('editDate').value;
+    currentEditItem.time = document.getElementById('editTime').value;
+    currentEditItem.notes = document.getElementById('editNotes').value;
+
+    postToAPI({
+      secret: API_SECRET,
+      action: 'updateItem',
+      itineraryId: currentEditItem.itineraryId,
+      day: currentEditItem.day,
+      sortOrder: currentEditItem.sortOrder,
+      date: currentEditItem.date,
+      time: currentEditItem.time,
+      notes: currentEditItem.notes
+    });
+
+    editModal.style.display = 'none';
+    const modifySelect = document.getElementById('modifyItinSelect');
+    if (modifySelect.value) {
+      renderModifyCarousel(modifySelect.value, false);
+    }
+  };
+});
+
+// Add Note functionality for modify modal
+window.addEventListener('DOMContentLoaded', function() {
+  const addNoteBtn = document.getElementById('addNoteBtn');
+  const noteTextModal = document.getElementById('noteTextModal');
+  const noteTextInput = document.getElementById('noteTextInput');
+  const noteTextBack = document.getElementById('noteTextBack');
+  const noteTextSubmit = document.getElementById('noteTextSubmit');
+  
+  let noteInsertionMode = false;
+  let pendingNotePosition = null;
+  window.moveMode = false;
+	window.itemToMove = null;
+	window.pendingMovePosition = null;
+
+  // Toggle note insertion mode
+  addNoteBtn.onclick = () => {
+  window.passwordProtection.requireAuth(() => {
+    noteInsertionMode = !noteInsertionMode;
+    const id = document.getElementById('modifyItinSelect').value;
+    
+    if (noteInsertionMode) {
+      addNoteBtn.textContent = 'Cancel Note';
+      addNoteBtn.style.background = '#DB504A';
+      renderModifyCarousel(id, true); // true = note insertion mode
+    } else {
+      addNoteBtn.textContent = 'Add a Note 🗒️';
+      addNoteBtn.style.background = 'var(--menuButton)';
+      renderModifyCarousel(id, false); // false = normal mode
+    }
+	});
+  };
+
+  // Note text modal handlers
+  noteTextBack.onclick = () => {
+    noteTextModal.style.display = 'none';
+    noteTextInput.value = '';
+  };
+
+  noteTextSubmit.onclick = () => {
+    const noteText = noteTextInput.value.trim();
+    if (!noteText) {
+      alert('Please enter a note');
+      return;
+    }
+
+    if (!pendingNotePosition) return;
+
+    const { itineraryId, day, sortOrder } = pendingNotePosition;
+
+    // Shift existing items at or after this position
+    const dayItems = window.itineraryItems.filter(it => 
+      it.itineraryId === itineraryId && it.day === day && it.sortOrder >= sortOrder
+    );
+    dayItems.forEach(it => {
+      it.sortOrder++;
+      postToAPI({
+        secret: API_SECRET,
+        action: 'updateItem',
+        itineraryId: it.itineraryId,
+        placeId: it.placeId,
+        day: it.day,
+        date: it.date,
+        time: it.time,
+        notes: it.notes,
+        sortOrder: it.sortOrder
+      });
+    });
+
+    // Add the note
+    const noteItem = {
+      itineraryId,
+      placeId: '',
+      day,
+      sortOrder,
+      date: '',
+      time: '',
+      notes: noteText
+    };
+
+    window.itineraryItems.push(noteItem);
+    
+    postToAPI({
+      secret: API_SECRET,
+      action: 'addNote',
+      itineraryId: noteItem.itineraryId,
+      day: noteItem.day,
+      sortOrder: noteItem.sortOrder,
+      notes: noteItem.notes
+    });
+
+    // Close modal and exit note mode
+    noteTextModal.style.display = 'none';
+    noteTextInput.value = '';
+    noteInsertionMode = false;
+    addNoteBtn.textContent = 'Add a Note 🗒️';
+    addNoteBtn.style.background = 'var(--menuButton)';
+    
+    // Refresh the carousel
+    renderModifyCarousel(itineraryId, false);
+  };
+
+  // Function to handle hotspot clicks
+  window.handleNoteHotspotClick = function(itineraryId, day, sortOrder) {
+    pendingNotePosition = { itineraryId, day, sortOrder };
+    noteTextModal.style.display = 'block';
+    noteTextInput.focus();
+  };
+
+ // Move mode functions
+  window.enterMoveMode = function(itineraryId, day, sortOrder) {
+    window.moveMode = true;
+    window.itemToMove = { itineraryId, day, sortOrder };
+    
+    // Update button states
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const cancelBtn = document.getElementById('cancelModifyItin');
+    
+    // Hide add note button and change cancel to show move controls
+    addNoteBtn.style.display = 'none';
+    cancelBtn.textContent = 'Cancel Move';
+    
+    // Add save button
+    const saveBtn = document.createElement('button');
+    saveBtn.id = 'saveMoveBtn';
+    saveBtn.textContent = 'Save Move';
+    saveBtn.style.cssText = 'background: var(--menuButton); border-radius: 4px; border: none; padding: 6px 14px; font-family: var(--menuFont), cursive; cursor: pointer; color: #333; margin-left: 8px;';
+    saveBtn.disabled = true;
+    cancelBtn.parentNode.appendChild(saveBtn);
+    
+    // Wire up save button
+    saveBtn.onclick = () => window.executeMoveItem();
+    
+    // Render carousel in move mode
+    renderModifyCarousel(itineraryId, false, true); // Third parameter = move mode
+  }
+
+  window.exitMoveMode = function() {
+    window.moveMode = false;
+    window.itemToMove = null;
+    window.pendingMovePosition = null;
+    
+    // Restore button states
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const cancelBtn = document.getElementById('cancelModifyItin');
+    const saveBtn = document.getElementById('saveMoveBtn');
+    
+    addNoteBtn.style.display = 'block';
+    cancelBtn.textContent = 'Done';
+    if (saveBtn) saveBtn.remove();
+    
+    // Re-render normal carousel
+    const modifySelect = document.getElementById('modifyItinSelect');
+    if (modifySelect.value) {
+      renderModifyCarousel(modifySelect.value, false, false);
+    }
+  }
+
+  window.executeMoveItem = function() {
+    if (!window.itemToMove || !window.pendingMovePosition) return;
+    
+    const { itineraryId, day: oldDay, sortOrder: oldSortOrder } = window.itemToMove;
+    const { day: newDay, sortOrder: newSortOrder } = window.pendingMovePosition;
+    
+    // Find the item to move
+    const item = window.itineraryItems.find(it => 
+      it.itineraryId === itineraryId && it.day === oldDay && it.sortOrder === oldSortOrder
+    );
+    
+    if (!item) return;
+    
+    // Send move request to backend
+	postToAPI({
+	  secret: API_SECRET,
+	  action: 'moveItem',
+	  itineraryId: itineraryId,
+	  oldDay: oldDay,
+	  oldSortOrder: oldSortOrder,
+	  newDay: newDay,
+	  newSortOrder: newSortOrder,
+	  placeId: item.placeId || '',
+	  date: item.date || '',
+	  time: item.time || '',
+	  notes: item.notes || ''
+	});
+    
+    // Update frontend data immediately
+    updateFrontendAfterMove(itineraryId, oldDay, oldSortOrder, newDay, newSortOrder);
+    
+    // Exit move mode
+    window.exitMoveMode();
+  }
+
+window.updateFrontendAfterMove = function(itineraryId, oldDay, oldSortOrder, newDay, newSortOrder) {
+  const movedItem = window.itineraryItems.find(it => 
+    it.itineraryId === itineraryId && it.day === oldDay && it.sortOrder === oldSortOrder
+  );
+  
+  if (!movedItem) return;
+  
+  // Calculate the final position based on the move type
+  let finalSortOrder = newSortOrder;
+  
+if (oldDay === newDay) {
+    // Same day move
+    if (oldSortOrder < newSortOrder) {
+      // Moving to a later position in the same day
+      
+      // Find the highest sortOrder for this day EXCLUDING the item being moved
+      const dayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === oldDay && item !== movedItem
+      );
+      const maxSortOrder = dayItems.length > 0 ? Math.max(...dayItems.map(item => item.sortOrder)) : 0;
+      
+if (newSortOrder > maxSortOrder) {
+  // Moving to the end - final position should be maxSortOrder (the last position)
+  finalSortOrder = maxSortOrder;
+} else {
+  // Moving to middle position - final position is one less than requested
+  finalSortOrder = newSortOrder - 1;
+}
+      
+      // Shift items between old position and final position down by 1
+      window.itineraryItems.forEach(item => {
+        if (item.itineraryId !== itineraryId || item === movedItem) return;
+        
+        if (item.day === oldDay && 
+            item.sortOrder > oldSortOrder && 
+            item.sortOrder <= finalSortOrder) {
+          item.sortOrder--;
+        }
+      });
+    } else {
+      // Moving to an earlier position: final position is as requested
+      finalSortOrder = newSortOrder;
+      
+      // Shift items between new and old positions up by 1
+      window.itineraryItems.forEach(item => {
+        if (item.itineraryId !== itineraryId || item === movedItem) return;
+        
+        if (item.day === oldDay && 
+            item.sortOrder >= newSortOrder && 
+            item.sortOrder < oldSortOrder) {
+          item.sortOrder++;
+        }
+      });
+    }
+  } else {
+    // Different day move: final position is as requested
+    finalSortOrder = newSortOrder;
+    
+    // Handle old day: shift down items that were after the moved item
+    window.itineraryItems.forEach(item => {
+      if (item.itineraryId !== itineraryId || item === movedItem) return;
+      
+      if (item.day === oldDay && item.sortOrder > oldSortOrder) {
+        item.sortOrder--;
+      }
+    });
+    
+    // Handle new day: shift up items that will be at or after the new position
+    window.itineraryItems.forEach(item => {
+      if (item.itineraryId !== itineraryId || item === movedItem) return;
+      
+      if (item.day === newDay && item.sortOrder >= newSortOrder) {
+        item.sortOrder++;
+      }
+    });
+  }
+  
+  // Update the moved item with the calculated final position
+  movedItem.day = newDay;
+  movedItem.sortOrder = finalSortOrder;
+}
+
+  // Function to handle move hotspot clicks
+  window.handleMoveHotspotClick = function(itineraryId, day, sortOrder) {
+    window.pendingMovePosition = { itineraryId, day, sortOrder };
+    
+    // Clear previous selections
+    document.querySelectorAll('.move-hotspot').forEach(h => h.classList.remove('selected'));
+    event.target.classList.add('selected');
+    event.target.style.background = 'rgba(76,175,80,0.3)';
+    
+    // Enable save button
+    const saveBtn = document.getElementById('saveMoveBtn');
+    if (saveBtn) saveBtn.disabled = false;
+  };
+});
+
+// Updated carousel rendering function
+function renderModifyCarousel(itineraryId, insertionMode = false, moveMode = false) {
+  const modifyCarousel = document.getElementById('modifyItinCarousel');
+  const items = window.itineraryItems
+    .filter(it => it.itineraryId === itineraryId)
+    .sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+  
+  modifyCarousel.innerHTML = '';
+
+  let currentDay = 0;
+  items.forEach((it, index) => {
+    const place = window.places.find(p => p.id === it.placeId);
+    
+// Add hotspot before this item if in insertion mode
+if (insertionMode) {
+  // Handle day transitions
+  if (it.day !== currentDay) {
+    // Store the actual previous day value before we update currentDay
+    const previousDay = currentDay;
+    
+    // First hotspot: "End of previous day" (if there was a previous day)
+    if (previousDay > 0) {
+      // Find the highest sortOrder for the ACTUAL previous day
+      const prevDayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === previousDay
+      );
+      const maxSortOrder = prevDayItems.length > 0 ? Math.max(...prevDayItems.map(item => item.sortOrder)) : 0;
+      
+      const endOfDayHotspot = document.createElement('div');
+      endOfDayHotspot.className = 'insert-hotspot';
+      endOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+      endOfDayHotspot.textContent = '+';
+      // Use the explicit previousDay variable (Day 1)
+      endOfDayHotspot.onclick = () => handleNoteHotspotClick(itineraryId, previousDay, maxSortOrder + 1);
+      modifyCarousel.appendChild(endOfDayHotspot);
+    }
+    
+    // Second hotspot: "Beginning of new day"
+    const startOfDayHotspot = document.createElement('div');
+    startOfDayHotspot.className = 'insert-hotspot';
+startOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    startOfDayHotspot.textContent = '+';
+    // Use it.day (Day 2)
+    startOfDayHotspot.onclick = () => handleNoteHotspotClick(itineraryId, it.day, 1);
+    modifyCarousel.appendChild(startOfDayHotspot);
+  } else {
+    // Regular hotspot within the same day (before this specific item)
+    const hotspot = document.createElement('div');
+    hotspot.className = 'insert-hotspot';
+	hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    hotspot.textContent = '+';
+    hotspot.onclick = () => handleNoteHotspotClick(itineraryId, it.day, it.sortOrder);
+    modifyCarousel.appendChild(hotspot);
+  }
+}
+
+if (moveMode) {
+  // Get the item being moved
+  const movingItem = window.itemToMove;
+  const isMovingItem = movingItem && 
+    it.itineraryId === movingItem.itineraryId && 
+    it.day === movingItem.day && 
+    it.sortOrder === movingItem.sortOrder;
+  
+  // Handle day transitions
+  if (it.day !== currentDay) {
+    const previousDay = currentDay;
+    
+    // Only show end-of-previous-day hotspot if it's not adjacent to moving item
+    if (previousDay > 0) {
+      const prevDayItems = window.itineraryItems.filter(item => 
+        item.itineraryId === itineraryId && item.day === previousDay
+      );
+      const maxSortOrder = prevDayItems.length > 0 ? Math.max(...prevDayItems.map(item => item.sortOrder)) : 0;
+      
+      // Don't show if moving item is the last item of previous day
+      const showEndHotspot = !(movingItem && movingItem.day === previousDay && movingItem.sortOrder === maxSortOrder);
+      
+      if (showEndHotspot) {
+        const endOfDayHotspot = document.createElement('div');
+        endOfDayHotspot.className = 'move-hotspot';
+        endOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+        endOfDayHotspot.textContent = '+';
+        // FIXED: Send maxSortOrder + 1 to put item at end of previous day
+        endOfDayHotspot.onclick = () => handleMoveHotspotClick(itineraryId, previousDay, maxSortOrder + 1);
+        modifyCarousel.appendChild(endOfDayHotspot);
+      }
+    }
+    
+    // Only show start-of-new-day hotspot if moving item isn't first item of this day
+    const showStartHotspot = !(movingItem && movingItem.day === it.day && movingItem.sortOrder === 1);
+    
+    if (showStartHotspot) {
+      const startOfDayHotspot = document.createElement('div');
+      startOfDayHotspot.className = 'move-hotspot';
+      startOfDayHotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+      startOfDayHotspot.textContent = '+';
+      startOfDayHotspot.onclick = () => handleMoveHotspotClick(itineraryId, it.day, 1);
+      modifyCarousel.appendChild(startOfDayHotspot);
+    }
+  } else {
+    // Only show hotspot if it's not the moving item and not immediately before it
+    const showHotspot = !isMovingItem && 
+      !(movingItem && movingItem.day === it.day && movingItem.sortOrder === it.sortOrder - 1);
+    
+    if (showHotspot) {
+      const hotspot = document.createElement('div');
+      hotspot.className = 'move-hotspot';
+      hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+      hotspot.textContent = '+';
+      hotspot.onclick = () => handleMoveHotspotClick(itineraryId, it.day, it.sortOrder);
+      modifyCarousel.appendChild(hotspot);
+    }
+  }
+}
+
+// ALWAYS update currentDay for day tracking (both insertion and normal mode)
+if (it.day !== currentDay) {
+  currentDay = it.day;
+}
+
+	// Regular item card
+	const card = document.createElement('div');
+	card.className = 'place-card';
+	card.dataset.day = it.day;
+
+	// Highlight the item being moved
+	const movingItem = window.itemToMove;
+	const isMovingItem = movingItem && 
+	  it.itineraryId === movingItem.itineraryId && 
+	  it.day === movingItem.day && 
+	  it.sortOrder === movingItem.sortOrder;
+
+	if (isMovingItem && moveMode) {
+	  card.classList.add('moving-item');
+	}
+    
+if (!insertionMode) {
+  // Hide buttons for all items when in move mode, or just for the moving item
+  const showButtons = !moveMode;
+  
+  card.innerHTML = `
+    ${showButtons ? `<span style="position:absolute;top:4px;right:8px;cursor:pointer;font-size:1em;color:#DB504A;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="remove-item" title="Remove">🗑️</span>` : ''}
+    ${showButtons ? `<span style="position:absolute;top:36px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="edit-item" title="Edit">✏️</span>` : ''}
+    ${showButtons ? `<span style="position:absolute;top:68px;right:8px;cursor:pointer;font-size:1em;color:#333;background:var(--menuBg);border:2px solid var(--borders);border-radius:6px;padding:2px 4px;transition:all 0.2s;" class="move-item" title="Move">↔️</span>` : ''}
+    <h4>${place ? place.name : 'Note'}</h4>
+    ${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+    ${it.date ? `<p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>` : ''}
+    ${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+  `;
+      
+	// Only add event listeners if buttons exist
+	const removeBtn = card.querySelector('.remove-item');
+	const editBtn = card.querySelector('.edit-item');
+	const moveBtn = card.querySelector('.move-item');
+	
+	if (removeBtn) {
+		removeBtn.onclick = e => {
+		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
+		  if (confirm('Are you sure you want to remove this item?')) {
+			// Grey out the card to show it's being removed
+			card.style.opacity = 0.4;
+			card.style.pointerEvents = 'none'; // Disable further clicks
+			
+			// Use the same postToAPI that works for everything else
+			postToAPI({
+			  secret: API_SECRET,
+			  action: 'removeItem',
+			  itineraryId: it.itineraryId,
+			  day: it.day,
+			  sortOrder: it.sortOrder
+			});
+			
+			// Optionally add some visual indicator
+			removeBtn.style.color = '#666';
+			removeBtn.title = 'Removed';
+			
+			// UPDATE: Remove the item from frontend data immediately
+			const indexToRemove = window.itineraryItems.findIndex(item => 
+			  item.itineraryId === it.itineraryId && 
+			  item.day === it.day && 
+			  item.sortOrder === it.sortOrder
+			);
+			
+			if (indexToRemove !== -1) {
+			  // Remove the item from the array
+			  window.itineraryItems.splice(indexToRemove, 1);
+			  
+			  // Update sortOrder for remaining items in the same itinerary/day
+			  window.itineraryItems.forEach(item => {
+				if (item.itineraryId === it.itineraryId && 
+					item.day === it.day && 
+					item.sortOrder > it.sortOrder) {
+				  item.sortOrder--;
+				}
+			  });
+			}
+		  }
+		  });
+		};
+	}
+	
+	if (editBtn) {
+		editBtn.onclick = e => {
+		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
+		  openEditModal(it.itineraryId, it.day, it.sortOrder);
+		  });
+		};
+	}
+	
+	if (moveBtn) {
+		moveBtn.onclick = e => {
+		  e.stopPropagation();
+		  window.passwordProtection.requireAuth(() => {
+		  window.enterMoveMode(it.itineraryId, it.day, it.sortOrder);
+		});
+		};
+	}
+
+	} else {
+	  // Card for insertion mode (but with same info as normal mode)
+	  card.innerHTML = `
+		<h4>${place ? place.name : 'Note'}</h4>
+		${it.notes ? `<p>🗒️ ${it.notes}</p>` : ''}
+		${it.date ? `<p>🗓️ ${it.date}${it.time ? ` • ${it.time}` : ''}</p>` : ''}
+		${place && place.regions && place.regions.length ? `<p><em>📍 ${place.regions.join(', ')}</em></p>` : ''}
+	  `;
+	}
+    
+    modifyCarousel.appendChild(card);
+  });
+
+  // Add final hotspot at the end if in insertion mode
+  if (insertionMode && items.length > 0) {
+    const lastItem = items[items.length - 1];
+    const hotspot = document.createElement('div');
+    hotspot.className = 'insert-hotspot';
+hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--borders); border-radius: 4px; background: rgba(0,0,0,0.05); margin: 4px; font-size: 20px; color: var(--catText);';
+    hotspot.textContent = '+';
+    hotspot.onclick = () => handleNoteHotspotClick(itineraryId, lastItem.day, lastItem.sortOrder + 1);
+    modifyCarousel.appendChild(hotspot);
+  }
+  
+if (moveMode && items.length > 0) {
+  const lastItem = items[items.length - 1];
+  const movingItem = window.itemToMove;
+  
+  // Only show final hotspot if moving item isn't the last item
+  const showFinalHotspot = !(movingItem && 
+    movingItem.day === lastItem.day && 
+    movingItem.sortOrder === lastItem.sortOrder);
+  
+  if (showFinalHotspot) {
+    const hotspot = document.createElement('div');
+    hotspot.className = 'move-hotspot';
+    hotspot.style.cssText = 'flex: 0 0 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #4CAF50; border-radius: 4px; background: rgba(76,175,80,0.1); margin: 4px; font-size: 20px; color: #4CAF50;';
+    hotspot.textContent = '+';
+    
+    // FIXED: Send lastItem.sortOrder + 1 to put item at end of final day
+    const targetSortOrder = lastItem.sortOrder + 1;
+    
+    hotspot.onclick = () => handleMoveHotspotClick(itineraryId, lastItem.day, targetSortOrder);
+    modifyCarousel.appendChild(hotspot);
+  }
+}
+  
+setTimeout(() => {
+ const modifyLabel = document.getElementById('modifyDayLabel');
+ const modifyNextLabel = document.getElementById('modifyDayNextLabel');
+ const modifyCarousel = document.getElementById('modifyItinCarousel');
+ const modifyCards = modifyCarousel.querySelectorAll('.place-card');
+
+  
+  function updateModifyDayLabels() {
+    const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+    
+    const firstVisible = Array.from(modifyCards).find(c => {
+      const r = c.getBoundingClientRect();
+      return r.right > wrapRect.left + 1;
+    });
+    
+    if (!firstVisible) {
+      modifyLabel.style.display = 'none';
+      modifyNextLabel.style.display = 'none';
+      return;
+    }
+    
+    const day = firstVisible.dataset.day;
+    modifyLabel.textContent = `Day ${day}`;
+    const cr = firstVisible.getBoundingClientRect();
+    const relX = cr.left - wrapRect.left;
+    modifyLabel.style.left = `${relX > 0 ? relX : 0}px`;
+    modifyLabel.style.display = 'block';
+    
+    const nextDay = String(Number(day) + 1);
+    const nextCard = Array.from(modifyCards).find(c => c.dataset.day === nextDay);
+    
+    if (nextCard) {
+      const nr = nextCard.getBoundingClientRect();
+      const relNextX = nr.left - wrapRect.left;
+      if (relNextX < wrapRect.width) {
+        modifyNextLabel.textContent = `Day ${nextDay}`;
+        modifyNextLabel.style.left = `${relNextX > 0 ? relNextX : 0}px`;
+        modifyNextLabel.style.display = 'block';
+      } else {
+        modifyNextLabel.style.display = 'none';
+      }
+    } else {
+      modifyNextLabel.style.display = 'none';
+    }
+  }
+  
+  if (modifyCards.length > 0) {
+    modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
+    updateModifyDayLabels();
+  }
+}, 100);
+}
+ // Day label logic for modify carousel
+ window.addEventListener('DOMContentLoaded', () => {
+   const modifyCarousel = document.getElementById('modifyItinCarousel');
+   const modifyLabel    = document.getElementById('modifyDayLabel');
+   const modifyNextLabel= document.getElementById('modifyDayNextLabel');
+   const modifyCards    = modifyCarousel.querySelectorAll('.place-card');
+
+   function updateModifyDayLabels() {
+     const wrapRect = modifyCarousel.parentElement.getBoundingClientRect();
+     // …rest of your existing updateModifyDayLabels body…
+   }
+
+   if (modifyCards.length > 0) {
+     modifyCarousel.addEventListener('scroll', updateModifyDayLabels);
+     updateModifyDayLabels();
+   }
+ });
+
+
+  // Exported so map and filters can call them
+  window.renderCarousel = function renderCarousel(v){
+    const c = document.getElementById('placeCarousel');
+    c.innerHTML = '';
+    v.forEach(p => {
+      c.insertAdjacentHTML('beforeend',
+        `<div class="place-card">
+            <h4>${p.name}</h4>
+            <p><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em></p>
+        ${p.regions && p.regions.length ? `<p><em>📍 ${p.regions.join(', ')}</em></p>`: ''}
+            </div>`
+      );
+      const cardEl = c.lastElementChild;
+      cardEl.onclick = () => {
+        const m = window.markers.find(mk => {
+          const [lng, lat] = mk.getLngLat().toArray();
+          return lat === p.latlng[0] && lng === p.latlng[1];
+        });
+        if (m) {
+          if (window.currentPopup) window.currentPopup.remove();
+          const popup = m.getPopup();
+          popup.addTo(window.map);
+          window.currentPopup = popup;
+          window.map.flyTo({ center: [p.latlng[1], p.latlng[0]], zoom: 14, speed: 1.0, curve: 1.6, essential: true });
+        }
+      };
+    });
+  };
+
+  window.drawMarkers = function drawMarkers(){
+    window.markers.forEach(m => m.remove()); window.markers = [];
+    const visible = [];
+    places.forEach(p=>{
+      if(!selVis.has(p.visited?'Been there':'Not yet')) return;
+      if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return;
+      if (p.regions && !p.regions.some(r => selReg.has(r))) return;
+      visible.push(p);
+      let popup = `<strong>${p.name}</strong>`
+        + `${p.notes ? `<br>🗒️ ${p.notes}` : ''}`
+        + `<br><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em>`
+        + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;
+      const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
+      if(revs.length){
+        popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">';
+        revs.forEach(r=>{
+          popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
+          r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`);
+          popup+='</div>';
+        });
+        popup+='</div></details>';
+      }
+      if(p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
+      if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
+      if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
+      popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add to itinerary</button>`;
+
+      const strokeColor=p.visited?'#DAA520':'#555';
+      const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
+      const el = document.createElement('div');
+      el.innerHTML = svgIcon;
+      el.className = 'place-marker';
+
+      const pop = new maplibregl.Popup({
+        offset: 25,
+        closeOnClick: false,
+        focusAfterOpen: false
+      }).setHTML(popup);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([ p.latlng[1], p.latlng[0] ])
+        .setPopup(pop)
+        .addTo(window.map);
+
+      // delegate “+ Add to itinerary”
+      document.body.addEventListener('click', e => {
+        const btn = e.target.closest('.add-to-itin');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+		window.passwordProtection.requireAuth(() => {
+        openAddModal(btn.dataset.placeId);
+      });
+	  });
+
+      marker.placeId = p.id;
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const currentZoom = window.map.getZoom();
+        const targetZoom  = 12;
+		
+        window.map.flyTo({
+          center: [ p.latlng[1], p.latlng[0] ],
+          zoom: Math.max(currentZoom, targetZoom),
+          speed: 1.0, curve: 1.6, essential: true
+        });
+        if (window.currentPopup && window.currentPopup !== marker.getPopup()) {
+          window.currentPopup.remove();
+        }
+        const popup = marker.getPopup();
+        popup.addTo(window.map);
+        window.currentPopup = popup;
+      });
+
+      window.markers.push(marker);
+    });
+
+    renderCarousel(visible);
+  };
+
+
+  window.setupFilters = function(categories,regions,catMap){
+    const fd=document.getElementById('filters');
+    const wrapper=document.getElementById('panelContainer');
+
+    document.getElementById('toggleFilters').onclick = () => {
+      const ex = fd.classList.toggle('expanded');
+      document.body.classList.toggle('menu-open', ex);
+      document.getElementById('toggleFilters').textContent = ex ? 'Close Menu' : 'Menu';
+      document.getElementById('placeSearch').style.display   = ex ? 'block' : 'none';
+      document.getElementById('toggleSubcats').style.display = ex ? 'block' : 'none';
+      document.getElementById('itineraryMode').style.display = ex ? 'block' : 'none';
+    };
+
+    document.getElementById('itineraryMode').onclick = () => {
+      // flip flag
+      const fd     = document.getElementById('filters');
+      const inItin = fd.classList.toggle('itineraryActive');
+
+      const searchEl   = document.getElementById('placeSearch');
+      const deselectEl = document.getElementById('toggleSubcats');
+      if (inItin) {
+        searchEl.style.display   = 'none';
+        deselectEl.style.display = 'none';
+
+        // reset filters
+        selSub.clear();
+        places.forEach(p => p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`)));
+        selReg.clear(); regions.forEach(r => selReg.add(r));
+        selVis.clear(); selVis.add('Been there'); selVis.add('Not yet');
+
+        document.querySelectorAll('#panelContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
+        allOn = true;
+        document.getElementById('toggleSubcats').textContent = 'Deselect All';
+
+        document.getElementById('placeSearch').value = '';
+        renderCarousel(places);
+        drawMarkers();
+      } else {
+        const expanded = fd.classList.contains('expanded');
+        searchEl.style.display   = expanded ? 'block' : 'none';
+        deselectEl.style.display = expanded ? 'block' : 'none';
+      }
+
+      document.getElementById('panelContainer').style.display   = inItin ? 'none'  : 'block';
+      document.getElementById('placeCarousel').style.display    = inItin ? 'none'  : 'flex';
+      document.getElementById('itineraryContainer').style.display = inItin ? 'block' : 'none';
+
+      const btn = document.getElementById('itineraryMode');
+      btn.textContent = inItin ? 'Exit Itinerary Mode' : 'Enter Itinerary Mode';
+
+      if (!inItin) {
+        showAllMarkers();
+        const selectEl = document.getElementById('itinerarySelect');
+        selectEl.style.display = 'none';
+        selectEl.selectedIndex  = 0;
+        document.getElementById('itineraryCarousel').style.display = 'none';
+        const viewBtn = document.getElementById('viewItineraries');
+        viewBtn.textContent = 'View Itineraries';
+        document.getElementById('itinDayCurrent').style.display = 'none';
+        document.getElementById('itinDayNext').style.display    = 'none';
+      }
+    };
+
+    function makeCB(val,setRef,label){
+      const lbl=document.createElement('label');
+      const cb=document.createElement('input');
+      cb.type='checkbox'; cb.value=val; cb.checked=true;
+      cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+      cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); };
+      lbl.append(cb,' ',label); return lbl;
+    }
+
+    function addPanel(title,items,isRegion=false,masterOnly=false){
+      const p=document.createElement('div'); p.className='panel';
+      const h=document.createElement('div'); h.className='panel-header';
+      if(!masterOnly){
+        const m=document.createElement('input'); m.type='checkbox'; m.checked=true;
+        m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
+        m.onclick=e=>e.stopPropagation();
+        m.onchange=()=>{
+          p.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+            if(cb!==m){
+              cb.checked=m.checked; const k=cb.value;
+              isRegion? (m.checked?selReg.add(k):selReg.delete(k))
+                      : (m.checked?selSub.add(k):selSub.delete(k));
+            }
+          });
+          drawMarkers();
+        };
+        h.append(m);
+      }
+      h.append(document.createTextNode(title));
+      if(!isRegion&&title!=='Visited?'){
+        const sw=document.createElement('div'); sw.className='color-swatch';
+        sw.style.background=categoryColors[title]; h.append(sw);
+      }
+      const arr=document.createElement('span'); arr.className='arrow'; h.append(arr);
+      const b=document.createElement('div'); b.className='panel-body';
+      if (title === 'Visited?') {
+        items.forEach(it => b.append(makeCB(it,selVis,it)));
+      } else {
+        items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));
+      }
+      h.onclick = () => {
+        const o = b.classList.toggle('active');
+        arr.classList.toggle('expanded', o);
+      };
+      p.append(h,b); wrapper.append(p);
+    }
+
+    if(regions.size) addPanel('Region',[...regions].sort(),true);
+    addPanel('Visited?',['Been there','Not yet'],false,true);
+    if(categories.includes('Food'))          addPanel('Food',[...catMap['Food']].sort(),false);
+    if(categories.includes('Sweet Treats'))  addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
+    categories
+      .filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous')
+      .sort()
+      .forEach(c=>addPanel(c,[...catMap[c]].sort()));
+    if (categories.includes('Miscellaneous')) {
+      addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
+    }
+  };
