@@ -197,7 +197,7 @@ html, body {
 	}
 	.search-toggle-container button#toggleSubcats {
 	  flex: 1;
-	  margin: 0;	
+      margin: 8px;
 	  background: var(--menuButton);
 	  padding-top: 6px;
 	  border-radius: 8px;
