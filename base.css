@@ -1,0 +1,718 @@
+/* Base shared layout and component CSS extracted from map.html. */
+
+/* Core CSS */
+html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: sans-serif;
+    }
+	#map { width: 100%; height: 100%; }
+
+/* Maplibre */
+.maplibregl-popup-content-wrapper,
+	.maplibregl-popup-content {
+		border-radius: 8px !important;
+		font-family: var(--popupFont), sans-serif;					/* Popup Cards' Font */
+		font-size: 14px !important;							/* Popup Cards' Text size */
+		color: #333 !important;
+		}
+	.maplibregl-popup-content-wrapper a,
+	.maplibregl-popup-content a {
+	  color: #0078A8 !important;
+		}
+	.maplibregl-popup-content strong {
+	  font-weight: normal !important;
+	  font-size: 1.25em !important;
+	  font-family: var(--carouselFont), sans-serif !important;
+	  margin: 6px 0 4px 0;
+	}
+    .maplibregl-popup-content h4,
+    .maplibregl-popup-content-wrapper h4 {
+      font-weight: normal !important;
+      font-size: 1.25em !important;
+      font-family: var(--carouselFont), sans-serif !important;
+      margin: 6px 0 4px 0;
+    }
+
+/* Filters */
+.filters {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: var(--menuBg); border-radius: 8px;									
+      overflow: hidden; max-height: 40px; width: 120px;
+      transition: max-height 0.3s, width 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+    .filters.expanded {
+      max-height: calc(var(--realVh, 1vh) * 100 - 20px);
+      width: 280px;
+    }
+  .panel-container {
+    flex: 1;
+    overflow-y: auto;
+  }
+   .filters:not(.expanded) .panel-container {
+	  display: none !important;
+	  overflow-y: hidden !important;
+	  scrollbar-width: none !important;
+	  -ms-overflow-style: none !important;
+	}
+    .filters:not(.expanded) .panel-container::-webkit-scrollbar {
+	display: none !important;
+	}
+   .place-carousel {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid var(--borders);
+
+    flex: none;
+    position: sticky;
+    bottom: 0;
+    background: rgba(255,249,230,0.95);
+    z-index: 10;
+  }
+	.filters:not(.expanded) .place-carousel {
+	  display: none !important;
+	  overflow-x: hidden !important;
+	  scrollbar-width: none !important;
+	  -ms-overflow-style: none !important;
+	}
+	.filters:not(.expanded) .place-carousel::-webkit-scrollbar {
+	  display: none !important;
+	}
+    /* Toggle Button */
+    #toggleFilters {
+      display: block; width: 100%; padding: 8px;
+      background: var(--menuButton); border: none; border-bottom: 1px solid #ddd;			
+      font-family: var(--menuFont), cursive; cursor: pointer;							/* Show/Hide Filters button font */
+      color: #000;
+    }
+
+    /* Panel Headers */
+    .panel { margin: 8px; }
+    .panel-header {
+      display: flex; align-items: center; padding: 6px 8px;
+      background: var(--menuButton); border-radius: 6px; cursor: pointer;
+      font-family: var(--catFont), cursive; font-size: 1.6em;						/* Category Tabs font */
+      color: var(--catText); text-shadow: 2px 2px 0 var(--catShadow);	
+    }
+    .panel-header input[type="checkbox"],
+    .panel-body input[type="checkbox"] {
+      appearance: none; width: 18px; height: 18px;
+      margin-right: 12px; border: 2px solid var(--borders);
+      border-radius: 3px; position: relative; cursor: pointer;
+    }
+    input[type="checkbox"]:checked { border: none; }
+    input[type="checkbox"]:checked::after {
+      content: attr(data-emoji);
+      position: absolute; top: -2px; left: -2px;
+      font-size: 22px; line-height: 18px;
+      pointer-events: none;
+    }
+    .panel-header .color-swatch {
+      margin-left: auto; width: 14px; height: 14px;
+      border-radius: 50%; border: 1px solid #999;					
+    }
+	.panel-header .arrow {
+	     display: inline-block;
+	     width: 0;
+	     height: 0;
+	     margin-left: 8px;
+	     border-left: 8px solid transparent;
+	     border-right: 8px solid transparent;
+	     border-top: 12px solid var(--catText);
+	     transition: transform 0.2s ease;
+	     filter: drop-shadow(2px 2px 0 var(--catShadow));
+	   }
+	   .panel-header .arrow.expanded {
+	     transform: rotate(-90deg);
+	   }
+    /* Panel Bodies */
+    .panel-body { display: none; padding: 8px 12px;
+      background: var(--subcatBG); border-radius: 6px;							/* Expanded Categories BG color */
+    }
+    .panel-body.active { display: block; }
+    .panel-body label {
+      display: block; margin-bottom: 6px;
+      font-family: var(--subcatFont), sans-serif; font-size: 1.1em;				/* Subcategory Font */
+      position: relative;
+    }
+
+    .review-carousel {
+      display: flex; overflow-x: auto; gap: 8px; padding: 6px 0;
+    }
+    .review-item {
+      flex: 0 0 180px; background: #fff;
+      border: 1px solid #ccc; padding: 6px;
+      border-radius: 4px; box-sizing: border-box;
+    }
+    .review-item a { display: block; margin-top: 4px; font-size: 0.9em; }
+    .review-item strong { display: block; margin-bottom: 4px; }
+    .review-item p { margin: 0 0 4px; }
+    .place-card {
+    flex: 0 0 200px;
+    background: var(--caroCardBg);
+    border: 1px solid var(--borders);
+    border-radius: 6px;
+    padding: 6px;
+    box-sizing: border-box;
+    cursor: pointer;
+	font-family: var(--carouselFont), sans-serif; 						/* Carousel Cards' Font */
+    position: relative;
+	}
+	.place-card h4 {
+	  font-weight: normal !important;
+	  font-size: 1.25em;
+	  margin: 4px 0 0 0;
+	  font-family: var(--carouselFont), sans-serif;
+	}
+    #placeCarousel .place-card p {
+      margin: 2px 0 0 0;
+    }
+    #placeSearch {
+      width: calc(100% - 16px);
+      margin: 8px;
+      padding: 10px 10px 6px;
+      border: 1px solid var(--borders);
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+      background-color: var(--searchBG);
+      font-family: var(--menuFont), sans-serif;					/* Search Box Font */
+      font-size: 1em;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #placeSearch::placeholder {
+      color: #999;											/* Search Placeholder Text Color */
+    }
+	.search-toggle-container {
+	  display: flex;
+	}
+	.search-toggle-container input#placeSearch {
+	  flex: 2;
+	  width: auto;
+	  border-radius: 8px;
+	}
+	.search-toggle-container button#toggleSubcats {
+	  flex: 1;
+      margin: 8px;
+	  background: var(--menuButton);
+	  padding-top: 6px;
+	  border-radius: 8px;
+	  color: #000;
+	  border: none;
+	  border-bottom: 1px solid #ddd;
+	  font-family: var(--menuFont), cursive;						/* Filter select/unselect all button font */
+	  cursor: pointer;
+	}
+	#filters.itineraryActive:not(.expanded) {
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	box-shadow: none !important;
+	height: auto !important;
+	}
+	#filters.itineraryActive:not(.expanded) > *:not(#toggleFilters) {
+	display: none !important;
+	}
+	/* When itinerary mode is on, never show search or deselect */
+	#filters.itineraryActive #placeSearch,
+	#filters.itineraryActive #toggleSubcats,
+	#filters.itineraryActive .search-toggle-container {
+	display: none !important;
+	}
+
+/* Itinerary: View */
+#itinerarySelect {
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;
+	  background-color: var(--searchBG);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 8px 8px 8px 8px;
+	  font-family: var(--menuFont), sans-serif;
+	  font-size: 1em;
+	  color: #333;
+	  background-image: url('data:image/svg+xml;utf8,\
+		<svg xmlns="http://www.w3.org/2000/svg"\
+			 width="12" height="12" viewBox="0 0 12 12">\
+		  <path d="M2 4l4 4 4-4"\
+				stroke="%23666" fill="none" stroke-width="2"/>\
+		</svg>');
+	  background-repeat: no-repeat;
+	  background-position: right 8px center;
+	  background-size: 12px;
+	}
+	#itinerarySelect:focus {
+	  outline: 2px solid var(--borders);
+	  outline-offset: 2px;
+	}
+	#itinerarySelect,
+	#itinerarySelect option {
+	  font-family: var(--menuFont), sans-serif;
+	}
+	#itinDayCurrent,
+	#itinDayNext {
+		font-family: var(--menuFont), cursive;
+		font-size: 1.4em;
+		text-decoration: underline;
+	}
+
+/* Itinerary: Create */
+#createItinModal {
+ 		background: var(--menuBg);
+ 		border: 1px solid var(--borders);
+ 		border-radius: 8px;
+ 		box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm input, #createItinForm button {
+ 		border: 1px solid var(--borders);
+ 		background: var(--searchBG);
+ 		color: #333;
+ 		font-family: var(--menuFont), sans-serif;
+ 	}
+ 	#createItinForm button {
+ 		background: var(--menuButton);
+ 		cursor: pointer;
+ 	}
+
+/* Itinerary: Add */
+#itinAddModal {
+		display: none;
+		position: fixed;
+		top: 50%; left: 50%;
+		transform: translate(-50%, -50%);
+		background: var(--menuBg);
+		border: 1px solid var(--borders);
+		border-radius: 8px;
+		padding: 16px;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+		z-index: 10000;
+		width: 320px;
+		max-width: calc(100% - 32px);
+		font-family: var(--menuFont), sans-serif;
+	}
+	#addItinForm {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		min-width: 0;
+	}
+	#addItinForm label {
+		font-size: 1em;
+	}
+  #addItinForm select,
+  #addItinForm input,
+  #addItinForm textarea {
+    width: 92%;
+    max-width: 92%;
+    box-sizing: border-box;
+    margin: 0 auto;
+    padding: 6px 8px;
+    border: 1px solid var(--borders);
+    border-radius: 4px;
+    font-family: var(--menuFont), sans-serif;
+    background-color: var(--searchBG);
+    color: #333;
+    -webkit-appearance: none;
+       -moz-appearance: none;
+            appearance: none;
+  }
+	
+	/* Options need their own bg in some browsers */
+	#addItinForm select option {
+		background-color: var(--searchBG);
+		color: #333;
+	}
+	#addItinForm button {
+		align-self: flex-end;
+		background: var(--menuButton);
+		color: #333;
+		border: none;
+		border-radius: 4px;
+		padding: 6px 12px;
+		font-family: var(--menuFont), cursive;
+		cursor: pointer;
+	}
+	#modalNext[disabled] {
+		opacity: .45;
+		cursor: default;
+		pointer-events: none;
+	}
+	#insertConfirm[disabled]{
+	opacity:.45;
+	pointer-events:none;
+	cursor:default;
+	}
+	/* Step‑2 insertion carousel container */
+	#insertStepContainer {
+		margin-top: 16px;
+		display: none;
+	}
+	/* Step‑2 buttons */
+	#insertStepContainer button {
+		background: var(--menuButton);
+		color: #333;
+		border: none;
+		border-radius: 4px;
+		padding: 6px 12px;
+		font-family: var(--menuFont), cursive;
+		cursor: pointer;
+	}
+	/* Back button aligned left */
+	#insertBack {
+		margin-right: auto;
+	}
+	
+	/* Insert hotspots styling */
+	.insert-hotspot {
+		flex: 0 0 15%;
+		max-width: 15%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		opacity: 0.5;
+		border: 1px dashed var(--borders);
+		border-radius: 4px;
+		background: rgba(0,0,0,0.05);
+		margin: 4px;
+	}
+	.insert-hotspot.selected {
+		background: var(--menuButton);
+		opacity: 1;
+	}
+	/* ── Constrain the insertion carousel inside the modal ── */
+	#insertStepContainer {
+	margin-top: 16px;
+	display: none;
+	/* stack carousel above buttons instead of side‑by‑side */
+	flex-direction: column;
+	}
+  /* ── Insertion carousel: disable sticky so Back/Add remain visible ── */
+  #insertCarousel.place-carousel {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 8px;
+    /* override the default sticky positioning of .place-carousel */
+    position: static !important;
+    bottom: auto    !important;
+    z-index: auto   !important;
+  }
+  .insert-day-label {
+    font-family: var(--menuFont), cursive;
+    font-size: 1.1em;
+    margin: 4px 8px 0 8px;
+    text-align: left;
+    color: #000;
+  }
+
+/* Itinerary: Modify */
+#modifyItinSelect {
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;
+	  background-color: var(--searchBG);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 8px 8px 8px 8px;
+	  font-family: var(--menuFont), sans-serif;
+	  font-size: 1em;
+	  color: #333;
+	  background-repeat: no-repeat;
+	  background-position: right 8px center;
+	  background-size: 12px;
+	}
+	#modifyItinSelect:focus {
+	  outline: 2px solid var(--borders);
+	  outline-offset: 2px;
+	}
+	#modifyItinSelect, #modifyItinSelect option {
+	  font-family: var(--menuFont), sans-serif;
+	}
+    body.menu-open {
+      overflow: hidden;
+    }
+	#modifyItinCarousel .place-card h4 {
+	  padding-right: 32px;
+	}
+	#modifyItinCarousel .place-card p {
+	  padding-right: 32px;
+	}
+	.remove-item:hover {
+		background: var(--menuButton) !important;
+		border-color: #DB504A !important;
+}
+	#editItemModal {
+	  display: none;
+	  position: fixed;
+	  top: 50%; left: 50%;
+	  transform: translate(-50%, -50%);
+	  background: var(--menuBg);
+	  border: 1px solid var(--borders);
+	  border-radius: 8px;
+	  padding: 16px;
+	  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+	  z-index: 20003;
+	  width: 320px;
+	  max-width: calc(100% - 32px);
+	  font-family: var(--menuFont), sans-serif;
+	}
+
+	#editItemForm {
+	  display: flex;
+	  flex-direction: column;
+	  gap: 12px;
+	}
+
+	#editItemForm label {
+	  font-size: 1em;
+	}
+
+	#editItemForm input,
+	#editItemForm textarea {
+	  width: 92%;
+	  padding: 6px 8px;
+	  border: 1px solid var(--borders);
+	  border-radius: 4px;
+	  font-family: var(--menuFont), sans-serif;
+	  background-color: var(--searchBG);
+	  color: #333;
+	}
+
+	#editItemForm button {
+	  background: var(--menuButton);
+	  color: #333;
+	  border: none;
+	  border-radius: 4px;
+	  padding: 6px 12px;
+	  font-family: var(--menuFont), cursive;
+	  cursor: pointer;
+	}
+	@keyframes moveItemPulse {
+	  0%, 100% { 
+		box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+		transform: scale(1.02);
+	  }
+	  50% { 
+		box-shadow: 0 6px 20px rgba(255, 152, 0, 0.5);
+		transform: scale(1.04);
+	  }
+	}
+
+	.moving-item {
+	  background: linear-gradient(135deg, #FFE082, #FFF9C4) !important;
+	  border: 3px solid #FF9800 !important;
+	  animation: moveItemPulse 2s ease-in-out infinite !important;
+	  position: relative !important;
+	  z-index: 100 !important;
+	}
+
+/* Static inline styles extracted from map.html */
+#itineraryMode {
+  display: none; width: calc(100% - 16px); margin: 8px 8px 8px; padding: 6px 8px; background: var(--menuButton); border-bottom: 1px solid #ddd; border-radius: 4px; border: none; font-family: var(--menuFont), cursive; font-size: 1em; color: #333; text-align: center; cursor: pointer;
+}
+
+#placeSearch {
+  display:none;
+}
+
+#toggleSubcats {
+  display:none;
+}
+
+#itineraryContainer {
+  display: none; overflow-y: auto; padding: 8px 8px 0 8px; margin: 8px 8px 0 8px; font-family: sans-serif;
+}
+
+#createItinerary {
+  width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;
+}
+
+#modifyItineraries {
+  width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;
+}
+
+#viewItineraries {
+  width: 100%; margin-bottom: 8px; padding: 6px 8px; background: var(--menuButton); border: none; border-radius: 4px; font-family: var(--menuFont), cursive; font-size: 1em; text-align: left; cursor: pointer; color: #333;
+}
+
+#itinerarySelect {
+  display:none;
+}
+
+#itineraryCarouselWrapper {
+  position:relative; margin-top:8px; overflow:visible; padding-top:24px;
+}
+
+#itinDayCurrent {
+  display:none; position:absolute; top:4px; /* lift above cards */ left:0; white-space:nowrap; pointer-events:none; z-index:1000;
+}
+
+#itinDayNext {
+  display:none; position:absolute; top:4px; left:0; white-space:nowrap; opacity:0.5; /* slightly faded */ pointer-events:none; z-index:1000;
+}
+
+#itineraryCarousel.place-carousel {
+  display:none; overflow-x:auto; gap:8px; padding:8px; border-top:none;
+}
+
+#hidden_iframe {
+  display:none;
+}
+
+#modalTime {
+  width:80%;box-sizing:border-box;
+}
+
+.add-itin-actions {
+  display:flex;justify-content:flex-end;gap:8px;
+}
+
+.insert-actions {
+  display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; /* ensures these sit on top of the carousel */ position: relative; z-index: 1001;
+}
+
+#createItinModal {
+  display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20000; width:320px; max-width:96%; font-family: var(--menuFont), sans-serif;
+}
+
+#createItinForm {
+  display:flex; flex-direction:column; gap:14px;
+}
+
+.create-itin-label {
+  font-size:1em;
+}
+
+#itinTitle {
+  width: 98%; box-sizing: border-box; padding:7px 8px; border:1px solid var(--borders); border-radius:4px; font-size:1em; background: var(--searchBG); color:#333;
+}
+
+.create-itin-actions {
+  display:flex; justify-content:flex-end; gap:8px;
+}
+
+#cancelCreateItin {
+  background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;
+}
+
+#submitCreateItin {
+  background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;
+}
+
+#modifyItinModal {
+  display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.22); z-index:20001; width:340px; max-width:98%; font-family: var(--menuFont), sans-serif;
+}
+
+.modify-itin-field {
+  margin-bottom:14px;
+}
+
+.modal-section-title {
+  margin-bottom:8px; font-size:1em;
+}
+
+#modifyCarouselWrapper {
+  position:relative; padding-top:24px;
+}
+
+#modifyDayLabel {
+  display:none; position:absolute; top:4px; left:0; white-space:nowrap; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.4em; text-decoration:underline;
+}
+
+#modifyDayNextLabel {
+  display:none; position:absolute; top:4px; left:0; white-space:nowrap; opacity:0.5; pointer-events:none; z-index:1000; font-family: var(--menuFont), cursive; font-size:1.4em; text-decoration:underline;
+}
+
+#modifyItinCarousel.place-carousel {
+  min-height:60px;
+}
+
+.modify-itin-actions {
+  display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:14px;
+}
+
+#addNoteBtn {
+  display:none; background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;
+}
+
+.modify-itin-actions-spacer {
+  margin-left:auto;
+}
+
+#cancelModifyItin {
+  background:var(--menuButton); border-radius:4px; border:none; padding:6px 14px; font-family: var(--menuFont), cursive; cursor:pointer;color:#333;
+}
+
+#noteTextModal {
+  display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: var(--menuBg); border: 1px solid var(--borders); border-radius: 8px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10002; width: 300px; max-width: calc(100% - 32px); font-family: var(--menuFont), sans-serif;
+}
+
+.note-text-title {
+  margin-bottom: 12px; font-size: 1em;
+}
+
+#noteTextInput {
+  width: 94%; padding: 8px; border: 1px solid var(--borders); border-radius: 4px; background-color: var(--searchBG); font-family: var(--menuFont), sans-serif; resize: vertical;
+}
+
+.note-text-actions {
+  display: flex; justify-content: space-between; gap: 8px; margin-top: 12px;
+}
+
+#noteTextBack {
+  background: var(--menuButton); border: none; border-radius: 4px; padding: 6px 12px; font-family: var(--menuFont), cursive; cursor: pointer;
+}
+
+#noteTextSubmit {
+  background: var(--menuButton); border: none; border-radius: 4px; padding: 6px 12px; font-family: var(--menuFont), cursive; cursor: pointer;
+}
+
+.edit-item-title {
+  margin-bottom: 14px; font-size: 1.1em;
+}
+
+.edit-item-actions {
+  display: flex; justify-content: space-between; gap: 8px; margin-top: 12px;
+}
+
+#passwordOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:29999;
+}
+
+#passwordModal {
+  display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--menuBg); border:1px solid var(--borders); border-radius:8px; padding:20px; box-shadow:0 4px 16px rgba(0,0,0,0.3); z-index:30000; width:300px; max-width:calc(100% - 40px); font-family:var(--menuFont), sans-serif;
+}
+
+.password-title {
+  margin:0 0 16px 0; font-size:1.2em; color:#333; text-align:center;
+}
+
+#passwordError {
+  display:none; color:#d32f2f; font-size:0.9em; margin-bottom:8px; text-align:center;
+}
+
+#passwordInput {
+  width:calc(100% - 16px); padding:8px; border:1px solid var(--borders); border-radius:4px; background:var(--searchBG); font-family:var(--menuFont), sans-serif; font-size:1em; margin-bottom:16px;
+}
+
+.password-actions {
+  display:flex; justify-content:flex-end; gap:8px;
+}
+
+#passwordCancel {
+  background:var(--menuButton); border:none; border-radius:4px; padding:8px 16px; font-family:var(--menuFont), cursive; cursor:pointer; color:#333;
+}
+
+#passwordSubmit {
+  background:var(--menuButton); border:none; border-radius:4px; padding:8px 16px; font-family:var(--menuFont), cursive; cursor:pointer; color:#333;
+}
