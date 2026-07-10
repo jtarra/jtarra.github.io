@@ -1,8 +1,8 @@
-// Hawaii map configuration.
+// Colorado map configuration.
 // Loaded by shared/map-loader.js before shared/map-engine.js.
 
 const CONFIG = {
-      sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+      sheetId: '1iVs8I3dty6TOU7rEYWEJwa3xTDKSMv769DgLQGfv4GA',
       apiKey: '1iVs8I3dty6TOU7rEYWEJwa3xTDKSMv769DgLQGfv4GA',
       ranges: ['Places!A:L','Reviews!A:E'],
       mapCenter: [39.0433, -106.0259],
