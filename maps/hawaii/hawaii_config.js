@@ -8,7 +8,18 @@ const CONFIG = {
       mapCenter: [21.4559, -157.9519],
       mapZoom: 10,
       attribution: '<a href="https://www.youtube.com/watch?v=rzLIUgnKY40">Home</a>',
-      baseColors: ['#FF6347','#D62828','#00A693','#4D7D5C','#528ED1','#DEFF8D','#32CD32','#FF69B4'],
+      baseColors: [
+        '#E76F51', // coral
+        '#2A9D8F', // ocean teal
+        '#E9C46A', // golden sand
+        '#F4A261', // sunset orange
+        '#457B9D', // deep blue
+        '#8AB17D', // palm green
+        '#D62828', // hibiscus red
+        '#A67C52', // warm brown
+        '#6D597A', // muted purple
+        '#00A6A6'  // bright aqua
+      ],
       emojiList: ['🤙🏼','🧜🏼‍♀️','🏄🏼‍♂️','🏄🏻‍♀️','🐓','🐋','🐠','🦈','🪸','🪼','🌺','🥥','🍍','🍧','🤿','🌋','🏝️','🛵','👙','🌴','⛱️'],
       userIconUrls: ['MapResources/UserIcons/Hawaii/Hula1.png','MapResources/UserIcons/Hawaii/Hula2.png','MapResources/UserIcons/Hawaii/Hula3.png','MapResources/UserIcons/Hawaii/Hula4.png','MapResources/UserIcons/Hawaii/Hula5.png']
 };
