@@ -2,14 +2,14 @@
 
 /* Colorado theme variables */
 :root {
-  --menuBg: #FFF9E6;
-  --menuButton: #E7D8C4;
-  --catText: #E3B505;
-  --catShadow: #DB504A;
-  --searchBG: #F5F1EC;
-  --caroCardBg: #FAF1D2;
-  --borders: #D0B59A;
-  --subcatBG: #F8E9D5;
+  --menuBg: #F6EFE2;
+  --menuButton: #C8A36A;
+  --catText: #2F5D50;
+  --catShadow: #B45A3C;
+  --searchBG: #FFF9EF;
+  --caroCardBg: #EFE1C6;
+  --borders: #8A6F4D;
+  --subcatBG: #E6D1AE;
 
   --catFont: 'Bardy';
   --subcatFont: 'Dorgan';
