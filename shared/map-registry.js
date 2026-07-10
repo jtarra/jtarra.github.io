@@ -8,7 +8,7 @@ window.MAP_REGISTRY = {
       title: 'Hawaii',
       theme: 'maps/hawaii/hawaii_theme.css',
       config: 'maps/hawaii/hawaii_config.js'
-    }
+    },
     colorado: {
       title: 'Colorado',
       theme: 'maps/colorado/colorado_theme.css',
