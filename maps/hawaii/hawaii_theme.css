@@ -2,14 +2,14 @@
 
 /* Hawaii theme variables */
 :root {
-  --menuBg: #F7EFD8;        /* warm sand */
-  --menuButton: #8FB8B2;    /* faded aqua */
-  --catText: #F2B84B;       /* vintage golden yellow */
-  --catShadow: #C85F4A;     /* coral red */
-  --searchBG: #FFF8E8;      /* soft cream */
-  --caroCardBg: #F3DEB8;    /* aged postcard beige */
-  --borders: #A67C52;       /* muted wood/tan */
-  --subcatBG: #E8CF9F;      /* warm tapa cloth tan */
+  --menuBg: #FFF3D6;
+  --menuButton: #78B7A4;
+  --catText: #F6A83A;
+  --catShadow: #D95D39;
+  --searchBG: #FFF9EA;
+  --caroCardBg: #FFE1A8;
+  --borders: #B47A4C;
+  --subcatBG: #F4C98B;
 
   --catFont: 'Bardy';
   --subcatFont: 'Dorgan';
@@ -20,4 +20,4 @@
 
 /* Fonts */
 @font-face { font-family: 'Bardy'; src: url('../../MapResources/Fonts/Bardy.woff') format('woff'); }
-    @font-face { font-family: 'Dorgan'; src: url('../../MapResources/Fonts/Dorgan.woff') format('woff'); }
+@font-face { font-family: 'Dorgan'; src: url('../../MapResources/Fonts/Dorgan.woff') format('woff'); }
