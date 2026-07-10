@@ -6,8 +6,13 @@ window.MAP_REGISTRY = {
   maps: {
     hawaii: {
       title: 'Hawaii',
-      theme: 'maps/hawaii/theme.css',
-      config: 'maps/hawaii/config.js'
+      theme: 'maps/hawaii/hawaii_theme.css',
+      config: 'maps/hawaii/hawaii_config.js'
+    }
+    colorado: {
+      title: 'Colorado',
+      theme: 'maps/colorado/colorado_theme.css',
+      config: 'maps/colorado/colorado_config.js'
     }
   }
 };
