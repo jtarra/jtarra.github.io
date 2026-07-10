@@ -3,7 +3,7 @@
 
 const CONFIG = {
       sheetId: '1iVs8I3dty6TOU7rEYWEJwa3xTDKSMv769DgLQGfv4GA',
-      apiKey: '1iVs8I3dty6TOU7rEYWEJwa3xTDKSMv769DgLQGfv4GA',
+      apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
       ranges: ['Places!A:L','Reviews!A:E'],
       mapCenter: [39.0433, -106.0259],
       mapZoom: 10,
