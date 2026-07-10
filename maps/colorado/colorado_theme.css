@@ -1,6 +1,6 @@
-/* Hawaii map theme CSS extracted from map.html. */
+/* Colorado map theme CSS extracted from map.html. */
 
-/* Hawaii theme variables */
+/* Colorado theme variables */
 :root {
   --menuBg: #FFF9E6;
   --menuButton: #E7D8C4;
@@ -20,4 +20,4 @@
 
 /* Fonts */
 @font-face { font-family: 'Bardy'; src: url('../../MapResources/Fonts/Bardy.woff') format('woff'); }
-    @font-face { font-family: 'Dorgan'; src: url('../../MapResources/Fonts/Dorgan.woff') format('woff'); }
+@font-face { font-family: 'Dorgan'; src: url('../../MapResources/Fonts/Dorgan.woff') format('woff'); }
