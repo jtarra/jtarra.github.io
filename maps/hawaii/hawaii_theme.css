@@ -2,14 +2,14 @@
 
 /* Hawaii theme variables */
 :root {
-  --menuBg: #FFF9E6;
-  --menuButton: #E7D8C4;
-  --catText: #E3B505;
-  --catShadow: #DB504A;
-  --searchBG: #F5F1EC;
-  --caroCardBg: #FAF1D2;
-  --borders: #D0B59A;
-  --subcatBG: #F8E9D5;
+  --menuBg: #F7EFD8;        /* warm sand */
+  --menuButton: #8FB8B2;    /* faded aqua */
+  --catText: #F2B84B;       /* vintage golden yellow */
+  --catShadow: #C85F4A;     /* coral red */
+  --searchBG: #FFF8E8;      /* soft cream */
+  --caroCardBg: #F3DEB8;    /* aged postcard beige */
+  --borders: #A67C52;       /* muted wood/tan */
+  --subcatBG: #E8CF9F;      /* warm tapa cloth tan */
 
   --catFont: 'Bardy';
   --subcatFont: 'Dorgan';
