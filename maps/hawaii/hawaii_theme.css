@@ -2,14 +2,14 @@
 
 /* Hawaii theme variables */
 :root {
-  --menuBg: #FFF3D6;
-  --menuButton: #78B7A4;
-  --catText: #F6A83A;
-  --catShadow: #D95D39;
-  --searchBG: #FFF9EA;
-  --caroCardBg: #FFE1A8;
-  --borders: #B47A4C;
-  --subcatBG: #F4C98B;
+  --menuBg: #F4E7C8;
+  --menuButton: #7FA6A1;
+  --catText: #D99A3D;
+  --catShadow: #A94E3B;
+  --searchBG: #FAF3E3;
+  --caroCardBg: #EED6A3;
+  --borders: #8D6B4A;
+  --subcatBG: #DFC18B;
 
   --catFont: 'Bardy';
   --subcatFont: 'Dorgan';
