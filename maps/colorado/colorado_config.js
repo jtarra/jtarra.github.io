@@ -8,7 +8,7 @@ const CONFIG = {
       mapCenter: [39.0433, -106.0259],
       mapZoom: 8,
       attribution: '<a href="https://www.youtube.com/watch?v=rzLIUgnKY40">Home</a>',
-      baseColors: ['#FF6347','#D62828','#00A693','#4D7D5C','#528ED1','#DEFF8D','#32CD32','#FF69B4'],
+      baseColors: ['#2F5D50','#B45A3C','#4F86A8','#C8A36A','#6F4E37','#7D8F69','#9E3F2F','#5E6C84'],
       emojiList: ['🫈','🧗🏻‍♀️','🧗🏼','🦝','🫎','🦌','🦬','🐄','🐻','🦔','🦫','🦆','🌲','🌿','☀️','🏔️','🏕️','⛷️','🏞️','🛶'],
       userIconUrls: ['MapResources/UserIcons/colorado/greenbackCutthroatTrout.png','MapResources/UserIcons/Hawaii/Hula2.png']
 };
