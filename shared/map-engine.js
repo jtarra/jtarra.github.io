@@ -199,9 +199,13 @@ window.passwordProtection = new PasswordProtection();
       includeScore: true
     });
 
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: {
+    // Basemap selection is now configurable per map.
+    // Maps without CONFIG.mapStyleUrl continue using the original OSM raster tiles.
+    function getMapStyle() {
+      if (CONFIG.mapStyle) return CONFIG.mapStyle;
+      if (CONFIG.mapStyleUrl) return CONFIG.mapStyleUrl;
+
+      return {
         version: 8,
         sources: {
           'raster-tiles': {
@@ -220,7 +224,43 @@ window.passwordProtection = new PasswordProtection();
           type: 'raster',
           source: 'raster-tiles'
         }]
-      },
+      };
+    }
+
+    // Optional vector-label language override for maps that use vector styles.
+    // Example for Japan config: mapStyleUrl: 'https://tiles.openfreemap.org/styles/bright', mapLabelLanguage: 'en'
+    function applyMapLabelLanguage(map) {
+      if (!CONFIG.mapLabelLanguage) return;
+
+      const language = CONFIG.mapLabelLanguage;
+      const preferredFields = language === 'local'
+        ? ['name']
+        : [`name:${language}`, `name_${language}`];
+
+      const fallbackFields = language === 'en'
+        ? ['name:latin', 'name']
+        : ['name:en', 'name_en', 'name:latin', 'name'];
+
+      const fields = [...new Set([...preferredFields, ...fallbackFields])];
+      const textField = ['coalesce', ...fields.map(field => ['get', field])];
+
+      const style = map.getStyle();
+      if (!style || !Array.isArray(style.layers)) return;
+
+      style.layers.forEach(layer => {
+        if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+          try {
+            map.setLayoutProperty(layer.id, 'text-field', textField);
+          } catch (err) {
+            console.warn(`Could not update label language for layer "${layer.id}":`, err);
+          }
+        }
+      });
+    }
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: getMapStyle(),
       center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
       zoom: CONFIG.mapZoom,
       dragRotate:      false,
@@ -229,7 +269,10 @@ window.passwordProtection = new PasswordProtection();
     });
     window.map = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    map.on('load', () => map.resize());
+    map.on('load', () => {
+      map.resize();
+      applyMapLabelLanguage(map);
+    });
     map.touchPitch.disable();
     map.setMaxPitch(0);
 	map.dragRotate.disable();
