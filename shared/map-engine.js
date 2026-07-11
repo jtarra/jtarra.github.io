@@ -242,18 +242,48 @@ window.passwordProtection = new PasswordProtection();
         : ['name:en', 'name_en', 'name:latin', 'name'];
 
       const fields = [...new Set([...preferredFields, ...fallbackFields])];
-      const textField = ['coalesce', ...fields.map(field => ['get', field])];
+      const localizedName = ['coalesce', ...fields.map(field => ['get', field])];
+
+      function isNameField(field) {
+        return typeof field === 'string' &&
+          (field === 'name' || field.startsWith('name:') || field.startsWith('name_'));
+      }
+
+      function localizeTextField(value) {
+        if (Array.isArray(value)) {
+          if (value[0] === 'get' && isNameField(value[1])) {
+            return { value: localizedName, changed: true };
+          }
+
+          let changed = false;
+          const localized = value.map(part => {
+            const result = localizeTextField(part);
+            changed = changed || result.changed;
+            return result.value;
+          });
+          return { value: localized, changed };
+        }
+
+        if (typeof value === 'string' && /^\{name(?::[^}]+|_[^}]+)?\}$/.test(value)) {
+          return { value: localizedName, changed: true };
+        }
+
+        return { value, changed: false };
+      }
 
       const style = map.getStyle();
       if (!style || !Array.isArray(style.layers)) return;
 
       style.layers.forEach(layer => {
-        if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
-          try {
-            map.setLayoutProperty(layer.id, 'text-field', textField);
-          } catch (err) {
-            console.warn(`Could not update label language for layer "${layer.id}":`, err);
-          }
+        if (layer.type !== 'symbol' || !layer.layout || !layer.layout['text-field']) return;
+
+        const localized = localizeTextField(layer.layout['text-field']);
+        if (!localized.changed) return;
+
+        try {
+          map.setLayoutProperty(layer.id, 'text-field', localized.value);
+        } catch (err) {
+          console.warn(`Could not update label language for layer "${layer.id}":`, err);
         }
       });
     }
