@@ -1,4 +1,4 @@
-// Hawaii map configuration.
+// Japan map configuration.
 // Loaded by shared/map-loader.js before shared/map-engine.js.
 
 const CONFIG = {
@@ -6,7 +6,7 @@ const CONFIG = {
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
       ranges: ['Places!A:L','Reviews!A:E'],
       mapCenter: [35.6895, 139.6917],
-      mapZoom: 10,
+      mapZoom: 8,
       mapStyleUrl: 'https://tiles.openfreemap.org/styles/bright',
       mapLabelLanguage: 'en',
       attribution: '<a href="https://www.youtube.com/watch?v=rzLIUgnKY40">Home</a>',
