@@ -13,6 +13,11 @@ window.MAP_REGISTRY = {
       title: 'Colorado',
       theme: 'maps/colorado/colorado_theme.css',
       config: 'maps/colorado/colorado_config.js'
+    },
+    japan: {
+      title: 'Japan',
+      theme: 'maps/japan/japan_theme.css',
+      config: 'maps/japan/japan_config.js'
     }
   }
 };
