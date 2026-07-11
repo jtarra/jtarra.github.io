@@ -5,7 +5,7 @@ const CONFIG = {
       sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
       ranges: ['Places!A:L','Reviews!A:E'],
-      mapCenter: [21.4559, -157.9519],
+      mapCenter: [35.6895, 139.6917],
       mapZoom: 10,
       mapStyleUrl: 'https://tiles.openfreemap.org/styles/bright',
       mapLabelLanguage: 'en',
