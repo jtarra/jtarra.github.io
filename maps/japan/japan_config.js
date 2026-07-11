@@ -2,7 +2,7 @@
 // Loaded by shared/map-loader.js before shared/map-engine.js.
 
 const CONFIG = {
-      sheetId: '1XBG0uONiQoPvUxqz6V4BJBsOckDM2cahH4WylqOdz74',
+      sheetId: '1NessfMdpj-7RTZqQLKrprOTbCaCH-eLgXnb0T-kAbTU',
       apiKey: 'AIzaSyDiUAu4Uii6gAltbyJ8G2UkLMUdydyd9Jw',
       ranges: ['Places!A:L','Reviews!A:E'],
       mapCenter: [35.6895, 139.6917],
