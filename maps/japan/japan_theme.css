@@ -2,14 +2,14 @@
 
 /* Japan theme variables */
 :root {
-  --menuBg: #FFF9E6;
-  --menuButton: #E7D8C4;
-  --catText: #E3B505;
-  --catShadow: #DB504A;
-  --searchBG: #F5F1EC;
-  --caroCardBg: #FAF1D2;
-  --borders: #D0B59A;
-  --subcatBG: #F8E9D5;
+  --menuBg: #F4EFE4;       /* warm washi paper */
+  --menuButton: #D9D0BF;   /* natural paper/taupe */
+  --catText: #26384A;      /* deep indigo */
+  --catShadow: #C64B3C;    /* muted vermilion */
+  --searchBG: #FBF8F1;     /* soft ivory */
+  --caroCardBg: #E9E0CF;   /* aged paper */
+  --borders: #867B6B;      /* warm charcoal-brown */
+  --subcatBG: #DED3C0;     /* pale kraft/washi */
 
   --catFont: 'Bardy';
   --subcatFont: 'Dorgan';
