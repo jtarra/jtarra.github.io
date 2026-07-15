@@ -4,8 +4,8 @@
 :root {
   --menuBg: #F6EFEB;
   --menuButton: #D8CEC5;
-  --catText: #526253;      /* matcha green */
-  --catShadow: #C96770;    /* muted sakura */
+  --catText: #C96770;      /* matcha green */
+  --catShadow: #526253;    /* muted sakura */
   --searchBG: #FFF9F5;
 
   --carouselBg: #C9C9B8;   /* pale sage strip */
