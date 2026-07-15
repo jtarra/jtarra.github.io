@@ -2,14 +2,14 @@
 
 /* Japan theme variables */
 :root {
-  --menuBg: #F5EEE9;
-  --menuButton: #D8C8C3;
-  --catText: #3C4658;
-  --catShadow: #C85E68;
-  --searchBG: #FCF8F5;
-  --caroCardBg: #EADBD5;
-  --borders: #8A7772;
-  --subcatBG: #E1CEC7;
+  --menuBg: #252A30;
+  --menuButton: #3A4148;
+  --catText: #F1D18A;
+  --catShadow: #E45B52;
+  --searchBG: #333941;
+  --caroCardBg: #30363D;
+  --borders: #69727A;
+  --subcatBG: #414850;
 
   --catFont: 'Bardy';
   --subcatFont: 'Dorgan';
