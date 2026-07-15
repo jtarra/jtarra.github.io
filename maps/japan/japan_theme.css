@@ -2,17 +2,17 @@
 
 /* Japan theme variables */
 :root {
-  --menuBg: #F6EFEB;
-  --menuButton: #D8CEC5;
-  --catText: #C96770;      /* matcha green */
-  --catShadow: #526253;    /* muted sakura */
-  --searchBG: #FFF9F5;
+  --menuBg: #F3ECEC;
+  --menuButton: #D7C7CC;
+  --catText: #353A4A;      /* dark ink */
+  --catShadow: #A85269;    /* plum */
+  --searchBG: #FAF6F6;
 
-  --carouselBg: #C9C9B8;   /* pale sage strip */
-  --caroCardBg: #ECE0D8;   /* warm pink-beige cards */
+  --carouselBg: #C9B9C0;   /* dusty plum-gray */
+  --caroCardBg: #E8DADF;   /* pale plum cards */
 
-  --borders: #89877A;
-  --subcatBG: #DDD7C9;
+  --borders: #776B72;
+  --subcatBG: #DDCED3;
 
   
   --catFont: 'Bardy';
