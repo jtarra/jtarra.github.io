@@ -249,27 +249,84 @@ window.passwordProtection = new PasswordProtection();
           (field === 'name' || field.startsWith('name:') || field.startsWith('name_'));
       }
 
-      function localizeTextField(value) {
-        if (Array.isArray(value)) {
-          if (value[0] === 'get' && isNameField(value[1])) {
-            return { value: localizedName, changed: true };
-          }
-
-          let changed = false;
-          const localized = value.map(part => {
-            const result = localizeTextField(part);
-            changed = changed || result.changed;
-            return result.value;
-          });
-          return { value: localized, changed };
-        }
-
-        if (typeof value === 'string' && /^\{name(?::[^}]+|_[^}]+)?\}$/.test(value)) {
-          return { value: localizedName, changed: true };
-        }
-
-        return { value, changed: false };
-      }
+		function countNameFields(value) {
+		  if (Array.isArray(value)) {
+		    if (value[0] === 'get' && isNameField(value[1])) {
+		      return 1;
+		    }
+		
+		    return value.reduce(
+		      (total, part) => total + countNameFields(part),
+		      0
+		    );
+		  }
+		
+		  if (
+		    typeof value === 'string' &&
+		    /^\{name(?::[^}]+|_[^}]+)?\}$/.test(value)
+		  ) {
+		    return 1;
+		  }
+		
+		  return 0;
+		}
+		
+		function localizeTextField(value) {
+		  if (Array.isArray(value)) {
+		    if (value[0] === 'get' && isNameField(value[1])) {
+		      return {
+		        value: localizedName,
+		        changed: true
+		      };
+		    }
+		
+		    /*
+		     * OpenFreeMap uses format/concat expressions containing both a
+		     * Latin/English name and a local-language name. Replacing each
+		     * name separately would display the selected language twice.
+		     *
+		     * When multiple name fields are present, replace the entire
+		     * bilingual expression with one localized name.
+		     */
+		    if (
+		      (value[0] === 'format' || value[0] === 'concat') &&
+		      countNameFields(value) > 1
+		    ) {
+		      return {
+		        value: localizedName,
+		        changed: true
+		      };
+		    }
+		
+		    let changed = false;
+		
+		    const localized = value.map(part => {
+		      const result = localizeTextField(part);
+		      changed = changed || result.changed;
+		      return result.value;
+		    });
+		
+		    return {
+		      value: localized,
+		      changed
+		    };
+		  }
+		
+		  if (
+		    typeof value === 'string' &&
+		    /^\{name(?::[^}]+|_[^}]+)?\}$/.test(value)
+		  ) {
+		    return {
+		      value: localizedName,
+		      changed: true
+		    };
+		  }
+		
+		  return {
+		    value,
+		    changed: false
+		  };
+		}
 
       const style = map.getStyle();
       if (!style || !Array.isArray(style.layers)) return;
