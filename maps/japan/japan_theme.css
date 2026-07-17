@@ -2,14 +2,14 @@
 
 /* Japan theme variables */
 :root {
-  --menuBg: #F3F0E5;
-  --menuButton: #D8D5C2;
-  --catText: #52634D;
-  --catShadow: #B96A4F;
-  --searchBG: #FCFAF3;
-  --caroCardBg: #E4DFCF;
-  --borders: #7F8174;
-  --subcatBG: #DAD8C8;
+  --menuBg: #BDBEAC;
+  --menuButton: #9FA18F;
+  --catText: #202521;
+  --catShadow: #835A47;
+  --searchBG: #D3D4C6;
+  --caroCardBg: #ADB09D;
+  --borders: #66695C;
+  --subcatBG: #A7AA97;
   --carouselBg: var(--menuBg);
 
   
