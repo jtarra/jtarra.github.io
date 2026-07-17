@@ -291,15 +291,8 @@ window.passwordProtection = new PasswordProtection();
     const map = new maplibregl.Map({
       container: 'map',
       style: getMapStyle(),
-
-		attributionControl: CONFIG.attribution
-		  ? {
-		      compact: true,
-		      customAttribution: CONFIG.attribution
-		    }
-		  : {
-		      compact: true
-		    },
+		
+	customAttribution: CONFIG.attribution,
 		
       center: [ CONFIG.mapCenter[1], CONFIG.mapCenter[0] ],
       zoom: CONFIG.mapZoom,
