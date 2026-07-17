@@ -288,54 +288,45 @@ window.passwordProtection = new PasswordProtection();
       });
     }
 
-const map = new maplibregl.Map({
-  container: 'map',
-  style: mapStyle,
-  attributionControl: false,
-  center: [CONFIG.mapCenter[1], CONFIG.mapCenter[0]],
-  zoom: CONFIG.mapZoom,
-  dragRotate: false,
-  touchZoomRotate: true,
-  pitchWithRotate: false
-});
+    const mapStyle = getMapStyle();
 
-window.map = map;
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: mapStyle,
+      attributionControl: false,
+      center: [CONFIG.mapCenter[1], CONFIG.mapCenter[0]],
+      zoom: CONFIG.mapZoom,
+      dragRotate: false,
+      touchZoomRotate: true,
+      pitchWithRotate: false
+    });
 
-const customAttributionControl = {
-  onAdd() {
-    this._container = document.createElement('div');
-    this._container.className =
-      'maplibregl-ctrl maplibregl-ctrl-attrib';
+    window.map = map;
 
-    const homeAttribution = CONFIG.attribution
-      ? `${CONFIG.attribution} | `
-      : '';
+    // Show only the per-map custom attribution, such as the temporary Home link.
+    // Provider/source attribution remains hidden because attributionControl is false.
+    if (CONFIG.attribution) {
+      const customAttributionControl = {
+        onAdd() {
+          this._container = document.createElement('div');
+          this._container.className = 'maplibregl-ctrl maplibregl-ctrl-attrib';
+          this._container.innerHTML = CONFIG.attribution;
+          return this._container;
+        },
 
-    this._container.innerHTML =
-      homeAttribution +
-      '<a href="https://openmaptiles.org/" target="_blank" rel="noopener">' +
-      '© OpenMapTiles</a> | ' +
-      '<a href="https://www.openstreetmap.org/copyright" ' +
-      'target="_blank" rel="noopener">' +
-      '© OpenStreetMap contributors</a>';
+        onRemove() {
+          this._container.remove();
+          this._container = null;
+        }
+      };
 
-    return this._container;
-  },
+      map.addControl(customAttributionControl, 'bottom-right');
+    }
 
-  onRemove() {
-    this._container.remove();
-    this._container = null;
-  }
-};
-
-map.addControl(customAttributionControl, 'bottom-right');
-
-map.addControl(
-  new maplibregl.NavigationControl({ showCompass: false }),
-  'top-right'
-);
-	  
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      'top-right'
+    );
     map.on('load', () => {
       map.resize();
       applyMapLabelLanguage(map);
