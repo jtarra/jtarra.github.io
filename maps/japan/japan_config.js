@@ -10,7 +10,7 @@ const CONFIG = {
       mapStyleUrl: 'https://tiles.openfreemap.org/styles/bright',
       mapLabelLanguage: 'en',
       attribution: '<a href="https://www.youtube.com/watch?v=rzLIUgnKY40">Home</a>',
-      baseColors: ['#FF6347','#D62828','#00A693','#4D7D5C','#528ED1','#DEFF8D','#32CD32','#FF69B4'],
+      baseColors: ['#D85C6A','#355C7D','#D9A441','#5F7D58','#8B5A83','#2F7F78','#C46A3B'],
       emojiList: ['🦑','💮','🪷','🌊','🍲','🍥','🍣','🍠','🍜','🍙','🍚','🥥','🏔️','🗾','🚄','🚅','🏝️','🚆','🇯🇵','🥷🏻','🍡'],
       userIconUrls: ['MapResources/UserIcons/Hawaii/Hula1.png','MapResources/UserIcons/Hawaii/Hula2.png','MapResources/UserIcons/Hawaii/Hula3.png','MapResources/UserIcons/Hawaii/Hula4.png','MapResources/UserIcons/Hawaii/Hula5.png']
 };
