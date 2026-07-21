@@ -10,13 +10,47 @@ html, body {
 	#map { width: 100%; height: 100%; }
 
 /* Maplibre */
-.maplibregl-popup-content-wrapper,
+	.maplibregl-popup-content-wrapper,
 	.maplibregl-popup-content {
-		border-radius: 8px !important;
-		font-family: var(--popupFont), sans-serif;					/* Popup Cards' Font */
-		font-size: 14px !important;							/* Popup Cards' Text size */
-		color: #333 !important;
-		}
+	  border-radius: 8px !important;
+	  background: var(--menuBg) !important;
+	  font-family: var(--popupFont), sans-serif;
+	  font-size: 14px !important;
+	  color: #333 !important;
+	}
+
+	.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+	  border-bottom-color: var(--menuBg) !important;
+	}
+	
+	.maplibregl-popup-anchor-top-left .maplibregl-popup-tip {
+	  border-bottom-color: var(--menuBg) !important;
+	}
+	
+	.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+	  border-bottom-color: var(--menuBg) !important;
+	}
+	
+	.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+	  border-top-color: var(--menuBg) !important;
+	}
+	
+	.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip {
+	  border-top-color: var(--menuBg) !important;
+	}
+	
+	.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+	  border-top-color: var(--menuBg) !important;
+	}
+	
+	.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+	  border-right-color: var(--menuBg) !important;
+	}
+	
+	.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+	  border-left-color: var(--menuBg) !important;
+	}
+
 	.maplibregl-popup-content-wrapper a,
 	.maplibregl-popup-content a {
 	  color: #0078A8 !important;
@@ -38,6 +72,7 @@ html, body {
 	.order-recommendations {
 	  margin: 10px 0 8px;
 	  padding: 8px 10px 9px;
+	  background: var(--caroCardBg);
 	  border: 1px solid var(--borders);
 	  border-radius: 6px;
 	}
