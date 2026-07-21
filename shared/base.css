@@ -35,9 +35,12 @@ html, body {
       margin: 6px 0 4px 0;
     }
 
-    .order-recommendations {
-      margin: 10px 0 8px;
-    }
+	.order-recommendations {
+	  margin: 10px 0 8px;
+	  padding: 8px 10px 9px;
+	  border: 1px solid var(--borders);
+	  border-radius: 6px;
+	}
 
     .order-recommendations h4 {
       margin-bottom: 4px;
@@ -59,18 +62,20 @@ html, body {
       padding-right: 4px;
     }
 
-    .order-recommendations-toggle {
-      display: inline-block;
-      margin-top: 5px;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: #0078A8;
-      font: inherit;
-      font-weight: bold;
-      text-decoration: underline;
-      cursor: pointer;
-    }
+	.order-recommendations-toggle {
+	  display: block;
+	  width: 100%;
+	  margin-top: 7px;
+	  padding: 7px 0 0;
+	  border: 0;
+	  border-top: 1px solid var(--borders);
+	  background: transparent;
+	  color: #0078A8;
+	  font: inherit;
+	  font-weight: bold;
+	  text-align: left;
+	  cursor: pointer;
+	}
 
 /* Filters */
 .filters {
