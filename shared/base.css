@@ -107,7 +107,7 @@ html, body {
 	  background: transparent;
 	  color: #0078A8;
 	  font: inherit;
-	  font-weight: bold;
+	  font-weight: normal;
 	  text-align: left;
 	  cursor: pointer;
 	}
