@@ -43,10 +43,11 @@ html, body {
       margin-bottom: 4px;
     }
 
-    .order-recommendations-list {
-      margin: 0 0 0 20px;
-      padding: 0;
-    }
+	.order-recommendations-list {
+	  margin: 0;
+	  padding-left: 20px;
+	  list-style-position: outside;
+	}
 
     .order-recommendations-list li {
       margin: 2px 0;
