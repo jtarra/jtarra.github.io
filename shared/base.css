@@ -35,6 +35,42 @@ html, body {
       margin: 6px 0 4px 0;
     }
 
+    .order-recommendations {
+      margin: 10px 0 8px;
+    }
+
+    .order-recommendations h4 {
+      margin-bottom: 4px;
+    }
+
+    .order-recommendations-list {
+      margin: 0 0 0 20px;
+      padding: 0;
+    }
+
+    .order-recommendations-list li {
+      margin: 2px 0;
+    }
+
+    .order-recommendations-list.expanded {
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .order-recommendations-toggle {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #0078A8;
+      font: inherit;
+      font-weight: bold;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
 /* Filters */
 .filters {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
