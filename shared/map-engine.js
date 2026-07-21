@@ -10,6 +10,82 @@
     window.addEventListener('orientationchange', setRealVh);
     window.addEventListener('DOMContentLoaded', setRealVh);
 
+    function escapeHTML(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function buildOrderRecommendationsHTML(recommendations) {
+      if (!Array.isArray(recommendations) || recommendations.length === 0) {
+        return '';
+      }
+
+      const shouldCollapse = recommendations.length >= 5;
+      const initialVisibleCount = shouldCollapse ? 3 : recommendations.length;
+      const hiddenCount = recommendations.length - initialVisibleCount;
+
+      const listItems = recommendations.map((recommendation, index) => {
+        const isExtra = shouldCollapse && index >= initialVisibleCount;
+
+        return `<li${isExtra ? ' class="order-recommendation-extra" hidden' : ''}>${escapeHTML(recommendation)}</li>`;
+      }).join('');
+
+      const toggleButton = shouldCollapse
+        ? `<button type="button" class="order-recommendations-toggle" data-hidden-count="${hiddenCount}" aria-expanded="false">Show ${hiddenCount} more</button>`
+        : '';
+
+      return `<div class="order-recommendations"><h4>🍜 What to Order</h4><ul class="order-recommendations-list">${listItems}</ul>${toggleButton}</div>`;
+    }
+
+    function setOrderRecommendationsExpanded(section, expanded) {
+      const list = section.querySelector('.order-recommendations-list');
+      const button = section.querySelector('.order-recommendations-toggle');
+      const extraItems = section.querySelectorAll('.order-recommendation-extra');
+
+      if (!button) return;
+
+      extraItems.forEach(item => {
+        item.hidden = !expanded;
+      });
+
+      if (list) {
+        list.classList.toggle('expanded', expanded);
+      }
+
+      button.setAttribute('aria-expanded', String(expanded));
+      button.textContent = expanded
+        ? 'Show less'
+        : `Show ${button.dataset.hiddenCount} more`;
+    }
+
+    function resetOrderRecommendationsPopup(popup) {
+      const popupElement = popup.getElement();
+      const section = popupElement
+        ? popupElement.querySelector('.order-recommendations')
+        : null;
+
+      if (section) {
+        setOrderRecommendationsExpanded(section, false);
+      }
+    }
+
+    document.addEventListener('click', e => {
+      const button = e.target.closest('.order-recommendations-toggle');
+      if (!button) return;
+
+      const section = button.closest('.order-recommendations');
+      if (!section) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const isExpanded = button.getAttribute('aria-expanded') === 'true';
+      setOrderRecommendationsExpanded(section, !isExpanded);
+    });
 
 	window.itineraries     = [];
 	window.itineraryItems  = [];
@@ -171,8 +247,7 @@ window.passwordProtection = new PasswordProtection();
 		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
 	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
 		  return { 
-			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });
-          const [hdrR,...rowsR] = data.valueRanges[1].values;
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,orderRecommendations:(o.OrderRecommendations||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean),tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });          const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           window.places = places;
 		  window.reviewsBy = reviewsBy;
@@ -517,6 +592,7 @@ window.passwordProtection = new PasswordProtection();
           subcategories: (o.Subcategory || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
           regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
           notes: o.Notes,
+          orderRecommendations: (o.OrderRecommendations || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean),
           tags: (o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),
           visited: o.Visited.trim().toUpperCase() === 'Y',
           latlng: [lat, lng],
@@ -1865,6 +1941,7 @@ setTimeout(() => {
         + `${p.notes ? `<br>🗒️ ${p.notes}` : ''}`
         + `<br><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em>`
         + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;
+      popup += buildOrderRecommendationsHTML(p.orderRecommendations);
       const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
       if(revs.length){
         popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">';
@@ -1891,6 +1968,10 @@ setTimeout(() => {
         closeOnClick: false,
         focusAfterOpen: false
       }).setHTML(popup);
+
+      pop.on('open', () => {
+        resetOrderRecommendationsPopup(pop);
+      });
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([ p.latlng[1], p.latlng[0] ])
