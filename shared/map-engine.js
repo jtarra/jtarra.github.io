@@ -19,6 +19,42 @@
         .replace(/'/g, '&#039;');
     }
 
+	const PLACE_STATUS_TEMPORARILY_CLOSED = 'Temporarily Closed';
+	const PLACE_STATUS_PERMANENTLY_CLOSED = 'Permanently Closed';
+	
+	function normalizePlaceStatus(value) {
+	  const normalized = String(value || '').trim().toLowerCase();
+	
+	  if (normalized === 'temporarily closed') {
+	    return PLACE_STATUS_TEMPORARILY_CLOSED;
+	  }
+	
+	  if (normalized === 'permanently closed') {
+	    return PLACE_STATUS_PERMANENTLY_CLOSED;
+	  }
+	
+	  return '';
+	}
+	
+	function isPlaceStatusVisible(place) {
+	  if (!place || !place.placeStatus) return true;
+	
+	  return window.selStatus instanceof Set &&
+	    window.selStatus.has(place.placeStatus);
+	}
+	
+	function buildPlaceStatusHTML(placeStatus) {
+	  if (placeStatus === PLACE_STATUS_TEMPORARILY_CLOSED) {
+	    return '<br><span class="place-status">⚠️ Temporarily Closed</span>';
+	  }
+	
+	  if (placeStatus === PLACE_STATUS_PERMANENTLY_CLOSED) {
+	    return '<br><span class="place-status">⛔ Permanently Closed</span>';
+	  }
+	
+	  return '';
+	}
+
     function buildOrderRecommendationsHTML(recommendations) {
       if (!Array.isArray(recommendations) || recommendations.length === 0) {
         return '';
@@ -247,7 +283,7 @@ window.passwordProtection = new PasswordProtection();
 		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
 	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
 		  return { 
-			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,orderRecommendations:(o.OrderRecommendations||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean),tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });          const [hdrR,...rowsR] = data.valueRanges[1].values;
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,orderRecommendations:(o.OrderRecommendations||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean),placeStatus:normalizePlaceStatus(o.PlaceStatus),tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });          const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           window.places = places;
 		  window.reviewsBy = reviewsBy;
@@ -530,8 +566,9 @@ window.passwordProtection = new PasswordProtection();
 
     window.selSub = new Set();
     places.forEach(p => p.subcategories.forEach(sc => window.selSub.add(`${p.category} - ${sc}`)));
-    window.selReg = new Set(regSet);
-    window.selVis = new Set(['Been there','Not yet']);
+	window.selReg = new Set(regSet);
+	window.selVis = new Set(['Been there','Not yet']);
+	window.selStatus = new Set();
 
     const basePool = CONFIG.baseColors.slice(); shuffle(basePool);
     window.categoryColors = {};
@@ -546,19 +583,24 @@ window.passwordProtection = new PasswordProtection();
     // global “Select/Deselect All” for subcategories
     let allOn = true;
     const toggleSubcats = document.getElementById('toggleSubcats');
-    toggleSubcats.onclick = () => {
-      allOn = !allOn;
-      document.querySelectorAll('#panelContainer .panel').forEach(panel => {
-        const hdr = panel.querySelector('.panel-header');
-        const title = hdr.textContent.trim();
-        if (title !== 'Region' && title !== 'Visited?') {
-          const master = hdr.querySelector('input[type="checkbox"]');
-          master.checked = allOn;
-          master.dispatchEvent(new Event('change'));
-        }
-      });
-      toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
-    };
+	toggleSubcats.onclick = () => {
+	  allOn = !allOn;
+	
+	  document
+	    .querySelectorAll('#panelContainer .panel[data-panel-type="category"]')
+	    .forEach(panel => {
+	      const master = panel.querySelector(
+	        '.panel-header input[type="checkbox"]'
+	      );
+	
+	      if (!master) return;
+	
+	      master.checked = allOn;
+	      master.dispatchEvent(new Event('change'));
+	    });
+	
+	  toggleSubcats.textContent = allOn ? 'Deselect All' : 'Select All';
+	};
 
     // search box → Fuse
     const placeSearch = document.getElementById('placeSearch');
@@ -591,9 +633,10 @@ window.passwordProtection = new PasswordProtection();
           category: o.Category,
           subcategories: (o.Subcategory || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
           regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
-          notes: o.Notes,
-          orderRecommendations: (o.OrderRecommendations || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean),
-          tags: (o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),
+		  notes: o.Notes,
+	  	  orderRecommendations: (o.OrderRecommendations || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean),
+		  placeStatus: normalizePlaceStatus(o.PlaceStatus),
+		  tags: (o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),
           visited: o.Visited.trim().toUpperCase() === 'Y',
           latlng: [lat, lng],
           mapsLink: o.MapsLink,
@@ -1904,7 +1947,7 @@ setTimeout(() => {
   window.renderCarousel = function renderCarousel(v){
     const c = document.getElementById('placeCarousel');
     c.innerHTML = '';
-    v.forEach(p => {
+    v.filter(isPlaceStatusVisible).forEach(p => {
       c.insertAdjacentHTML('beforeend',
         `<div class="place-card">
             <h4>${p.name}</h4>
@@ -1932,36 +1975,82 @@ setTimeout(() => {
   window.drawMarkers = function drawMarkers(){
     window.markers.forEach(m => m.remove()); window.markers = [];
     const visible = [];
-    places.forEach(p=>{
-      if(!selVis.has(p.visited?'Been there':'Not yet')) return;
+	places.forEach(p=>{
+	  if(!isPlaceStatusVisible(p)) return;
+	  if(!selVis.has(p.visited?'Been there':'Not yet')) return;
       if(!p.subcategories.some(sc => selSub.has(`${p.category} - ${sc}`))) return;
       if (p.regions && !p.regions.some(r => selReg.has(r))) return;
       visible.push(p);
-      let popup = `<strong>${p.name}</strong>`
-        + `${p.notes ? `<br>🗒️ ${p.notes}` : ''}`
-        + `<br><em>🏷️ ${p.category} – ${p.subcategories.join(', ')}</em>`
-        + (p.regions && p.regions.length ? `<br><em>📍 ${p.regions.join(', ')}</em>` : '' ) + `<br>`;
-      popup += buildOrderRecommendationsHTML(p.orderRecommendations);
-      const revs=(reviewsBy[p.id]||[]).sort((a,b)=>b.date.localeCompare(a.date));
-      if(revs.length){
-        popup+='★'.repeat(revs[0].rating)+'<br><details><summary>'+revs.length+' review'+(revs.length>1?'s':'')+'</summary><div class="review-carousel">';
-        revs.forEach(r=>{
-          popup+=`<div class="review-item"><strong>${r.date}</strong><p>${r.text}</p>`;
-          r.photos.forEach(u=>popup+=`<a href="${u}" target="_blank">View photo</a>`);
-          popup+='</div>';
-        });
-        popup+='</div></details>';
-      }
-      if(p.mapsLink)  popup+=`<a href="${p.mapsLink}" target="_blank">Google Maps</a>`;
-      if(p.appleLink) popup+=`<br><a href="${p.appleLink}" target="_blank">Apple Maps</a>`;
-      if (p.extraLink)popup += `<br><a href="${p.extraLink}" target="_blank">More Info</a>`;
-      popup += `<br><button class="add-to-itin" data-place-id="${p.id}">+ Add to itinerary</button>`;
+	const escapedSubcategories = p.subcategories
+	  .map(escapeHTML)
+	  .join(', ');
+	
+	const escapedRegions = p.regions
+	  .map(escapeHTML)
+	  .join(', ');
+	
+	let popup = `<strong>${escapeHTML(p.name)}</strong>`
+	  + buildPlaceStatusHTML(p.placeStatus)
+	  + `${p.notes ? `<br>🗒️ ${escapeHTML(p.notes)}` : ''}`
+	  + `<br><em>🏷️ ${escapeHTML(p.category)} – ${escapedSubcategories}</em>`
+	  + (
+	      p.regions && p.regions.length
+	        ? `<br><em>📍 ${escapedRegions}</em>`
+	        : ''
+	    )
+	  + `<br>`;
+	
+	popup += buildOrderRecommendationsHTML(p.orderRecommendations);
+	
+	const revs = (reviewsBy[p.id] || [])
+	  .sort((a, b) => b.date.localeCompare(a.date));
+	
+	if (revs.length) {
+	  popup += '★'.repeat(revs[0].rating)
+	    + '<br><details><summary>'
+	    + revs.length
+	    + ' review'
+	    + (revs.length > 1 ? 's' : '')
+	    + '</summary><div class="review-carousel">';
+	
+	  revs.forEach(r => {
+	    popup += `<div class="review-item"><strong>${escapeHTML(r.date)}</strong><p>${escapeHTML(r.text)}</p>`;
+	
+	    r.photos.forEach(u => {
+	      popup += `<a href="${escapeHTML(u)}" target="_blank">View photo</a>`;
+	    });
+	
+	    popup += '</div>';
+	  });
+	
+	  popup += '</div></details>';
+	}
+	
+	if (p.mapsLink) {
+	  popup += `<a href="${escapeHTML(p.mapsLink)}" target="_blank">Google Maps</a>`;
+	}
+	
+	if (p.appleLink) {
+	  popup += `<br><a href="${escapeHTML(p.appleLink)}" target="_blank">Apple Maps</a>`;
+	}
+	
+	if (p.extraLink) {
+	  popup += `<br><a href="${escapeHTML(p.extraLink)}" target="_blank">More Info</a>`;
+	}
+	
+	popup += `<br><button class="add-to-itin" data-place-id="${escapeHTML(p.id)}">+ Add to itinerary</button>`;
 
       const strokeColor=p.visited?'#DAA520':'#555';
       const svgIcon=`<svg width="24" height="35" viewBox="0 0 24 35" xmlns="http://www.w3.org/2000/svg"><path fill="${categoryColors[p.category]}" stroke="${strokeColor}" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9 c0 6.75 9 19.5 9 19.5 s9-12.75 9-19.5 c0-4.97-4.03-9-9-9 zm0 13.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>`;
-      const el = document.createElement('div');
-      el.innerHTML = svgIcon;
-      el.className = 'place-marker';
+	  const el = document.createElement('div');
+	  el.innerHTML = svgIcon;
+	  el.className = 'place-marker';
+	
+	  if (p.placeStatus === PLACE_STATUS_TEMPORARILY_CLOSED) {
+	    el.classList.add('place-marker--temporarily-closed');
+	  } else if (p.placeStatus === PLACE_STATUS_PERMANENTLY_CLOSED) {
+	    el.classList.add('place-marker--permanently-closed');
+	  }
 
       const pop = new maplibregl.Popup({
         offset: 25,
@@ -2015,125 +2104,489 @@ setTimeout(() => {
   };
 
 
-  window.setupFilters = function(categories,regions,catMap){
-    const fd=document.getElementById('filters');
-    const wrapper=document.getElementById('panelContainer');
+window.setupFilters = function(categories,regions,catMap){
+  const fd = document.getElementById('filters');
+  const wrapper = document.getElementById('panelContainer');
 
-    document.getElementById('toggleFilters').onclick = () => {
-      const ex = fd.classList.toggle('expanded');
-      document.body.classList.toggle('menu-open', ex);
-      document.getElementById('toggleFilters').textContent = ex ? 'Close Menu' : 'Menu';
-      document.getElementById('placeSearch').style.display   = ex ? 'block' : 'none';
-      document.getElementById('toggleSubcats').style.display = ex ? 'block' : 'none';
-      document.getElementById('itineraryMode').style.display = ex ? 'block' : 'none';
-    };
+  document.getElementById('toggleFilters').onclick = () => {
+    const ex = fd.classList.toggle('expanded');
 
-    document.getElementById('itineraryMode').onclick = () => {
-      // flip flag
-      const fd     = document.getElementById('filters');
-      const inItin = fd.classList.toggle('itineraryActive');
+    document.body.classList.toggle('menu-open', ex);
 
-      const searchEl   = document.getElementById('placeSearch');
-      const deselectEl = document.getElementById('toggleSubcats');
-      if (inItin) {
-        searchEl.style.display   = 'none';
-        deselectEl.style.display = 'none';
+    document.getElementById('toggleFilters').textContent =
+      ex ? 'Close Menu' : 'Menu';
 
-        // reset filters
-        selSub.clear();
-        places.forEach(p => p.subcategories.forEach(sc => selSub.add(`${p.category} - ${sc}`)));
-        selReg.clear(); regions.forEach(r => selReg.add(r));
-        selVis.clear(); selVis.add('Been there'); selVis.add('Not yet');
+    document.getElementById('placeSearch').style.display =
+      ex ? 'block' : 'none';
 
-        document.querySelectorAll('#panelContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
-        allOn = true;
-        document.getElementById('toggleSubcats').textContent = 'Deselect All';
+    document.getElementById('toggleSubcats').style.display =
+      ex ? 'block' : 'none';
 
-        document.getElementById('placeSearch').value = '';
-        renderCarousel(places);
-        drawMarkers();
-      } else {
-        const expanded = fd.classList.contains('expanded');
-        searchEl.style.display   = expanded ? 'block' : 'none';
-        deselectEl.style.display = expanded ? 'block' : 'none';
+    document.getElementById('itineraryMode').style.display =
+      ex ? 'block' : 'none';
+  };
+
+  document.getElementById('itineraryMode').onclick = () => {
+    const fd = document.getElementById('filters');
+    const inItin = fd.classList.toggle('itineraryActive');
+
+    const searchEl = document.getElementById('placeSearch');
+    const deselectEl = document.getElementById('toggleSubcats');
+
+    if (inItin) {
+      searchEl.style.display = 'none';
+      deselectEl.style.display = 'none';
+
+      // Reset categories, visit history, and regions.
+      selSub.clear();
+
+      places.forEach(p => {
+        p.subcategories.forEach(sc => {
+          selSub.add(`${p.category} - ${sc}`);
+        });
+      });
+
+      selReg.clear();
+      regions.forEach(r => selReg.add(r));
+
+      selVis.clear();
+      selVis.add('Been there');
+      selVis.add('Not yet');
+
+      /*
+       * Keep the user's availability choices.
+       * All other filter checkboxes return to checked.
+       */
+      document
+        .querySelectorAll('#panelContainer input[type="checkbox"]')
+        .forEach(cb => {
+          cb.checked = cb.dataset.filterGroup === 'availability'
+            ? selStatus.has(cb.value)
+            : true;
+        });
+
+      const regionAllButton =
+        document.querySelector('.more-filter-regions-all');
+
+      if (regionAllButton) {
+        regionAllButton.textContent = 'Deselect all';
       }
 
-      document.getElementById('panelContainer').style.display   = inItin ? 'none'  : 'block';
-      document.getElementById('placeCarousel').style.display    = inItin ? 'none'  : 'flex';
-      document.getElementById('itineraryContainer').style.display = inItin ? 'block' : 'none';
+      allOn = true;
 
-      const btn = document.getElementById('itineraryMode');
-      btn.textContent = inItin ? 'Exit Itinerary Mode' : 'Enter Itinerary Mode';
+      document.getElementById('toggleSubcats').textContent =
+        'Deselect All';
 
-      if (!inItin) {
-        showAllMarkers();
-        const selectEl = document.getElementById('itinerarySelect');
-        selectEl.style.display = 'none';
-        selectEl.selectedIndex  = 0;
-        document.getElementById('itineraryCarousel').style.display = 'none';
-        const viewBtn = document.getElementById('viewItineraries');
-        viewBtn.textContent = 'View Itineraries';
-        document.getElementById('itinDayCurrent').style.display = 'none';
-        document.getElementById('itinDayNext').style.display    = 'none';
-      }
-    };
+      document.getElementById('placeSearch').value = '';
 
-    function makeCB(val,setRef,label){
-      const lbl=document.createElement('label');
-      const cb=document.createElement('input');
-      cb.type='checkbox'; cb.value=val; cb.checked=true;
-      cb.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
-      cb.onchange=()=>{ cb.checked?setRef.add(val):setRef.delete(val); drawMarkers(); };
-      lbl.append(cb,' ',label); return lbl;
+      renderCarousel(places);
+      drawMarkers();
+    } else {
+      const expanded = fd.classList.contains('expanded');
+
+      searchEl.style.display = expanded ? 'block' : 'none';
+      deselectEl.style.display = expanded ? 'block' : 'none';
     }
 
-    function addPanel(title,items,isRegion=false,masterOnly=false){
-      const p=document.createElement('div'); p.className='panel';
-      const h=document.createElement('div'); h.className='panel-header';
-      if(!masterOnly){
-        const m=document.createElement('input'); m.type='checkbox'; m.checked=true;
-        m.dataset.emoji=CONFIG.emojiList[Math.floor(Math.random()*CONFIG.emojiList.length)];
-        m.onclick=e=>e.stopPropagation();
-        m.onchange=()=>{
-          p.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-            if(cb!==m){
-              cb.checked=m.checked; const k=cb.value;
-              isRegion? (m.checked?selReg.add(k):selReg.delete(k))
-                      : (m.checked?selSub.add(k):selSub.delete(k));
-            }
-          });
-          drawMarkers();
-        };
-        h.append(m);
-      }
-      h.append(document.createTextNode(title));
-      if(!isRegion&&title!=='Visited?'){
-        const sw=document.createElement('div'); sw.className='color-swatch';
-        sw.style.background=categoryColors[title]; h.append(sw);
-      }
-      const arr=document.createElement('span'); arr.className='arrow'; h.append(arr);
-      const b=document.createElement('div'); b.className='panel-body';
-      if (title === 'Visited?') {
-        items.forEach(it => b.append(makeCB(it,selVis,it)));
-      } else {
-        items.forEach(it => b.append(makeCB(isRegion ? it : `${title} - ${it}`,isRegion ? selReg : selSub,it)));
-      }
-      h.onclick = () => {
-        const o = b.classList.toggle('active');
-        arr.classList.toggle('expanded', o);
-      };
-      p.append(h,b); wrapper.append(p);
-    }
+    document.getElementById('panelContainer').style.display =
+      inItin ? 'none' : 'block';
 
-    if(regions.size) addPanel('Region',[...regions].sort(),true);
-    addPanel('Visited?',['Been there','Not yet'],false,true);
-    if(categories.includes('Food'))          addPanel('Food',[...catMap['Food']].sort(),false);
-    if(categories.includes('Sweet Treats'))  addPanel('Sweet Treats',[...catMap['Sweet Treats']].sort(),false);
-    categories
-      .filter(c => c!=='Food' && c!=='Sweet Treats' && c!=='Miscellaneous')
-      .sort()
-      .forEach(c=>addPanel(c,[...catMap[c]].sort()));
-    if (categories.includes('Miscellaneous')) {
-      addPanel('Miscellaneous', [...catMap['Miscellaneous']].sort(), false);
+    document.getElementById('placeCarousel').style.display =
+      inItin ? 'none' : 'flex';
+
+    document.getElementById('itineraryContainer').style.display =
+      inItin ? 'block' : 'none';
+
+    const btn = document.getElementById('itineraryMode');
+
+    btn.textContent =
+      inItin ? 'Exit Itinerary Mode' : 'Enter Itinerary Mode';
+
+    if (!inItin) {
+      showAllMarkers();
+
+      const selectEl = document.getElementById('itinerarySelect');
+
+      selectEl.style.display = 'none';
+      selectEl.selectedIndex = 0;
+
+      document.getElementById('itineraryCarousel').style.display =
+        'none';
+
+      const viewBtn = document.getElementById('viewItineraries');
+
+      viewBtn.textContent = 'View Itineraries';
+
+      document.getElementById('itinDayCurrent').style.display =
+        'none';
+
+      document.getElementById('itinDayNext').style.display =
+        'none';
     }
   };
+
+  function makeCB(
+    val,
+    setRef,
+    label,
+    checked = true,
+    filterGroup = '',
+    afterChange = null
+  ) {
+    const lbl = document.createElement('label');
+    const cb = document.createElement('input');
+
+    cb.type = 'checkbox';
+    cb.value = val;
+    cb.checked = checked;
+
+    if (filterGroup) {
+      cb.dataset.filterGroup = filterGroup;
+    }
+
+    cb.dataset.emoji =
+      CONFIG.emojiList[
+        Math.floor(Math.random() * CONFIG.emojiList.length)
+      ];
+
+    cb.onchange = () => {
+      if (cb.checked) {
+        setRef.add(val);
+      } else {
+        setRef.delete(val);
+      }
+
+      if (afterChange) {
+        afterChange();
+      }
+
+      drawMarkers();
+    };
+
+    lbl.append(cb, ' ', label);
+
+    return lbl;
+  }
+
+  function addPanel(title,items){
+    const p = document.createElement('div');
+
+    p.className = 'panel';
+    p.dataset.panelType = 'category';
+
+    const h = document.createElement('div');
+
+    h.className = 'panel-header';
+
+    const m = document.createElement('input');
+
+    m.type = 'checkbox';
+    m.checked = true;
+
+    m.dataset.emoji =
+      CONFIG.emojiList[
+        Math.floor(Math.random() * CONFIG.emojiList.length)
+      ];
+
+    m.onclick = e => e.stopPropagation();
+
+    m.onchange = () => {
+      p.querySelectorAll(
+        '.panel-body input[type="checkbox"]'
+      ).forEach(cb => {
+        cb.checked = m.checked;
+
+        const key = cb.value;
+
+        if (m.checked) {
+          selSub.add(key);
+        } else {
+          selSub.delete(key);
+        }
+      });
+
+      drawMarkers();
+    };
+
+    h.append(m, document.createTextNode(title));
+
+    const sw = document.createElement('div');
+
+    sw.className = 'color-swatch';
+    sw.style.background = categoryColors[title];
+
+    h.append(sw);
+
+    const arr = document.createElement('span');
+
+    arr.className = 'arrow';
+
+    h.append(arr);
+
+    const b = document.createElement('div');
+
+    b.className = 'panel-body';
+
+    items.forEach(item => {
+      b.append(
+        makeCB(
+          `${title} - ${item}`,
+          selSub,
+          item
+        )
+      );
+    });
+
+    h.onclick = () => {
+      const open = b.classList.toggle('active');
+
+      arr.classList.toggle('expanded', open);
+    };
+
+    p.append(h, b);
+    wrapper.append(p);
+  }
+
+  function addMoreFiltersPanel(){
+    const p = document.createElement('div');
+
+    p.className = 'panel more-filters-panel';
+
+    const h = document.createElement('div');
+
+    h.className = 'panel-header';
+    h.append(document.createTextNode('More Filters'));
+
+    const arr = document.createElement('span');
+
+    arr.className = 'arrow';
+
+    h.append(arr);
+
+    const b = document.createElement('div');
+
+    b.className = 'panel-body more-filters-body';
+
+    /*
+     * Visit history
+     */
+    const visitSection = document.createElement('div');
+
+    visitSection.className = 'more-filter-section';
+
+    const visitTitle = document.createElement('div');
+
+    visitTitle.className = 'more-filter-section-title';
+    visitTitle.textContent = 'Visit history';
+
+    visitSection.append(
+      visitTitle,
+      makeCB(
+        'Been there',
+        selVis,
+        'Been there',
+        true,
+        'visit-history'
+      ),
+      makeCB(
+        'Not yet',
+        selVis,
+        'Not yet',
+        true,
+        'visit-history'
+      )
+    );
+
+    /*
+     * Availability
+     */
+    const availabilitySection = document.createElement('div');
+
+    availabilitySection.className = 'more-filter-section';
+
+    const availabilityTitle = document.createElement('div');
+
+    availabilityTitle.className = 'more-filter-section-title';
+    availabilityTitle.textContent = 'Availability';
+
+    availabilitySection.append(
+      availabilityTitle,
+      makeCB(
+        PLACE_STATUS_TEMPORARILY_CLOSED,
+        selStatus,
+        'Temporarily closed',
+        false,
+        'availability'
+      ),
+      makeCB(
+        PLACE_STATUS_PERMANENTLY_CLOSED,
+        selStatus,
+        'Permanently closed',
+        false,
+        'availability'
+      )
+    );
+
+    /*
+     * Regions
+     */
+    const regionsSection = document.createElement('div');
+
+    regionsSection.className = 'more-filter-section';
+
+    const regionsToggle = document.createElement('button');
+
+    regionsToggle.type = 'button';
+    regionsToggle.className = 'more-filter-regions-toggle';
+    regionsToggle.setAttribute('aria-expanded', 'false');
+
+    const regionsLabel = document.createElement('span');
+
+    regionsLabel.textContent = 'Regions';
+
+    const regionsArrow = document.createElement('span');
+
+    regionsArrow.className = 'more-filter-regions-arrow';
+
+    regionsToggle.append(
+      regionsLabel,
+      regionsArrow
+    );
+
+    const regionsBody = document.createElement('div');
+
+    regionsBody.className = 'more-filter-regions-body';
+
+    const sortedRegions = [...regions].sort();
+
+    if (sortedRegions.length) {
+      const regionAllButton = document.createElement('button');
+
+      regionAllButton.type = 'button';
+      regionAllButton.className = 'more-filter-regions-all';
+
+      const updateRegionAllButton = () => {
+        const allSelected = sortedRegions.every(region =>
+          selReg.has(region)
+        );
+
+        regionAllButton.textContent =
+          allSelected ? 'Deselect all' : 'Select all';
+      };
+
+      regionAllButton.onclick = () => {
+        const allSelected = sortedRegions.every(region =>
+          selReg.has(region)
+        );
+
+        if (allSelected) {
+          selReg.clear();
+        } else {
+          sortedRegions.forEach(region => {
+            selReg.add(region);
+          });
+        }
+
+        regionsBody
+          .querySelectorAll(
+            'input[data-filter-group="regions"]'
+          )
+          .forEach(cb => {
+            cb.checked = !allSelected;
+          });
+
+        updateRegionAllButton();
+        drawMarkers();
+      };
+
+      regionsBody.append(regionAllButton);
+
+      sortedRegions.forEach(region => {
+        regionsBody.append(
+          makeCB(
+            region,
+            selReg,
+            region,
+            true,
+            'regions',
+            updateRegionAllButton
+          )
+        );
+      });
+
+      updateRegionAllButton();
+    }
+
+    regionsToggle.onclick = () => {
+      const open =
+        regionsBody.classList.toggle('active');
+
+      regionsArrow.classList.toggle(
+        'expanded',
+        open
+      );
+
+      regionsToggle.setAttribute(
+        'aria-expanded',
+        String(open)
+      );
+    };
+
+    regionsSection.append(
+      regionsToggle,
+      regionsBody
+    );
+
+    b.append(
+      visitSection,
+      availabilitySection,
+      regionsSection
+    );
+
+    h.onclick = () => {
+      const open = b.classList.toggle('active');
+
+      arr.classList.toggle('expanded', open);
+    };
+
+    p.append(h, b);
+    wrapper.append(p);
+  }
+
+  if (categories.includes('Food')) {
+    addPanel(
+      'Food',
+      [...catMap['Food']].sort()
+    );
+  }
+
+  if (categories.includes('Sweet Treats')) {
+    addPanel(
+      'Sweet Treats',
+      [...catMap['Sweet Treats']].sort()
+    );
+  }
+
+  categories
+    .filter(category =>
+      category !== 'Food' &&
+      category !== 'Sweet Treats' &&
+      category !== 'Miscellaneous'
+    )
+    .sort()
+    .forEach(category => {
+      addPanel(
+        category,
+        [...catMap[category]].sort()
+      );
+    });
+
+  if (categories.includes('Miscellaneous')) {
+    addPanel(
+      'Miscellaneous',
+      [...catMap['Miscellaneous']].sort()
+    );
+  }
+
+  addMoreFiltersPanel();
+};
