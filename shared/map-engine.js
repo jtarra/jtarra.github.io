@@ -19,41 +19,17 @@
         .replace(/'/g, '&#039;');
     }
 
-	const PLACE_STATUS_TEMPORARILY_CLOSED = 'Temporarily Closed';
-	const PLACE_STATUS_PERMANENTLY_CLOSED = 'Permanently Closed';
-	
-	function normalizePlaceStatus(value) {
-	  const normalized = String(value || '').trim().toLowerCase();
-	
-	  if (normalized === 'temporarily closed') {
-	    return PLACE_STATUS_TEMPORARILY_CLOSED;
-	  }
-	
-	  if (normalized === 'permanently closed') {
-	    return PLACE_STATUS_PERMANENTLY_CLOSED;
-	  }
-	
-	  return '';
-	}
-	
-	function isPlaceStatusVisible(place) {
-	  if (!place || !place.placeStatus) return true;
-	
-	  return window.selStatus instanceof Set &&
-	    window.selStatus.has(place.placeStatus);
-	}
-	
-	function buildPlaceStatusHTML(placeStatus) {
-	  if (placeStatus === PLACE_STATUS_TEMPORARILY_CLOSED) {
-	    return '<br><span class="place-status">⚠️ Temporarily Closed</span>';
-	  }
-	
-	  if (placeStatus === PLACE_STATUS_PERMANENTLY_CLOSED) {
-	    return '<br><span class="place-status">⛔ Permanently Closed</span>';
-	  }
-	
-	  return '';
-	}
+		function isPlaceStatusVisible(place) {
+		  return !place ||
+		    !place.permanentlyClosed ||
+		    window.showPermanentlyClosed === true;
+		}
+		
+		function buildPlaceStatusHTML(permanentlyClosed) {
+		  return permanentlyClosed
+		    ? '<br><span class="place-status">⛔ Permanently Closed</span>'
+		    : '';
+		}	
 
     function buildOrderRecommendationsHTML(recommendations) {
       if (!Array.isArray(recommendations) || recommendations.length === 0) {
@@ -283,7 +259,7 @@ window.passwordProtection = new PasswordProtection();
 		  const o=Object.fromEntries(hdrP.map((h,i)=>[h,r[i]||''])); 
 	  	  const [lat,lng]=o.Coordinates.split(',').map(Number); 
 		  return { 
-			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,orderRecommendations:(o.OrderRecommendations||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean),placeStatus:normalizePlaceStatus(o.PlaceStatus),tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });          const [hdrR,...rowsR] = data.valueRanges[1].values;
+			  id:o.PlaceID,name:o.Name,category:o.Category,subcategories:(o.Subcategory||'').split(/\s*,\s*/).map(s=>s.trim()).filter(Boolean),regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),notes:o.Notes,orderRecommendations:(o.OrderRecommendations||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean),permanentlyClosed:String(o.PermanentlyClosed||'').trim().toUpperCase()==='Y',tags:(o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),visited:o.Visited.trim().toUpperCase()==='Y',latlng:[lat,lng],mapsLink:o.MapsLink,appleLink:o.AppleMapsLink, extraLink: o.ExtraLink }; });          const [hdrR,...rowsR] = data.valueRanges[1].values;
           const reviewsBy={}; rowsR.forEach(r=>{ const o=Object.fromEntries(hdrR.map((h,i)=>[h,r[i]||''])); const photos=(o.PhotoURL||'').trim().split(/\s*,\s*/).filter(Boolean); (reviewsBy[o.PlaceID]||=[]).push({date:o.VisitDate, rating:+o.Rating||0, text:o.Review, photos}); });
           window.places = places;
 		  window.reviewsBy = reviewsBy;
@@ -568,7 +544,7 @@ window.passwordProtection = new PasswordProtection();
     places.forEach(p => p.subcategories.forEach(sc => window.selSub.add(`${p.category} - ${sc}`)));
 	window.selReg = new Set(regSet);
 	window.selVis = new Set(['Been there','Not yet']);
-	window.selStatus = new Set();
+	window.showPermanentlyClosed = false;
 
     const basePool = CONFIG.baseColors.slice(); shuffle(basePool);
     window.categoryColors = {};
@@ -635,7 +611,7 @@ window.passwordProtection = new PasswordProtection();
           regions: (o.Region || '').split(/\s*,\s*/).map(s => s.trim()).filter(Boolean),
 		  notes: o.Notes,
 	  	  orderRecommendations: (o.OrderRecommendations || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean),
-		  placeStatus: normalizePlaceStatus(o.PlaceStatus),
+		  permanentlyClosed: String(o.PermanentlyClosed || '').trim().toUpperCase() === 'Y',
 		  tags: (o.Tags || '').split(/\s*,\s*/).map(t => t.toLowerCase()).filter(Boolean),
           visited: o.Visited.trim().toUpperCase() === 'Y',
           latlng: [lat, lng],
@@ -1990,7 +1966,7 @@ setTimeout(() => {
 	  .join(', ');
 	
 	let popup = `<strong>${escapeHTML(p.name)}</strong>`
-	  + buildPlaceStatusHTML(p.placeStatus)
+	  + buildPlaceStatusHTML(p.permanentlyClosed)
 	  + `${p.notes ? `<br>🗒️ ${escapeHTML(p.notes)}` : ''}`
 	  + `<br><em>🏷️ ${escapeHTML(p.category)} – ${escapedSubcategories}</em>`
 	  + (
@@ -2046,11 +2022,9 @@ setTimeout(() => {
 	  el.innerHTML = svgIcon;
 	  el.className = 'place-marker';
 	
-	  if (p.placeStatus === PLACE_STATUS_TEMPORARILY_CLOSED) {
-	    el.classList.add('place-marker--temporarily-closed');
-	  } else if (p.placeStatus === PLACE_STATUS_PERMANENTLY_CLOSED) {
-	    el.classList.add('place-marker--permanently-closed');
-	  }
+		if (p.permanentlyClosed) {
+		  el.classList.add('place-marker--permanently-closed');
+		}
 
       const pop = new maplibregl.Popup({
         offset: 25,
@@ -2157,13 +2131,13 @@ window.setupFilters = function(categories,regions,catMap){
        * Keep the user's availability choices.
        * All other filter checkboxes return to checked.
        */
-      document
-        .querySelectorAll('#panelContainer input[type="checkbox"]')
-        .forEach(cb => {
-          cb.checked = cb.dataset.filterGroup === 'availability'
-            ? selStatus.has(cb.value)
-            : true;
-        });
+		document
+		  .querySelectorAll('#panelContainer input[type="checkbox"]')
+		  .forEach(cb => {
+		    cb.checked = cb.dataset.filterGroup === 'availability'
+		      ? window.showPermanentlyClosed
+		      : true;
+		  });
 
       const regionAllButton =
         document.querySelector('.more-filter-regions-all');
@@ -2249,19 +2223,21 @@ window.setupFilters = function(categories,regions,catMap){
         Math.floor(Math.random() * CONFIG.emojiList.length)
       ];
 
-    cb.onchange = () => {
-      if (cb.checked) {
-        setRef.add(val);
-      } else {
-        setRef.delete(val);
-      }
-
-      if (afterChange) {
-        afterChange();
-      }
-
-      drawMarkers();
-    };
+	cb.onchange = () => {
+	  if (setRef) {
+	    if (cb.checked) {
+	      setRef.add(val);
+	    } else {
+	      setRef.delete(val);
+	    }
+	  }
+	
+	  if (afterChange) {
+	    afterChange(cb.checked);
+	  }
+	
+	  drawMarkers();
+	};
 
     lbl.append(cb, ' ', label);
 
@@ -2409,23 +2385,19 @@ window.setupFilters = function(categories,regions,catMap){
     availabilityTitle.className = 'more-filter-section-title';
     availabilityTitle.textContent = 'Availability';
 
-    availabilitySection.append(
-      availabilityTitle,
-      makeCB(
-        PLACE_STATUS_TEMPORARILY_CLOSED,
-        selStatus,
-        'Temporarily closed',
-        false,
-        'availability'
-      ),
-      makeCB(
-        PLACE_STATUS_PERMANENTLY_CLOSED,
-        selStatus,
-        'Permanently closed',
-        false,
-        'availability'
-      )
-    );
+	availabilitySection.append(
+	  availabilityTitle,
+	  makeCB(
+	    'permanently-closed',
+	    null,
+	    'Show permanently closed',
+	    false,
+	    'availability',
+	    checked => {
+	      window.showPermanentlyClosed = checked;
+	    }
+	  )
+	);
 
     /*
      * Regions
